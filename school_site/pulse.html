@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clutch • Pulse</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/pulse.js"></script>
+</head>
+<body data-page="pulse" data-requires-session="true">
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="logo">Clutch</div>
+        <span class="role-pill" id="role-pill">guest</span>
+      </div>
+
+      <div>
+        <p class="nav-label">Main</p>
+        <nav class="nav">
+          <a class="nav-btn" data-nav="home" href="index.html">Feed</a>
+          <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
+          <a class="nav-btn" data-nav="explore" href="explore.html">Discovery</a>
+          <a class="nav-btn" data-nav="highlights" href="highlights.html">Dashboards</a>
+          <a class="nav-btn" data-nav="profile" href="profile.html">Profile</a>
+        </nav>
+      </div>
+
+      <div class="sidebar-foot">
+        <strong>Pulse</strong>
+        <span class="helper">Your following feed, trending posts, and platform news in one place.</span>
+      </div>
+    </aside>
+
+    <div class="mobile-overlay" id="mobile-overlay"></div>
+
+    <div class="page-wrap">
+      <header class="site-header">
+        <button class="menu-btn" id="menu-btn" type="button">Menu</button>
+        <div class="search-wrap">
+          <input id="global-search" type="search" placeholder="Search people, schools, posts, news">
+        </div>
+        <button class="icon-btn" id="notif-btn" type="button" title="Notifications">🔔<span id="notif-count" class="badge">4</span></button>
+        <div class="session-chip" id="session-chip">Checking session...</div>
+        <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div>
+            <p class="eyebrow">Pulse</p>
+            <h1>Your follow feed, trending, and news stream.</h1>
+            <p class="lede">This page combines personalized posts from people you follow, trending highlights, and sports/platform news.</p>
+          </div>
+          <div class="card">
+            <p class="card-tag">Snapshot</p>
+            <div class="kpis">
+              <div class="metric">
+                <div class="metric-value" id="pulse-following-count">0</div>
+                <div class="metric-label">Following Posts</div>
+              </div>
+              <div class="metric">
+                <div class="metric-value" id="pulse-trending-count">0</div>
+                <div class="metric-label">Trending Posts</div>
+              </div>
+              <div class="metric">
+                <div class="metric-value" id="pulse-news-count">0</div>
+                <div class="metric-label">News Items</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid-3">
+          <article class="data-panel">
+            <div class="section-head">
+              <h2>Following</h2>
+              <span class="tag">Personalized</span>
+            </div>
+            <div class="table-card">
+              <div class="table-head">
+                <span>Author</span>
+                <span>Post</span>
+                <span>Sport</span>
+                <span>Date</span>
+              </div>
+              <div class="table-rows" id="pulse-following-list">
+                <div class="placeholder">Loading following posts...</div>
+              </div>
+            </div>
+          </article>
+
+          <article class="data-panel">
+            <div class="section-head">
+              <h2>Trending</h2>
+              <span class="tag">This Week</span>
+            </div>
+            <div class="table-card">
+              <div class="table-head">
+                <span>Author</span>
+                <span>Post</span>
+                <span>Sport</span>
+                <span>Date</span>
+              </div>
+              <div class="table-rows" id="pulse-trending-list">
+                <div class="placeholder">Loading trending posts...</div>
+              </div>
+            </div>
+          </article>
+
+          <article class="data-panel">
+            <div class="section-head">
+              <h2>News</h2>
+              <span class="tag">Latest</span>
+            </div>
+            <div class="cards" id="pulse-news-list">
+              <div class="placeholder">Loading news...</div>
+            </div>
+          </article>
+        </section>
+
+        <div id="pulse-status" class="helper">Checking session...</div>
+      </main>
+
+      <footer class="site-footer">
+        Clutch Website • Pulse page for Following, Trending, and News
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clutch • User Profile</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/userProfile.js"></script>
+</head>
+<body data-page="profile-view" data-requires-session="true">
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="logo">Clutch</div>
+        <span class="role-pill" id="role-pill">guest</span>
+      </div>
+      <div>
+        <p class="nav-label">Main</p>
+        <nav class="nav">
+          <a class="nav-btn" data-nav="home" href="index.html">Feed</a>
+          <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
+          <a class="nav-btn" data-nav="explore" href="explore.html">Discovery</a>
+          <a class="nav-btn" data-nav="highlights" href="highlights.html">Dashboards</a>
+          <a class="nav-btn" data-nav="profile" href="profile.html">My Profile</a>
+        </nav>
+      </div>
+      <div class="sidebar-foot">
+        <strong>Public Profile</strong>
+        <span class="helper">Posts, stats, school assignment, and follow controls.</span>
+      </div>
+    </aside>
+
+    <div class="mobile-overlay" id="mobile-overlay"></div>
+
+    <div class="page-wrap">
+      <header class="site-header">
+        <button class="menu-btn" id="menu-btn" type="button">Menu</button>
+        <div class="search-wrap">
+          <input id="global-search" type="search" placeholder="Search name or email exactly">
+        </div>
+        <button class="icon-btn" id="notif-btn" type="button">🔔<span id="notif-count" class="badge">4</span></button>
+        <div class="session-chip" id="session-chip">Checking session...</div>
+        <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div>
+            <p class="eyebrow">Profile View</p>
+            <h1 id="public-profile-title">Loading profile...</h1>
+            <p class="lede" id="public-profile-subtitle">Fetching public details.</p>
+            <div class="meta" id="public-profile-meta"></div>
+          </div>
+          <div class="card">
+            <p class="card-tag">Actions</p>
+            <div class="segmented">
+              <button id="follow-btn" type="button" class="btn primary">Follow</button>
+              <button id="message-btn" type="button" class="btn">Message</button>
+            </div>
+            <p id="follow-status" class="helper"></p>
+          </div>
+        </section>
+
+        <section class="panel" id="athlete-tabs-shell" hidden>
+          <div class="section-head">
+            <h2>Athlete Detail</h2>
+            <div class="segmented" id="athlete-tabs">
+              <button type="button" data-tab="posts" class="active">Posts</button>
+              <button type="button" data-tab="stats">Stats</button>
+              <button type="button" data-tab="info">Info</button>
+            </div>
+          </div>
+
+          <div id="athlete-tab-posts">
+            <div class="table-card">
+              <div class="table-head">
+                <span>Author</span>
+                <span>Caption</span>
+                <span>Type</span>
+                <span>Date</span>
+              </div>
+              <div class="table-rows" id="athlete-posts-list"></div>
+            </div>
+          </div>
+
+          <div id="athlete-tab-stats" hidden>
+            <div class="table-card">
+              <div class="table-head">
+                <span>Sport</span>
+                <span>Stat</span>
+                <span>Value</span>
+                <span>Source</span>
+              </div>
+              <div class="table-rows" id="athlete-stats-list"></div>
+            </div>
+          </div>
+
+          <div id="athlete-tab-info" hidden>
+            <div class="grid-3" id="athlete-info-cards"></div>
+          </div>
+        </section>
+
+        <section class="data-panel" id="general-posts-shell">
+          <div class="section-head">
+            <h2>Recent Posts</h2>
+          </div>
+          <div class="table-card">
+            <div class="table-head">
+              <span>Author</span>
+              <span>Caption</span>
+              <span>Type</span>
+              <span>Date</span>
+            </div>
+            <div class="table-rows" id="general-posts-list"></div>
+          </div>
+        </section>
+
+        <div id="public-profile-status" class="helper">Loading...</div>
+      </main>
+
+      <footer class="site-footer">Clutch Website • Public profile and follow flow</footer>
+    </div>
+  </div>
+</body>
+</html>

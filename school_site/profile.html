@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clutch • Profile</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/profile.js"></script>
+</head>
+<body data-page="profile" data-requires-session="true">
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="logo">Clutch</div>
+        <span class="role-pill" id="role-pill">guest</span>
+      </div>
+      <div>
+        <p class="nav-label">Main</p>
+        <nav class="nav">
+          <a class="nav-btn" data-nav="home" href="index.html">Feed</a>
+          <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
+          <a class="nav-btn" data-nav="explore" href="explore.html">Discovery</a>
+          <a class="nav-btn" data-nav="highlights" href="highlights.html">Dashboards</a>
+          <a class="nav-btn" data-nav="profile" href="profile.html">Profile</a>
+        </nav>
+      </div>
+      <div class="sidebar-foot">
+        <strong>Privacy & Safety</strong>
+        <span class="helper">Role-aware visibility controls, profile verification state, and report/block placeholders.</span>
+      </div>
+    </aside>
+
+    <div class="mobile-overlay" id="mobile-overlay"></div>
+
+    <div class="page-wrap">
+      <header class="site-header">
+        <button class="menu-btn" id="menu-btn" type="button">Menu</button>
+        <div class="search-wrap">
+          <input id="global-search" type="search" placeholder="Search profile, teams, stats">
+        </div>
+        <button class="icon-btn" id="notif-btn" type="button">🔔<span id="notif-count" class="badge">4</span></button>
+        <div class="session-chip" id="session-chip">Checking session...</div>
+        <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div>
+            <p class="eyebrow">Role Profile</p>
+            <h1 id="profile-title">Profile</h1>
+            <p class="lede" id="profile-subtitle">Loading role context...</p>
+            <div class="meta" id="profile-tags"></div>
+          </div>
+          <div class="card">
+            <p class="card-tag">Verification</p>
+            <h3 id="profile-verification">Pending</h3>
+            <p class="helper">School-admin verification badge behavior is represented here.</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <h2>Profile Details</h2>
+            <span class="tag" id="profile-role">Role: --</span>
+          </div>
+          <div class="form-grid">
+            <label>
+              Display Name
+              <input id="profile-name" type="text" placeholder="Name">
+            </label>
+            <label>
+              Primary Sport
+              <input id="profile-sport" type="text" placeholder="Sport">
+            </label>
+            <label>
+              Affiliation
+              <input id="profile-affiliation" type="text" placeholder="School or organization">
+            </label>
+            <label>
+              Location
+              <input id="profile-location" type="text" placeholder="City, State">
+            </label>
+            <label class="full">
+              Bio / Statement
+              <textarea id="profile-bio" placeholder="Personal statement"></textarea>
+            </label>
+          </div>
+          <div class="section-head">
+            <button id="save-profile" class="btn primary" type="button">Save Profile Metadata</button>
+            <div id="profile-status" class="form-status"></div>
+          </div>
+        </section>
+
+        <section class="data-panel">
+          <div class="section-head">
+            <h2>Stats & Visibility</h2>
+          </div>
+          <div class="grid-3">
+            <article class="card">
+              <p class="card-tag">Stats Snapshot</p>
+              <p id="profile-stats-copy">Role-based metrics appear here.</p>
+            </article>
+            <article class="card">
+              <p class="card-tag">Highlight Reel</p>
+              <p>Add YouTube/Vimeo links or uploaded clips.</p>
+            </article>
+            <article class="card">
+              <p class="card-tag">Privacy Controls</p>
+              <p>Public, Followers Only, or Private discovery settings.</p>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        Clutch Website • Profile, safety, and visibility controls
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

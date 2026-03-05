@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clutch • Feed</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/home.js"></script>
+</head>
+<body data-page="home" data-requires-session="true">
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="logo">Clutch</div>
+        <span class="role-pill" id="role-pill">guest</span>
+      </div>
+
+      <div>
+        <p class="nav-label">Main</p>
+        <nav class="nav">
+          <a class="nav-btn" data-nav="home" href="index.html">Feed</a>
+          <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
+          <a class="nav-btn" data-nav="explore" href="explore.html">Discovery</a>
+          <a class="nav-btn" data-nav="highlights" href="highlights.html">Dashboards</a>
+          <a class="nav-btn" data-nav="profile" href="profile.html">Profile</a>
+        </nav>
+      </div>
+
+      <div>
+        <p class="nav-label">Role Actions</p>
+        <nav class="nav">
+          <a class="nav-btn" href="highlights.html#admin" data-role-allow="school">School Admin CRM</a>
+          <a class="nav-btn" href="highlights.html#coach" data-role-allow="coach">Coach Workspace</a>
+          <a class="nav-btn" href="explore.html#scout-discovery" data-role-allow="scout">Scout Discovery</a>
+          <a class="nav-btn" href="highlights.html#athlete" data-role-allow="athlete">Athlete Stats</a>
+          <a class="nav-btn" href="highlights.html#fan" data-role-allow="general">Fan Zone</a>
+        </nav>
+      </div>
+
+      <div class="sidebar-foot">
+        <strong>Command Palette</strong>
+        <span class="helper">Jump to pages, teams, athletes, and shortcuts.</span>
+        <span class="helper"><kbd>⌘</kbd><kbd>K</kbd> / <kbd>Ctrl</kbd><kbd>K</kbd></span>
+      </div>
+    </aside>
+
+    <div class="mobile-overlay" id="mobile-overlay"></div>
+
+    <div class="page-wrap">
+      <header class="site-header">
+        <button class="menu-btn" id="menu-btn" type="button">Menu</button>
+        <div class="search-wrap">
+          <input id="global-search" type="search" placeholder="Search athletes, schools, coaches, scouts">
+        </div>
+        <button class="icon-btn" id="notif-btn" type="button" title="Notifications">🔔<span id="notif-count" class="badge">4</span></button>
+        <div class="session-chip" id="session-chip">Checking session...</div>
+        <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div>
+            <p class="eyebrow">Social Feed</p>
+            <h1>Home for every role, with role-safe visibility controls.</h1>
+            <p class="lede">Feed prioritizes followed accounts and can surface weekly trending posts. Filters and infinite-scroll style loading are represented in this web build.</p>
+            <div class="meta">
+              <span>Like, comment, share</span>
+              <span>All / Athletes / Coaches / Schools</span>
+              <span>Trending tab</span>
+            </div>
+          </div>
+          <div class="card">
+            <p class="card-tag">Live Snapshot</p>
+            <div class="kpis">
+              <div class="metric">
+                <div class="metric-value" id="metric-following">0</div>
+                <div class="metric-label">Following</div>
+              </div>
+              <div class="metric">
+                <div class="metric-value" id="metric-posts">0</div>
+                <div class="metric-label">Feed Posts</div>
+              </div>
+              <div class="metric">
+                <div class="metric-value" id="metric-trending">0</div>
+                <div class="metric-label">Trending</div>
+              </div>
+              <div class="metric">
+                <div class="metric-value" id="metric-unread">0</div>
+                <div class="metric-label">Unread Alerts</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="composer-panel" data-role-allow="athlete,coach,school">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Post Creation</p>
+              <h2>Create Update or Match Recap</h2>
+            </div>
+            <div class="segmented" id="post-type-tabs">
+              <button class="active" data-post-type="standard" type="button">Standard Post</button>
+              <button data-post-type="recap" type="button">Match Recap</button>
+            </div>
+          </div>
+
+          <form id="composer-form" class="form">
+            <div class="form-grid">
+              <label class="full">
+                Caption
+                <textarea id="composer-caption" placeholder="Share an update with your followers..."></textarea>
+              </label>
+              <label>
+                Visibility
+                <select id="composer-visibility">
+                  <option value="public">Public</option>
+                  <option value="followers">Followers only</option>
+                </select>
+              </label>
+              <label>
+                Schedule Post
+                <input id="composer-schedule" type="datetime-local">
+              </label>
+              <label class="full">
+                Tags (athletes, schools, sports)
+                <input id="composer-tags" type="text" placeholder="@JordanLee #Basketball #NorthValley">
+              </label>
+            </div>
+
+            <div class="surface-soft">
+              <strong>Media Uploader</strong>
+              <p class="helper">Drag-and-drop area placeholder with progress behavior. Supports image(s) and video (up to 2 minutes) in production API flow.</p>
+            </div>
+
+            <div id="recap-fields" class="form-grid full" hidden>
+              <label>
+                Final Score
+                <input id="recap-score" type="text" placeholder="North Valley 62 - 58 Lakeview">
+              </label>
+              <label>
+                Standout Athletes
+                <input id="recap-standout" type="text" placeholder="Jordan Lee, A. Kim">
+              </label>
+              <label class="full">
+                Recap Highlights
+                <textarea id="recap-highlights" placeholder="Key moments and turning points."></textarea>
+              </label>
+            </div>
+
+            <div id="composer-status" class="form-status"></div>
+            <button class="btn primary" type="submit">Publish</button>
+          </form>
+        </section>
+
+        <section class="data-panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Feed Stream</p>
+              <h2>Recent and Trending</h2>
+            </div>
+            <div class="segmented" id="feed-tabs">
+              <button type="button" data-feed-tab="following" class="active">Following</button>
+              <button type="button" data-feed-tab="trending">Trending</button>
+            </div>
+          </div>
+
+          <div class="segmented" id="feed-filters">
+            <button type="button" data-filter="all" class="active">All</button>
+            <button type="button" data-filter="athlete">Athletes</button>
+            <button type="button" data-filter="coach">Coaches</button>
+            <button type="button" data-filter="school">Schools</button>
+            <button type="button" data-filter="basketball">Basketball</button>
+            <button type="button" data-filter="soccer">Soccer</button>
+          </div>
+
+          <div class="table-card">
+            <div class="table-head">
+              <span>Author</span>
+              <span>Content</span>
+              <span>Sport</span>
+              <span>Date</span>
+            </div>
+            <div id="feed-list" class="table-rows">
+              <div class="placeholder">Waiting for data...</div>
+            </div>
+          </div>
+          <div id="connection-status" class="helper">Checking session...</div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        Clutch Website • PRD-aligned role-based feed and post experience
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

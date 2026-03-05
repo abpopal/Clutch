@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clutch • Discovery</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/explore.js"></script>
+</head>
+<body data-page="explore" data-requires-session="true">
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="logo">Clutch</div>
+        <span class="role-pill" id="role-pill">guest</span>
+      </div>
+      <div>
+        <p class="nav-label">Main</p>
+        <nav class="nav">
+          <a class="nav-btn" data-nav="home" href="index.html">Feed</a>
+          <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
+          <a class="nav-btn" data-nav="explore" href="explore.html">Discovery</a>
+          <a class="nav-btn" data-nav="highlights" href="highlights.html">Dashboards</a>
+          <a class="nav-btn" data-nav="profile" href="profile.html">Profile</a>
+        </nav>
+      </div>
+      <div class="sidebar-foot">
+        <strong>Search Scope</strong>
+        <span class="helper">People, schools, posts, and dedicated scout athlete discovery.</span>
+      </div>
+    </aside>
+
+    <div class="mobile-overlay" id="mobile-overlay"></div>
+
+    <div class="page-wrap">
+      <header class="site-header">
+        <button class="menu-btn" id="menu-btn" type="button">Menu</button>
+        <div class="search-wrap">
+          <input id="global-search" type="search" placeholder="Search by name, school, position, location">
+        </div>
+        <button class="icon-btn" id="notif-btn" type="button">🔔<span id="notif-count" class="badge">4</span></button>
+        <div class="session-chip" id="session-chip">Checking session...</div>
+        <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div>
+            <p class="eyebrow">Search & Discovery</p>
+            <h1>Global search plus dedicated scout athlete discovery.</h1>
+            <p class="lede">Implements PRD search tabs, advanced filters, and suggested accounts. Scout-focused discovery supports sport, position, GPA, location, and grad year filters.</p>
+          </div>
+          <div class="card">
+            <p class="card-tag">Search Tabs</p>
+            <div class="meta">
+              <span>People</span>
+              <span>Schools</span>
+              <span>Posts</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <h2>Search Results</h2>
+            <div class="segmented" id="search-tabs">
+              <button class="active" type="button" data-tab="people">People</button>
+              <button type="button" data-tab="schools">Schools</button>
+              <button type="button" data-tab="posts">Posts (coming soon)</button>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <label class="full">
+              Exact Name or Email
+              <input id="exact-query" type="search" placeholder="e.g. Jordan Lee or jordan@school.edu">
+            </label>
+            <label>
+              Sport
+              <select id="filter-sport">
+                <option value="all">All Sports</option>
+                <option value="basketball">Basketball</option>
+                <option value="soccer">Soccer</option>
+                <option value="football">Football</option>
+                <option value="track">Track</option>
+              </select>
+            </label>
+            <label>
+              Position
+              <input id="filter-position" type="text" placeholder="Point Guard">
+            </label>
+            <label>
+              Location
+              <input id="filter-location" type="text" placeholder="Denver, CO">
+            </label>
+            <label>
+              School Type
+              <select id="filter-school-type">
+                <option value="all">All</option>
+                <option value="high school">High School</option>
+                <option value="college">College</option>
+                <option value="university">University</option>
+                <option value="academy">Academy</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="table-card">
+            <div class="table-head">
+              <span>Name</span>
+              <span>Role / Email</span>
+              <span>School / Position</span>
+              <span>Actions</span>
+            </div>
+            <div id="search-results" class="table-rows"></div>
+          </div>
+        </section>
+
+        <section class="data-panel" id="scout-discovery" data-role-allow="scout">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Scout Dashboard</p>
+              <h2>Athlete Discovery</h2>
+            </div>
+            <div class="meta">
+              <span>Card + table toggle</span>
+              <span>Watchlist actions</span>
+              <span>Saved searches</span>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <label>
+              GPA Minimum
+              <input id="scout-gpa" type="number" step="0.1" min="0" max="4" placeholder="3.0">
+            </label>
+            <label>
+              Grad Year
+              <input id="scout-grad" type="number" min="2025" max="2035" placeholder="2027">
+            </label>
+            <label>
+              Radius (miles)
+              <input id="scout-radius" type="number" min="5" max="1000" placeholder="200">
+            </label>
+            <label>
+              Position
+              <input id="scout-position" type="text" placeholder="Winger">
+            </label>
+          </div>
+
+          <div class="cards" id="athlete-discovery-cards"></div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        Clutch Website • Scout discovery treated as first-class feature
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

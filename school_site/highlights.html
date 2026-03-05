@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clutch • Dashboards</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/dashboard.js"></script>
+</head>
+<body data-page="highlights" data-requires-session="true">
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="logo">Clutch</div>
+        <span class="role-pill" id="role-pill">guest</span>
+      </div>
+      <div>
+        <p class="nav-label">Main</p>
+        <nav class="nav">
+          <a class="nav-btn" data-nav="home" href="index.html">Feed</a>
+          <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
+          <a class="nav-btn" data-nav="explore" href="explore.html">Discovery</a>
+          <a class="nav-btn" data-nav="highlights" href="highlights.html">Dashboards</a>
+          <a class="nav-btn" data-nav="profile" href="profile.html">Profile</a>
+        </nav>
+      </div>
+      <div class="sidebar-foot">
+        <strong>Operations Layer</strong>
+        <span class="helper">School admin CRM, coach tools, scout pipeline, athlete stats, and fan engagement modules.</span>
+      </div>
+    </aside>
+
+    <div class="mobile-overlay" id="mobile-overlay"></div>
+
+    <div class="page-wrap">
+      <header class="site-header">
+        <button class="menu-btn" id="menu-btn" type="button">Menu</button>
+        <div class="search-wrap">
+          <input id="global-search" type="search" placeholder="Jump to team, league, athlete, or request">
+        </div>
+        <button class="icon-btn" id="notif-btn" type="button">🔔<span id="notif-count" class="badge">4</span></button>
+        <div class="session-chip" id="session-chip">Checking session...</div>
+        <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div>
+            <p class="eyebrow">Role Dashboards</p>
+            <h1>Operational modules aligned with PRD phases.</h1>
+            <p class="lede">Each role sees a focused dashboard module. This includes school operations, roster and stats workflows, scout recruiting pipeline, and athlete/fan experiences.</p>
+          </div>
+          <div class="card">
+            <p class="card-tag">Coverage</p>
+            <div class="meta">
+              <span>School Admin</span>
+              <span>Coach</span>
+              <span>Scout</span>
+              <span>Athlete</span>
+              <span>General User</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="admin" data-role-allow="school">
+          <div class="section-head">
+            <h2>School Admin Dashboard</h2>
+            <button class="btn">Export Calendar</button>
+          </div>
+          <div class="grid-4">
+            <article class="card"><p class="card-tag">Athletes</p><h3>428</h3><p>42 pending verifications</p></article>
+            <article class="card"><p class="card-tag">Teams</p><h3>21</h3><p>Across 8 sports</p></article>
+            <article class="card"><p class="card-tag">Events (7d)</p><h3>16</h3><p>Games, practices, tournaments</p></article>
+            <article class="card"><p class="card-tag">Pending Coaches</p><h3>5</h3><p>Require review</p></article>
+          </div>
+          <div class="cards">
+            <article class="card">
+              <p class="card-tag">Quick Actions</p>
+              <div class="segmented">
+                <button type="button">Add Athlete</button>
+                <button type="button">Invite Coach</button>
+                <button type="button">Schedule Game</button>
+                <button type="button">Create Announcement</button>
+              </div>
+            </article>
+            <article class="card">
+              <p class="card-tag">League Management</p>
+              <p>Bracket generator placeholder with seed-based playoff setup and public bracket visibility.</p>
+              <ul class="list">
+                <li>Set format (single elim / round robin)</li>
+                <li>Auto standings from approved scores</li>
+                <li>Coach-submitted score approvals</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel" id="coach" data-role-allow="coach">
+          <div class="section-head">
+            <h2>Coach Dashboard</h2>
+            <button class="btn">Export Roster PDF</button>
+          </div>
+          <div class="cards">
+            <article class="card">
+              <p class="card-tag">My Teams</p>
+              <p>Varsity Basketball, JV Basketball</p>
+            </article>
+            <article class="card">
+              <p class="card-tag">Upcoming</p>
+              <p>3 events in next 72 hours</p>
+            </article>
+            <article class="card">
+              <p class="card-tag">Pending Stats</p>
+              <p>12 athlete-submitted stat entries need review</p>
+            </article>
+          </div>
+          <div class="grid-2">
+            <article class="card">
+              <p class="card-tag">Attendance Tracker</p>
+              <p>Practice attendance workflow represented with present/late/absent statuses per athlete.</p>
+            </article>
+            <article class="card">
+              <p class="card-tag">Notifications</p>
+              <p>Schedule reminders and send team-wide or individual athlete alerts.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel" id="scout" data-role-allow="scout">
+          <div class="section-head">
+            <h2>Scout Dashboard</h2>
+            <button class="btn">Save Current Search</button>
+          </div>
+          <div class="grid-3">
+            <article class="card"><p class="card-tag">Watchlist</p><h3>39 Athletes</h3><p>7 updated this week</p></article>
+            <article class="card"><p class="card-tag">Offers</p><h3>14 Sent</h3><p>6 pending responses</p></article>
+            <article class="card"><p class="card-tag">Requests</p><h3>9 Incoming</h3><p>3 unread</p></article>
+          </div>
+          <div class="table-card">
+            <div class="table-head"><span>Athlete</span><span>Offer Type</span><span>Status</span><span>Deadline</span></div>
+            <div class="table-rows" id="scout-pipeline-table"></div>
+          </div>
+        </section>
+
+        <section class="panel" id="athlete" data-role-allow="athlete">
+          <div class="section-head">
+            <h2>Athlete Dashboard</h2>
+            <button class="btn">Download Stats PDF</button>
+          </div>
+          <div class="cards">
+            <article class="card"><p class="card-tag">Performance</p><p>View season and career trends.</p></article>
+            <article class="card"><p class="card-tag">Recruitment Inbox</p><p>Accept, decline, or request more info from scout offers.</p></article>
+            <article class="card"><p class="card-tag">Highlight Builder</p><p>Create and share a recruitment profile card.</p></article>
+          </div>
+        </section>
+
+        <section class="panel" id="fan" data-role-allow="general">
+          <div class="section-head">
+            <h2>General User Experience</h2>
+            <button class="btn">View Schedules</button>
+          </div>
+          <div class="cards">
+            <article class="card"><p class="card-tag">Follow Feed</p><p>Read-only social feed and announcements.</p></article>
+            <article class="card"><p class="card-tag">Fan Polls</p><p>Vote in school and coach polls like Player of the Week.</p></article>
+            <article class="card"><p class="card-tag">Restrictions</p><p>No posting, no offers, no private recruitment access.</p></article>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        Clutch Website • Operational dashboard modules by role
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

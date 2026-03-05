@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clutch • Login</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/login.js"></script>
+</head>
+<body data-page="login" data-requires-session="false" class="auth-page">
+  <section class="auth-panel">
+    <div class="panel">
+      <p class="eyebrow">Clutch</p>
+      <h1>Platform Access</h1>
+      <p class="lede">Sign in or create an account for Athlete, School Admin, Coach, Scout, or General User. Registration captures role-specific onboarding details from the PRD.</p>
+      <div class="cards">
+        <article class="card">
+          <p class="card-tag">Roles</p>
+          <p>Athlete, School Admin, Coach, Scout, General User</p>
+        </article>
+        <article class="card">
+          <p class="card-tag">Verification</p>
+          <p>Athletes, coaches, and schools start in pending verification state.</p>
+        </article>
+      </div>
+    </div>
+
+    <form id="auth-form" class="auth-form panel">
+      <div class="mode-toggle segmented">
+        <button type="button" class="tab active" data-mode="login">Login</button>
+        <button type="button" class="tab" data-mode="signup">Sign Up</button>
+      </div>
+
+      <div class="auth-grid">
+        <label class="full">
+          Email
+          <input id="auth-email" name="email" type="email" placeholder="you@school.edu" required>
+        </label>
+        <label class="full">
+          Password
+          <input id="auth-password" name="password" type="password" placeholder="••••••••" required>
+        </label>
+
+        <label class="full signup-only" hidden>
+          Full Name / Organization Name
+          <input id="auth-name" name="name" type="text" placeholder="Jordan Lee">
+        </label>
+
+        <label class="signup-only" hidden>
+          Role
+          <select id="auth-role" name="role">
+            <option value="athlete">Athlete</option>
+            <option value="school">School Admin</option>
+            <option value="coach">Coach</option>
+            <option value="scout">Scout</option>
+            <option value="general">General User</option>
+          </select>
+        </label>
+
+        <label class="signup-only" hidden>
+          Primary Sport
+          <input id="auth-sport" name="sport" type="text" placeholder="Basketball">
+        </label>
+
+        <label class="signup-only" hidden>
+          School / Organization
+          <input id="auth-affiliation" name="affiliation" type="text" placeholder="North Valley High">
+        </label>
+
+        <label class="signup-only" hidden>
+          Location
+          <input id="auth-location" name="location" type="text" placeholder="Denver, CO">
+        </label>
+
+        <label class="signup-only" hidden>
+          Grad Year (Athlete)
+          <input id="auth-grad-year" name="gradYear" type="number" min="2025" max="2035" placeholder="2028">
+        </label>
+
+        <label class="full signup-only" hidden>
+          Short Bio
+          <textarea id="auth-bio" name="bio" placeholder="Tell us about your goals."></textarea>
+        </label>
+      </div>
+
+      <div id="auth-error" class="form-status error"></div>
+      <button type="submit" class="btn primary" id="auth-submit">Login</button>
+      <p class="helper">After sign up, this website stores role metadata and creates linked role records when supported by your Supabase schema.</p>
+    </form>
+  </section>
+</body>
+</html>
