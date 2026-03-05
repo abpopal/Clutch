@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'home_page.dart';
+import 'brand.dart';
+import 'root_page.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -8,20 +9,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Clutched',
+      title: ClutchBrand.appName,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: Colors.transparent,
-        textTheme: const TextTheme(
-          headlineMedium: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
-      home: const HomePage(),
+      theme: ClutchBrand.theme(),
+      home: const RootPage(),
     );
   }
 }

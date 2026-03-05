@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../app/brand.dart';
+
 class ClutchedBackground extends StatelessWidget {
   const ClutchedBackground({super.key});
 
@@ -14,7 +16,7 @@ class ClutchedBackground extends StatelessWidget {
           gradient: RadialGradient(
             center: Alignment.topCenter,
             radius: 1.2,
-            colors: [Color(0xFF2A2222), Color(0xFF0F0D0D)],
+            colors: [ClutchBrand.coal, ClutchBrand.ink],
           ),
         ),
       ),
@@ -25,7 +27,7 @@ class ClutchedBackground extends StatelessWidget {
 class _DustPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final darkPaint = Paint()..color = const Color(0xFF1A1414).withOpacity(0.4);
+    final darkPaint = Paint()..color = ClutchBrand.coal.withOpacity(0.4);
     canvas.drawRect(Offset.zero & size, darkPaint);
 
     final random = Random(12);
@@ -36,8 +38,8 @@ class _DustPainter extends CustomPainter {
       final dy = random.nextDouble() * size.height;
       final isWarm = random.nextBool();
       paint.color = isWarm
-          ? const Color(0xFF7C2A2A).withOpacity(0.4)
-          : const Color(0xFF3A3232).withOpacity(0.5);
+          ? ClutchBrand.emberDeep.withOpacity(0.4)
+          : ClutchBrand.line.withOpacity(0.5);
       canvas.drawCircle(Offset(dx, dy), radius, paint);
     }
   }

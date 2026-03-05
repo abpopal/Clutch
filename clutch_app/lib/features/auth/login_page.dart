@@ -1,6 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../shared/clutched_background.dart';
 import '../../shared/glassy_card.dart';
@@ -14,7 +13,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  static const List<String> _roles = ['Athlete', 'Parent', 'Coach', 'Scout'];
+  static const List<String> _roles = ['Athlete', 'Scout'];
 
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
@@ -52,40 +51,69 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
+      final supabase = Supabase.instance.client;
       if (_isLogin) {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
+        await supabase.auth.signInWithPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
       } else {
-        final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        final roleValue = _selectedRole.toLowerCase();
+        final response = await supabase.auth.signUp(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
+          data: {
+            'name': _nameController.text.trim(),
+            'role': roleValue,
+          },
         );
 
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(credential.user!.uid)
-            .set({
-          'name': _nameController.text.trim(),
-          'email': _emailController.text.trim(),
-          'phone': _phoneController.text.trim(),
-          'zip': _zipController.text.trim(),
-          'role': _selectedRole,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+        final user = response.user;
+        if (user == null) {
+          throw AuthException('Sign up failed. Please try again.');
+        }
+
+        final userRow = await supabase
+            .from('users')
+            .insert({
+              'firebase_uid': user.id,
+              'role': roleValue,
+            })
+            .select('user_id')
+            .single();
+
+        final userId = userRow['user_id'] as String;
+        if (roleValue == 'school') {
+          await supabase.from('schools').insert({
+            'user_id': userId,
+            'name': _nameController.text.trim(),
+          });
+        } else if (roleValue == 'coach') {
+          await supabase.from('coaches').insert({'user_id': userId});
+        } else if (roleValue == 'athlete') {
+          await supabase.from('athletes').insert({'user_id': userId});
+        } else if (roleValue == 'scout') {
+          await supabase.from('scouts').insert({'user_id': userId});
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Sign up confirmed.')),
           );
         }
+
+        await supabase.auth.signInWithPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
       }
 
       if (mounted) {
-        Navigator.of(context).pop();
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
       }
-    } on FirebaseAuthException catch (e) {
+    } on AuthException catch (e) {
       setState(() {
         _errorMessage = e.message ?? 'Authentication failed. Try again.';
       });
