@@ -1,122 +1,803 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clutch • Profile</title>
-  <link rel="stylesheet" href="styles.css">
-  <script type="module" src="js/app.js"></script>
-  <script type="module" src="js/profile.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Clutch • Athlete Profile</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Barlow:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #0a0a0c;
+  --surface:  #111116;
+  --surface2: #18181f;
+  --surface3: #1e1e28;
+  --border:   #1f1f2a;
+  --border2:  #2a2a38;
+  --accent:   #00e5ff;
+  --accent2:  #7b61ff;
+  --gold:     #f5c842;
+  --green:    #00e676;
+  --red:      #ff4444;
+  --orange:   #ff8c00;
+  --text:     #f0f0f5;
+  --muted:    #6b6b80;
+  --muted2:   #9898aa;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font-size:15px;line-height:1.5;min-height:100vh;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;background:rgba(10,10,12,0.9);backdrop-filter:blur(20px);border-bottom:1px solid var(–border);}
+.nav-logo{font-family:‘Barlow Condensed’,sans-serif;font-size:22px;font-weight:900;letter-spacing:2px;color:var(–accent);text-transform:uppercase;}
+.nav-links{display:flex;gap:4px;}
+.nav-links a{padding:6px 14px;font-family:‘Barlow Condensed’,sans-serif;font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(–muted2);text-decoration:none;border-radius:4px;transition:color .2s,background .2s;}
+.nav-links a:hover{color:var(–text);background:var(–surface2);}
+.nav-links a.active{color:var(–accent);}
+.nav-right{display:flex;align-items:center;gap:14px;}
+.notif-btn{position:relative;background:none;border:none;cursor:pointer;color:var(–muted2);font-size:18px;padding:4px;transition:color .2s;}
+.notif-badge{position:absolute;top:0;right:0;width:16px;height:16px;border-radius:50%;background:var(–accent);color:var(–bg);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.avatar-sm{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(–accent2),var(–accent));display:flex;align-items:center;justify-content:center;font-family:‘Barlow Condensed’,sans-serif;font-size:13px;font-weight:800;color:#fff;cursor:pointer;}
+
+/* BANNER */
+.page{padding-top:56px;}
+.banner{position:relative;height:280px;overflow:hidden;background:linear-gradient(135deg,#0d0d18 0%,#0a1020 50%,#0a1a2a 100%);}
+.banner-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,229,255,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.035) 1px,transparent 1px);background-size:40px 40px;}
+.banner-glow{position:absolute;top:-80px;left:25%;width:700px;height:500px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,229,255,0.07) 0%,transparent 70%);pointer-events:none;}
+.banner-glow2{position:absolute;bottom:-120px;right:5%;width:500px;height:500px;border-radius:50%;background:radial-gradient(ellipse,rgba(123,97,255,0.06) 0%,transparent 70%);pointer-events:none;}
+.banner-number{position:absolute;right:50px;bottom:-20px;font-family:‘Barlow Condensed’,sans-serif;font-size:260px;font-weight:900;color:rgba(255,255,255,0.025);line-height:1;user-select:none;letter-spacing:-12px;}
+.banner-sport-tag{position:absolute;top:24px;right:28px;padding:5px 14px;border:1px solid rgba(0,229,255,0.3);border-radius:2px;font-family:‘Barlow Condensed’,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;color:var(–accent);text-transform:uppercase;background:rgba(0,229,255,0.05);}
+.banner-edit-btn{position:absolute;top:24px;left:28px;padding:6px 14px;background:rgba(255,255,255,0.06);border:1px solid var(–border2);border-radius:4px;font-family:‘Barlow Condensed’,sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;color:var(–muted2);text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.banner-edit-btn:hover{color:var(–text);border-color:var(–muted);}
+
+/* RANKING RIBBON on banner */
+.banner-rank-ribbon{position:absolute;bottom:20px;left:28px;display:flex;gap:8px;}
+.rank-pill{padding:5px 12px;border-radius:3px;font-family:‘Barlow Condensed’,sans-serif;font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;gap:6px;}
+.rank-pill.regional{background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.3);color:var(–accent);}
+.rank-pill.state{background:rgba(245,200,66,0.12);border:1px solid rgba(245,200,66,0.3);color:var(–gold);}
+.rank-pill.national{background:rgba(255,140,0,0.12);border:1px solid rgba(255,140,0,0.3);color:var(–orange);}
+.rank-pill-num{font-size:16px;font-weight:900;}
+
+/* PROFILE HEADER */
+.profile-header{position:relative;padding:0 40px;display:flex;align-items:flex-end;gap:28px;margin-top:-64px;z-index:2;}
+.avatar-wrap{position:relative;flex-shrink:0;}
+.avatar{width:128px;height:128px;border-radius:50%;border:3px solid var(–bg);background:linear-gradient(135deg,#1a1a2e,#16213e);overflow:hidden;box-shadow:0 0 0 2px var(–accent),0 8px 40px rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;font-family:‘Barlow Condensed’,sans-serif;font-size:44px;font-weight:900;color:var(–accent);}
+.verified-badge{position:absolute;bottom:6px;right:6px;width:26px;height:26px;border-radius:50%;background:var(–accent);border:2px solid var(–bg);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(–bg);}
+.profile-meta{padding-bottom:14px;flex:1;}
+.profile-name{font-family:‘Barlow Condensed’,sans-serif;font-size:40px;font-weight:900;letter-spacing:1px;line-height:1;text-transform:uppercase;}
+.profile-handle{font-family:‘Share Tech Mono’,monospace;font-size:13px;color:var(–muted2);margin-top:4px;}
+.profile-tags{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.tag{padding:3px 10px;border-radius:2px;font-family:‘Barlow Condensed’,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+.tag-position{background:rgba(0,229,255,0.12);color:var(–accent);border:1px solid rgba(0,229,255,0.25);}
+.tag-sport{background:rgba(123,97,255,0.12);color:var(–accent2);border:1px solid rgba(123,97,255,0.25);}
+.tag-school{background:rgba(245,200,66,0.10);color:var(–gold);border:1px solid rgba(245,200,66,0.25);}
+.tag-recruit{background:rgba(0,230,118,0.10);color:var(–green);border:1px solid rgba(0,230,118,0.25);}
+.tag-verified{background:rgba(0,229,255,0.15);color:var(–accent);border:1px solid var(–accent);display:flex;align-items:center;gap:4px;}
+.profile-actions{padding-bottom:14px;display:flex;gap:10px;align-items:flex-end;flex-shrink:0;}
+.btn-primary{padding:9px 22px;background:var(–accent);color:var(–bg);border:none;border-radius:4px;cursor:pointer;font-family:‘Barlow Condensed’,sans-serif;font-size:14px;font-weight:800;letter-spacing:1px;text-transform:uppercase;transition:opacity .2s,transform .1s;}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px);}
+.btn-outline{padding:9px 22px;background:transparent;color:var(–text);border:1px solid var(–border2);border-radius:4px;cursor:pointer;font-family:‘Barlow Condensed’,sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;transition:border-color .2s,color .2s;}
+.btn-outline:hover{border-color:var(–muted);}
+
+/* SOCIAL BAR */
+.social-bar{margin:20px 40px 0;padding:16px 24px;background:var(–surface);border:1px solid var(–border);border-radius:6px;display:flex;gap:0;align-items:center;}
+.social-stat{flex:1;text-align:center;padding:0 16px;border-right:1px solid var(–border);}
+.social-stat:last-child{border-right:none;}
+.social-stat-num{font-family:‘Barlow Condensed’,sans-serif;font-size:26px;font-weight:900;color:var(–text);line-height:1;}
+.social-stat-num.accent{color:var(–accent);}
+.social-stat-num.gold{color:var(–gold);}
+.social-stat-num.green{color:var(–green);}
+.social-stat-label{font-family:‘Barlow Condensed’,sans-serif;font-size:11px;font-weight:600;letter-spacing:1.5px;color:var(–muted);text-transform:uppercase;margin-top:3px;}
+
+/* GRID */
+.content-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;padding:24px 40px 80px;max-width:1300px;margin:0 auto;}
+
+/* CARD */
+.card{background:var(–surface);border:1px solid var(–border);border-radius:8px;overflow:hidden;margin-bottom:20px;}
+.card-header{padding:16px 20px;border-bottom:1px solid var(–border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-family:‘Barlow Condensed’,sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(–muted2);}
+.card-title span{color:var(–accent);}
+.card-body{padding:20px;}
+
+/* RANKINGS CARD */
+.ranking-ladder{display:flex;gap:0;border:1px solid var(–border);border-radius:6px;overflow:hidden;margin-bottom:16px;}
+.rank-tier{flex:1;padding:16px 12px;text-align:center;position:relative;background:var(–surface2);}
+.rank-tier:not(:last-child){border-right:1px solid var(–border);}
+.rank-tier.top{background:linear-gradient(160deg,rgba(245,200,66,0.06),transparent);}
+.rank-tier-label{font-family:‘Barlow Condensed’,sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(–muted);margin-bottom:6px;}
+.rank-tier-num{font-family:‘Barlow Condensed’,sans-serif;font-size:36px;font-weight:900;line-height:1;}
+.rank-tier-sub{font-size:11px;color:var(–muted2);margin-top:4px;}
+.rank-arrow{position:absolute;right:-1px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:8px solid transparent;border-bottom:8px solid transparent;border-left:8px solid var(–border);z-index:2;}
+.rank-progress-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:4px;}
+.rank-prog-item{background:var(–surface2);border:1px solid var(–border);border-radius:6px;padding:10px 12px;}
+.rank-prog-label{font-family:‘Barlow Condensed’,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(–muted);}
+.rank-prog-bar-wrap{height:4px;background:var(–border2);border-radius:2px;margin:6px 0 4px;overflow:hidden;}
+.rank-prog-fill{height:100%;border-radius:2px;transition:width 1.4s cubic-bezier(.16,1,.3,1);}
+.rank-prog-val{font-family:‘Share Tech Mono’,monospace;font-size:11px;color:var(–text);}
+
+/* CLUTCH EVENTS */
+.events-list{display:flex;flex-direction:column;gap:0;}
+.event-item{display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid var(–border);transition:background .2s;cursor:pointer;}
+.event-item:last-child{border-bottom:none;}
+.event-item:hover{background:var(–surface2);}
+.event-date-box{flex-shrink:0;width:48px;height:48px;border-radius:6px;background:var(–surface2);border:1px solid var(–border2);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.event-date-mo{font-family:‘Barlow Condensed’,sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(–muted);}
+.event-date-day{font-family:‘Barlow Condensed’,sans-serif;font-size:22px;font-weight:900;line-height:1;color:var(–text);}
+.event-info{flex:1;}
+.event-name{font-family:‘Barlow Condensed’,sans-serif;font-size:15px;font-weight:800;letter-spacing:0.5px;color:var(–text);}
+.event-meta{font-size:12px;color:var(–muted2);margin-top:2px;}
+.event-badge{padding:3px 10px;border-radius:3px;font-family:‘Barlow Condensed’,sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;flex-shrink:0;}
+.badge-registered{background:rgba(0,230,118,0.1);color:var(–green);border:1px solid rgba(0,230,118,0.25);}
+.badge-open{background:rgba(0,229,255,0.1);color:var(–accent);border:1px solid rgba(0,229,255,0.25);}
+.badge-past{background:rgba(255,255,255,0.05);color:var(–muted);border:1px solid var(–border);}
+.event-score{text-align:right;flex-shrink:0;}
+.event-score-val{font-family:‘Barlow Condensed’,sans-serif;font-size:18px;font-weight:900;color:var(–gold);}
+.event-score-label{font-size:10px;color:var(–muted);letter-spacing:1px;text-transform:uppercase;}
+
+/* BIO */
+.bio-text{color:var(–muted2);font-size:14px;line-height:1.7;}
+.bio-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+.bio-item label{display:block;font-family:‘Barlow Condensed’,sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(–muted);margin-bottom:3px;}
+.bio-item span{font-size:14px;font-weight:500;color:var(–text);}
+
+/* ACADEMIC */
+.academic-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;}
+.acad-stat{padding:16px;border-right:1px solid var(–border);border-bottom:1px solid var(–border);}
+.acad-stat:nth-child(3n){border-right:none;}
+.acad-stat:nth-last-child(-n+3){border-bottom:none;}
+.acad-val{font-family:‘Barlow Condensed’,sans-serif;font-size:24px;font-weight:900;color:var(–text);}
+.acad-val.good{color:var(–green);}
+.acad-val.accent{color:var(–accent);}
+.acad-key{font-family:‘Barlow Condensed’,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(–muted);margin-top:2px;}
+.acad-intended{padding:14px 20px;background:var(–surface2);border-top:1px solid var(–border);display:flex;align-items:center;gap:10px;}
+.acad-intended-label{font-family:‘Barlow Condensed’,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(–muted);}
+.acad-intended-val{font-size:14px;font-weight:500;color:var(–text);}
+
+/* FIFA STATS */
+.fifa-card{background:linear-gradient(160deg,#0f1525,#0a1020);border:1px solid var(–border2);border-radius:10px;padding:24px;position:relative;overflow:hidden;margin:16px;}
+.fifa-card::before{content:’’;position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,229,255,0.03) 0%,transparent 60%);pointer-events:none;}
+.fifa-overall{display:flex;align-items:center;gap:20px;margin-bottom:24px;}
+.overall-num{font-family:‘Barlow Condensed’,sans-serif;font-size:72px;font-weight:900;color:var(–accent);line-height:1;text-shadow:0 0 40px rgba(0,229,255,0.3);}
+.overall-info{flex:1;}
+.overall-label{font-family:‘Barlow Condensed’,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(–muted);}
+.overall-pos{font-family:‘Barlow Condensed’,sans-serif;font-size:28px;font-weight:900;color:var(–text);letter-spacing:2px;}
+.overall-sport{font-size:13px;color:var(–muted2);}
+.verified-stat-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.3);border-radius:3px;font-family:‘Barlow Condensed’,sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:var(–accent);text-transform:uppercase;margin-top:6px;}
+.stat-bars{display:flex;flex-direction:column;gap:10px;}
+.stat-row{display:grid;grid-template-columns:100px 1fr 36px;align-items:center;gap:10px;}
+.stat-name{font-family:‘Barlow Condensed’,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(–muted2);}
+.stat-bar-wrap{height:5px;background:var(–border2);border-radius:3px;overflow:hidden;}
+.stat-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(–accent2),var(–accent));transition:width 1.2s cubic-bezier(.16,1,.3,1);}
+.stat-val{font-family:‘Barlow Condensed’,sans-serif;font-size:14px;font-weight:800;color:var(–text);text-align:right;}
+
+/* PERCENTILE */
+.percentile-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:20px;}
+.pct-card{background:var(–surface2);border:1px solid var(–border);border-radius:8px;padding:14px;text-align:center;position:relative;overflow:hidden;}
+.pct-ring-wrap{position:relative;width:70px;height:70px;margin:0 auto 8px;}
+.pct-ring-bg{fill:none;stroke:var(–border2);stroke-width:6;}
+.pct-ring-fill{fill:none;stroke-width:6;stroke-linecap:round;transform:rotate(-90deg);transform-origin:35px 35px;transition:stroke-dashoffset 1.4s cubic-bezier(.16,1,.3,1);}
+.pct-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:‘Barlow Condensed’,sans-serif;font-size:17px;font-weight:900;}
+.pct-label{font-family:‘Barlow Condensed’,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(–muted);}
+.pct-scope{font-size:11px;color:var(–muted2);margin-top:2px;}
+
+/* CHART */
+.chart-tabs{display:flex;gap:4px;padding:14px 20px;border-bottom:1px solid var(–border);}
+.chart-tab{padding:5px 14px;border-radius:4px;border:none;cursor:pointer;font-family:‘Barlow Condensed’,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:transparent;color:var(–muted);transition:all .2s;}
+.chart-tab.active{background:rgba(0,229,255,0.1);color:var(–accent);}
+.chart-tab:hover:not(.active){color:var(–text);}
+.chart-area{padding:20px;}
+.metric-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:0 20px 20px;}
+.metric-chip{background:var(–surface2);border:1px solid var(–border);border-radius:6px;padding:12px 14px;}
+.metric-chip-label{font-family:‘Barlow Condensed’,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(–muted);}
+.metric-chip-val{font-family:‘Barlow Condensed’,sans-serif;font-size:22px;font-weight:900;line-height:1.2;color:var(–text);margin-top:2px;}
+.metric-chip-delta{font-size:11px;font-weight:600;margin-top:2px;}
+.delta-up{color:var(–green);}
+.delta-down{color:var(–red);}
+
+/* HIGHLIGHTS */
+.reel-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.reel-thumb{position:relative;border-radius:6px;overflow:hidden;background:var(–surface2);border:1px solid var(–border);aspect-ratio:16/9;cursor:pointer;transition:border-color .2s,transform .2s;}
+.reel-thumb:hover{border-color:var(–accent);transform:scale(1.01);}
+.reel-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.reel-gradient{position:absolute;inset:0;}
+.reel-play{width:40px;height:40px;border-radius:50%;background:rgba(0,229,255,0.15);border:2px solid var(–accent);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(–accent);position:relative;z-index:2;transition:background .2s;}
+.reel-thumb:hover .reel-play{background:rgba(0,229,255,0.3);}
+.reel-info{position:absolute;bottom:0;left:0;right:0;padding:8px 10px;background:linear-gradient(transparent,rgba(0,0,0,0.85));}
+.reel-title{font-family:‘Barlow Condensed’,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.5px;color:var(–text);line-height:1.2;}
+.reel-meta{font-size:10px;color:var(–muted2);margin-top:2px;}
+.reel-views{position:absolute;top:8px;right:8px;padding:2px 7px;background:rgba(0,0,0,0.6);border-radius:3px;font-family:‘Share Tech Mono’,monospace;font-size:10px;color:var(–muted2);}
+.add-reel-btn{margin-top:12px;width:100%;padding:10px;background:transparent;border:1px dashed var(–border2);border-radius:6px;cursor:pointer;font-family:‘Barlow Condensed’,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(–muted);transition:border-color .2s,color .2s;}
+.add-reel-btn:hover{border-color:var(–accent);color:var(–accent);}
+
+/* COACH ENDORSEMENT */
+.endorsement{padding:20px;position:relative;}
+.endorsement-quote{font-size:14px;color:var(–muted2);line-height:1.8;font-style:italic;padding-left:16px;border-left:2px solid var(–accent);margin-bottom:16px;}
+.endorsement-coach{display:flex;align-items:center;gap:12px;}
+.coach-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(–accent2),var(–accent));display:flex;align-items:center;justify-content:center;font-family:‘Barlow Condensed’,sans-serif;font-size:15px;font-weight:900;color:#fff;flex-shrink:0;}
+.coach-name{font-size:14px;font-weight:600;color:var(–text);}
+.coach-title{font-size:12px;color:var(–muted2);}
+.coach-verified{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.2);border-radius:3px;font-family:‘Barlow Condensed’,sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;color:var(–accent);text-transform:uppercase;margin-top:3px;}
+
+/* AWARDS */
+.awards-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 20px;}
+.award-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(–surface2);border:1px solid var(–border);border-radius:6px;transition:border-color .2s;}
+.award-item:hover{border-color:var(–border2);}
+.award-icon{font-size:20px;flex-shrink:0;}
+.award-name{font-family:‘Barlow Condensed’,sans-serif;font-size:13px;font-weight:700;color:var(–text);line-height:1.2;}
+.award-year{font-size:11px;color:var(–muted2);margin-top:2px;}
+
+/* OFFER TRACKER */
+.offer-timeline{padding:16px 20px;display:flex;flex-direction:column;gap:0;}
+.offer-item{display:flex;gap:16px;padding:12px 0;border-bottom:1px solid var(–border);position:relative;}
+.offer-item:last-child{border-bottom:none;}
+.offer-line{position:absolute;left:19px;top:36px;bottom:-12px;width:2px;background:var(–border);z-index:0;}
+.offer-item:last-child .offer-line{display:none;}
+.offer-dot{width:12px;height:12px;border-radius:50%;border:2px solid var(–bg);flex-shrink:0;margin-top:4px;position:relative;z-index:1;}
+.offer-school{flex:1;}
+.offer-school-name{font-family:‘Barlow Condensed’,sans-serif;font-size:15px;font-weight:800;color:var(–text);}
+.offer-school-meta{font-size:12px;color:var(–muted2);margin-top:2px;}
+.offer-status{padding:3px 10px;border-radius:3px;font-family:‘Barlow Condensed’,sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;flex-shrink:0;align-self:flex-start;}
+.status-pending{background:rgba(245,200,66,0.1);color:var(–gold);border:1px solid rgba(245,200,66,0.25);}
+.status-received{background:rgba(0,229,255,0.1);color:var(–accent);border:1px solid rgba(0,229,255,0.25);}
+.status-visit{background:rgba(123,97,255,0.1);color:var(–accent2);border:1px solid rgba(123,97,255,0.25);}
+.offer-date{font-family:‘Share Tech Mono’,monospace;font-size:10px;color:var(–muted);margin-top:4px;}
+
+/* AVAILABILITY CALENDAR */
+.cal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(–border);}
+.cal-month{font-family:‘Barlow Condensed’,sans-serif;font-size:16px;font-weight:800;letter-spacing:1px;text-transform:uppercase;}
+.cal-nav{display:flex;gap:4px;}
+.cal-nav-btn{width:28px;height:28px;border-radius:4px;border:1px solid var(–border2);background:none;color:var(–muted2);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.cal-nav-btn:hover{border-color:var(–accent);color:var(–accent);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:12px 16px 16px;}
+.cal-day-label{font-family:‘Barlow Condensed’,sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(–muted);text-align:center;padding:4px 0;}
+.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:4px;font-family:‘Barlow Condensed’,sans-serif;font-size:13px;font-weight:600;color:var(–muted2);cursor:pointer;transition:all .2s;position:relative;}
+.cal-day:hover:not(.empty):not(.unavail){background:var(–surface2);color:var(–text);}
+.cal-day.avail{background:rgba(0,230,118,0.1);color:var(–green);border:1px solid rgba(0,230,118,0.2);}
+.cal-day.avail:hover{background:rgba(0,230,118,0.2);}
+.cal-day.event{background:rgba(0,229,255,0.1);color:var(–accent);border:1px solid rgba(0,229,255,0.2);}
+.cal-day.unavail{color:var(–border2);cursor:default;}
+.cal-day.today{border:1px solid var(–accent);color:var(–accent);}
+.cal-day.empty{cursor:default;}
+.cal-legend{display:flex;gap:16px;padding:0 16px 14px;flex-wrap:wrap;}
+.cal-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(–muted2);}
+.cal-legend-dot{width:8px;height:8px;border-radius:2px;}
+
+/* RIGHT COLUMN */
+.recruit-status{display:flex;align-items:center;gap:12px;padding:16px 20px;background:linear-gradient(90deg,rgba(0,230,118,0.06),transparent);border-bottom:1px solid var(–border);}
+.recruit-dot{width:10px;height:10px;border-radius:50%;background:var(–green);box-shadow:0 0 10px var(–green);animation:pulse-dot 2s infinite;}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 6px var(–green);}50%{box-shadow:0 0 16px var(–green),0 0 6px var(–green);}}
+.recruit-label{font-family:‘Barlow Condensed’,sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(–green);}
+.recruit-sub{font-size:12px;color:var(–muted2);}
+.recruit-details{padding:16px 20px;}
+.recruit-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(–border);}
+.recruit-row:last-child{border-bottom:none;}
+.recruit-key{font-family:‘Barlow Condensed’,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(–muted);}
+.recruit-val{font-size:13px;font-weight:500;color:var(–text);}
+.recruit-val.accent{color:var(–accent);}
+.recruit-val.gold{color:var(–gold);}
+.recruit-actions{padding:0 20px 20px;display:flex;flex-direction:column;gap:8px;}
+
+.contact-list{padding:16px 20px;display:flex;flex-direction:column;gap:12px;}
+.contact-item{display:flex;align-items:center;gap:10px;}
+.contact-icon{width:32px;height:32px;border-radius:6px;background:var(–surface2);border:1px solid var(–border);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.contact-text{font-size:13px;color:var(–muted2);}
+.contact-text strong{display:block;font-size:13px;color:var(–text);font-weight:500;}
+
+.school-card{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(–border);}
+.school-logo{width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,#1a1a2e,#0d0d18);border:1px solid var(–border2);display:flex;align-items:center;justify-content:center;font-family:‘Barlow Condensed’,sans-serif;font-size:18px;font-weight:900;color:var(–gold);flex-shrink:0;}
+.school-info h4{font-family:‘Barlow Condensed’,sans-serif;font-size:16px;font-weight:800;letter-spacing:0.5px;color:var(–text);}
+.school-info p{font-size:12px;color:var(–muted2);margin-top:2px;}
+.school-stats{display:grid;grid-template-columns:1fr 1fr;gap:0;padding:0 20px 16px;}
+.school-stat{padding:10px 8px;border-bottom:1px solid var(–border);border-right:1px solid var(–border);}
+.school-stat:nth-child(2n){border-right:none;}
+.school-stat:nth-last-child(-n+2){border-bottom:none;}
+.school-stat-val{font-family:‘Barlow Condensed’,sans-serif;font-size:18px;font-weight:900;}
+.school-stat-key{font-size:10px;color:var(–muted);letter-spacing:1px;text-transform:uppercase;margin-top:1px;}
+
+.activity-list{padding:8px 20px 20px;}
+.activity-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(–border);}
+.activity-item:last-child{border-bottom:none;}
+.activity-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:6px;}
+.activity-text{font-size:13px;color:var(–muted2);line-height:1.5;}
+.activity-text strong{color:var(–text);font-weight:600;}
+.activity-time{font-family:‘Share Tech Mono’,monospace;font-size:10px;color:var(–muted);margin-top:3px;}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+.a1{animation:fadeUp .5s ease both;}
+.a2{animation:fadeUp .5s .08s ease both;}
+.a3{animation:fadeUp .5s .16s ease both;}
+.a4{animation:fadeUp .5s .24s ease both;}
+.a5{animation:fadeUp .5s .32s ease both;}
+
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:var(–bg);}
+::-webkit-scrollbar-thumb{background:var(–border2);border-radius:3px;}
+</style>
+
 </head>
-<body data-page="profile" data-requires-session="true">
-  <div class="app-layout">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <div class="logo">Clutch</div>
-        <span class="role-pill" id="role-pill">guest</span>
-      </div>
-      <div>
-        <p class="nav-label">Main</p>
-        <nav class="nav">
-          <a class="nav-btn" data-nav="home" href="index.html">Feed</a>
-          <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
-          <a class="nav-btn" data-nav="explore" href="explore.html">Discovery</a>
-          <a class="nav-btn" data-nav="highlights" href="highlights.html">Dashboards</a>
-          <a class="nav-btn" data-nav="profile" href="profile.html">Profile</a>
-        </nav>
-      </div>
-      <div class="sidebar-foot">
-        <strong>Privacy & Safety</strong>
-        <span class="helper">Role-aware visibility controls, profile verification state, and report/block placeholders.</span>
-      </div>
-    </aside>
+<body>
 
-    <div class="mobile-overlay" id="mobile-overlay"></div>
+<!-- NAV -->
 
-    <div class="page-wrap">
-      <header class="site-header">
-        <button class="menu-btn" id="menu-btn" type="button">Menu</button>
-        <div class="search-wrap">
-          <input id="global-search" type="search" placeholder="Search profile, teams, stats">
-        </div>
-        <button class="icon-btn" id="notif-btn" type="button">🔔<span id="notif-count" class="badge">4</span></button>
-        <div class="session-chip" id="session-chip">Checking session...</div>
-        <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
-      </header>
+<nav>
+  <div class="nav-logo">Clutch</div>
+  <div class="nav-links">
+    <a href="#">Feed</a>
+    <a href="#">Pulse</a>
+    <a href="#">Discovery</a>
+    <a href="#">Dashboards</a>
+    <a href="#" class="active">Profile</a>
+  </div>
+  <div class="nav-right">
+    <button class="notif-btn">🔔<span class="notif-badge">4</span></button>
+    <div class="avatar-sm">JW</div>
+  </div>
+</nav>
 
-      <main>
-        <section class="hero">
-          <div>
-            <p class="eyebrow">Role Profile</p>
-            <h1 id="profile-title">Profile</h1>
-            <p class="lede" id="profile-subtitle">Loading role context...</p>
-            <div class="meta" id="profile-tags"></div>
-          </div>
-          <div class="card">
-            <p class="card-tag">Verification</p>
-            <h3 id="profile-verification">Pending</h3>
-            <p class="helper">School-admin verification badge behavior is represented here.</p>
-          </div>
-        </section>
+<div class="page">
 
-        <section class="panel">
-          <div class="section-head">
-            <h2>Profile Details</h2>
-            <span class="tag" id="profile-role">Role: --</span>
-          </div>
-          <div class="form-grid">
-            <label>
-              Display Name
-              <input id="profile-name" type="text" placeholder="Name">
-            </label>
-            <label>
-              Primary Sport
-              <input id="profile-sport" type="text" placeholder="Sport">
-            </label>
-            <label>
-              Affiliation
-              <input id="profile-affiliation" type="text" placeholder="School or organization">
-            </label>
-            <label>
-              Location
-              <input id="profile-location" type="text" placeholder="City, State">
-            </label>
-            <label class="full">
-              Bio / Statement
-              <textarea id="profile-bio" placeholder="Personal statement"></textarea>
-            </label>
-          </div>
-          <div class="section-head">
-            <button id="save-profile" class="btn primary" type="button">Save Profile Metadata</button>
-            <div id="profile-status" class="form-status"></div>
-          </div>
-        </section>
+  <!-- BANNER -->
 
-        <section class="data-panel">
-          <div class="section-head">
-            <h2>Stats & Visibility</h2>
-          </div>
-          <div class="grid-3">
-            <article class="card">
-              <p class="card-tag">Stats Snapshot</p>
-              <p id="profile-stats-copy">Role-based metrics appear here.</p>
-            </article>
-            <article class="card">
-              <p class="card-tag">Highlight Reel</p>
-              <p>Add YouTube/Vimeo links or uploaded clips.</p>
-            </article>
-            <article class="card">
-              <p class="card-tag">Privacy Controls</p>
-              <p>Public, Followers Only, or Private discovery settings.</p>
-            </article>
-          </div>
-        </section>
-      </main>
-
-      <footer class="site-footer">
-        Clutch Website • Profile, safety, and visibility controls
-      </footer>
+  <div class="banner">
+    <div class="banner-grid"></div>
+    <div class="banner-glow"></div>
+    <div class="banner-glow2"></div>
+    <div class="banner-number">23</div>
+    <span class="banner-sport-tag">⚡ Basketball</span>
+    <button class="banner-edit-btn">✏ Edit Banner</button>
+    <div class="banner-rank-ribbon">
+      <div class="rank-pill regional">🌐 Regional <span class="rank-pill-num">#4</span></div>
+      <div class="rank-pill state">🏛 State <span class="rank-pill-num">#11</span></div>
+      <div class="rank-pill national">🇺🇸 National <span class="rank-pill-num">#94</span></div>
     </div>
   </div>
+
+  <!-- PROFILE HEADER -->
+
+  <div class="profile-header a1">
+    <div class="avatar-wrap">
+      <div class="avatar">JW</div>
+      <div class="verified-badge">✓</div>
+    </div>
+    <div class="profile-meta">
+      <div class="profile-name">Jordan Williams</div>
+      <div class="profile-handle">@jwilliams_23 · #23</div>
+      <div class="profile-tags">
+        <span class="tag tag-position">Point Guard</span>
+        <span class="tag tag-sport">Basketball</span>
+        <span class="tag tag-school">Westview HS</span>
+        <span class="tag tag-recruit">Actively Recruiting</span>
+        <span class="tag tag-verified">✓ Coach Verified</span>
+      </div>
+    </div>
+    <div class="profile-actions">
+      <button class="btn-outline">⋯ More</button>
+      <button class="btn-outline">📤 Share</button>
+      <button class="btn-primary">+ Follow</button>
+    </div>
+  </div>
+
+  <!-- SOCIAL BAR -->
+
+  <div class="social-bar a2">
+    <div class="social-stat"><div class="social-stat-num accent">2.4K</div><div class="social-stat-label">Followers</div></div>
+    <div class="social-stat"><div class="social-stat-num">318</div><div class="social-stat-label">Following</div></div>
+    <div class="social-stat"><div class="social-stat-num gold">12</div><div class="social-stat-label">Scout Views</div></div>
+    <div class="social-stat"><div class="social-stat-num">47</div><div class="social-stat-label">Posts</div></div>
+    <div class="social-stat"><div class="social-stat-num">8</div><div class="social-stat-label">Reel Uploads</div></div>
+    <div class="social-stat"><div class="social-stat-num green">3</div><div class="social-stat-label">Offers</div></div>
+  </div>
+
+  <!-- MAIN GRID -->
+
+  <div class="content-grid">
+  <div>
+
+```
+<!-- BIO -->
+<div class="card a3">
+  <div class="card-header">
+    <span class="card-title">About <span>/ Bio</span></span>
+    <button class="btn-outline" style="padding:4px 12px;font-size:11px;">Edit</button>
+  </div>
+  <div class="card-body">
+    <p class="bio-text">Junior point guard with elite court vision and high basketball IQ. 3-year varsity starter, back-to-back All-Conference. Focused on D1 opportunities — passionate about team-first leadership and winning culture.</p>
+    <div class="bio-grid">
+      <div class="bio-item"><label>Height</label><span>6'1"</span></div>
+      <div class="bio-item"><label>Weight</label><span>178 lbs</span></div>
+      <div class="bio-item"><label>Class Year</label><span>2026</span></div>
+      <div class="bio-item"><label>Location</label><span>Atlanta, GA</span></div>
+      <div class="bio-item"><label>Team</label><span>Westview Varsity</span></div>
+      <div class="bio-item"><label>Coach</label><span>Coach Davis</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ACADEMIC PROFILE -->
+<div class="card a3">
+  <div class="card-header">
+    <span class="card-title">Academic <span>/ Profile</span></span>
+    <span class="verified-stat-badge">✓ School Verified</span>
+  </div>
+  <div class="academic-grid">
+    <div class="acad-stat"><div class="acad-val good">3.7</div><div class="acad-key">GPA</div></div>
+    <div class="acad-stat"><div class="acad-val accent">1240</div><div class="acad-key">SAT Score</div></div>
+    <div class="acad-stat"><div class="acad-val">26</div><div class="acad-key">ACT Score</div></div>
+    <div class="acad-stat"><div class="acad-val good">Junior</div><div class="acad-key">Year</div></div>
+    <div class="acad-stat"><div class="acad-val">2026</div><div class="acad-key">Grad Year</div></div>
+    <div class="acad-stat"><div class="acad-val accent">0</div><div class="acad-key">Violations</div></div>
+  </div>
+  <div class="acad-intended">
+    <span class="acad-intended-label">Intended Major</span>
+    <span class="acad-intended-val">Sports Management / Business Administration</span>
+  </div>
+</div>
+
+<!-- RANKINGS -->
+<div class="card a3">
+  <div class="card-header">
+    <span class="card-title">Rankings <span>/ Regional → State → National</span></span>
+    <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);">Class of 2026 · PG · Basketball</span>
+  </div>
+  <div class="card-body" style="padding-bottom:8px;">
+    <div class="ranking-ladder">
+      <div class="rank-tier">
+        <div class="rank-tier-label">🌐 Regional</div>
+        <div class="rank-tier-num" style="color:var(--accent)">#4</div>
+        <div class="rank-tier-sub">Southeast · GA</div>
+      </div>
+      <div class="rank-tier top">
+        <div class="rank-tier-label">🏛 State</div>
+        <div class="rank-tier-num" style="color:var(--gold)">#11</div>
+        <div class="rank-tier-sub">Georgia · Class 6A</div>
+      </div>
+      <div class="rank-tier">
+        <div class="rank-tier-label">🇺🇸 National</div>
+        <div class="rank-tier-num" style="color:var(--orange)">#94</div>
+        <div class="rank-tier-sub">All PGs · 2026</div>
+      </div>
+    </div>
+    <div class="rank-progress-row">
+      <div class="rank-prog-item">
+        <div class="rank-prog-label">Regional Climb</div>
+        <div class="rank-prog-bar-wrap"><div class="rank-prog-fill" style="width:92%;background:linear-gradient(90deg,var(--accent2),var(--accent))"></div></div>
+        <div class="rank-prog-val">↑ 3 spots this month</div>
+      </div>
+      <div class="rank-prog-item">
+        <div class="rank-prog-label">State Progress</div>
+        <div class="rank-prog-bar-wrap"><div class="rank-prog-fill" style="width:75%;background:linear-gradient(90deg,#c8a000,var(--gold))"></div></div>
+        <div class="rank-prog-val">↑ 5 spots this month</div>
+      </div>
+      <div class="rank-prog-item">
+        <div class="rank-prog-label">National Progress</div>
+        <div class="rank-prog-bar-wrap"><div class="rank-prog-fill" style="width:55%;background:linear-gradient(90deg,#cc6600,var(--orange))"></div></div>
+        <div class="rank-prog-val">↑ 12 spots this month</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CLUTCH EVENTS / COMBINES -->
+<div class="card a4">
+  <div class="card-header">
+    <span class="card-title">Clutch Events <span>/ Combines & Stadium</span></span>
+    <button class="btn-primary" style="padding:5px 14px;font-size:11px;">Browse Events</button>
+  </div>
+  <div class="events-list">
+    <div class="event-item">
+      <div class="event-date-box"><div class="event-date-mo">APR</div><div class="event-date-day">12</div></div>
+      <div class="event-info">
+        <div class="event-name">Clutch Southeast Regional Combine</div>
+        <div class="event-meta">📍 State Farm Arena, Atlanta · Basketball · 140 Athletes</div>
+      </div>
+      <div><span class="event-badge badge-registered">Registered</span></div>
+    </div>
+    <div class="event-item">
+      <div class="event-date-box"><div class="event-date-mo">MAY</div><div class="event-date-day">3</div></div>
+      <div class="event-info">
+        <div class="event-name">Georgia State Championship Showcase</div>
+        <div class="event-meta">📍 Stegeman Coliseum, Athens · Multi-Sport · 80 Scout Seats</div>
+      </div>
+      <div><span class="event-badge badge-open">Open</span></div>
+    </div>
+    <div class="event-item">
+      <div class="event-date-box" style="opacity:.5;"><div class="event-date-mo">JAN</div><div class="event-date-day">18</div></div>
+      <div class="event-info">
+        <div class="event-name">Clutch Winter Classic — Atlanta</div>
+        <div class="event-meta">📍 Georgia Tech McCamish · Basketball · Completed</div>
+      </div>
+      <div>
+        <span class="event-badge badge-past">Past</span>
+        <div class="event-score"><div class="event-score-val">#6</div><div class="event-score-label">Finished</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FIFA STATS -->
+<div class="card a4">
+  <div class="card-header">
+    <span class="card-title">Performance <span>/ Stats Rating</span></span>
+    <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted)">2024–25 Season</span>
+  </div>
+  <div style="padding:0;">
+    <div class="fifa-card">
+      <div class="fifa-overall">
+        <div class="overall-num">87</div>
+        <div class="overall-info">
+          <div class="overall-label">Overall Rating</div>
+          <div class="overall-pos">PG</div>
+          <div class="overall-sport">Basketball · Class 2026</div>
+          <div class="verified-stat-badge">✓ Coach Verified Stats</div>
+        </div>
+      </div>
+      <div class="stat-bars">
+        <div class="stat-row"><span class="stat-name">Speed</span><div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:92%"></div></div><span class="stat-val">92</span></div>
+        <div class="stat-row"><span class="stat-name">Handles</span><div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:88%"></div></div><span class="stat-val">88</span></div>
+        <div class="stat-row"><span class="stat-name">Shooting</span><div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:83%"></div></div><span class="stat-val">83</span></div>
+        <div class="stat-row"><span class="stat-name">Passing</span><div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:90%"></div></div><span class="stat-val">90</span></div>
+        <div class="stat-row"><span class="stat-name">Defense</span><div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:79%"></div></div><span class="stat-val">79</span></div>
+        <div class="stat-row"><span class="stat-name">Court IQ</span><div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:94%"></div></div><span class="stat-val">94</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PERCENTILE RANKINGS -->
+<div class="card a4">
+  <div class="card-header">
+    <span class="card-title">Percentile <span>/ vs Region & State</span></span>
+    <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted)">Class 2026 · PG</span>
+  </div>
+  <div class="percentile-grid" id="pctGrid"></div>
+</div>
+
+<!-- SEASON CHART -->
+<div class="card a4">
+  <div class="card-header"><span class="card-title">Season <span>/ Analytics</span></span></div>
+  <div class="chart-tabs">
+    <button class="chart-tab active" onclick="switchTab(this,'pts')">Points</button>
+    <button class="chart-tab" onclick="switchTab(this,'ast')">Assists</button>
+    <button class="chart-tab" onclick="switchTab(this,'reb')">Rebounds</button>
+  </div>
+  <div class="metric-row">
+    <div class="metric-chip"><div class="metric-chip-label">PPG</div><div class="metric-chip-val">22.4</div><div class="metric-chip-delta delta-up">↑ +2.1 vs last season</div></div>
+    <div class="metric-chip"><div class="metric-chip-label">APG</div><div class="metric-chip-val">7.8</div><div class="metric-chip-delta delta-up">↑ +1.3 vs last season</div></div>
+    <div class="metric-chip"><div class="metric-chip-label">FG%</div><div class="metric-chip-val">48.2%</div><div class="metric-chip-delta delta-down">↓ -1.4% vs last season</div></div>
+  </div>
+  <div class="chart-area"><canvas id="statsChart" height="160"></canvas></div>
+</div>
+
+<!-- AWARDS -->
+<div class="card a5">
+  <div class="card-header"><span class="card-title">Awards <span>/ Honors</span></span></div>
+  <div class="awards-grid">
+    <div class="award-item"><div class="award-icon">🏆</div><div><div class="award-name">All-Conference First Team</div><div class="award-year">2024 & 2025</div></div></div>
+    <div class="award-item"><div class="award-icon">⭐</div><div><div class="award-name">Region Player of the Year</div><div class="award-year">2025</div></div></div>
+    <div class="award-item"><div class="award-icon">🥇</div><div><div class="award-name">State Playoff MVP</div><div class="award-year">2025</div></div></div>
+    <div class="award-item"><div class="award-icon">🎯</div><div><div class="award-name">Clutch Winter Classic #6</div><div class="award-year">Jan 2025</div></div></div>
+    <div class="award-item"><div class="award-icon">📰</div><div><div class="award-name">AJC Athlete of the Week</div><div class="award-year">Feb 2025</div></div></div>
+    <div class="award-item"><div class="award-icon">🏅</div><div><div class="award-name">3-Year Varsity Starter</div><div class="award-year">2023–2025</div></div></div>
+  </div>
+</div>
+
+<!-- COACH ENDORSEMENT -->
+<div class="card a5">
+  <div class="card-header"><span class="card-title">Coach <span>/ Endorsement</span></span></div>
+  <div class="endorsement">
+    <p class="endorsement-quote">"Jordan is the most coachable point guard I've had in 18 years of coaching. His vision, leadership under pressure, and work ethic are D1 caliber — without question. Any program that gets him is getting a winner."</p>
+    <div class="endorsement-coach">
+      <div class="coach-avatar">CD</div>
+      <div>
+        <div class="coach-name">Coach Marcus Davis</div>
+        <div class="coach-title">Varsity Head Coach · Westview High School</div>
+        <div class="coach-verified">✓ Verified Coach</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HIGHLIGHTS -->
+<div class="card a5">
+  <div class="card-header"><span class="card-title">Highlights <span>/ Reel</span></span><button class="btn-primary" style="padding:5px 14px;font-size:11px;">+ Add Clip</button></div>
+  <div class="card-body">
+    <div class="reel-grid">
+      <div class="reel-thumb"><div class="reel-bg"><div class="reel-gradient" style="background:linear-gradient(135deg,#0a1a2a,#0d1520)"></div><div class="reel-play">▶</div></div><div class="reel-views">4.2K</div><div class="reel-info"><div class="reel-title">State Championship — 28 Pts</div><div class="reel-meta">Mar 2025 · 3:14</div></div></div>
+      <div class="reel-thumb"><div class="reel-bg"><div class="reel-gradient" style="background:linear-gradient(135deg,#1a0a2e,#100d20)"></div><div class="reel-play">▶</div></div><div class="reel-views">2.8K</div><div class="reel-info"><div class="reel-title">Top 10 Handles — Season Mix</div><div class="reel-meta">Feb 2025 · 2:41</div></div></div>
+      <div class="reel-thumb"><div class="reel-bg"><div class="reel-gradient" style="background:linear-gradient(135deg,#0a2010,#0d1a10)"></div><div class="reel-play">▶</div></div><div class="reel-views">1.9K</div><div class="reel-info"><div class="reel-title">12 Ast vs Riverside — Full Game</div><div class="reel-meta">Jan 2025 · 4:58</div></div></div>
+      <div class="reel-thumb"><div class="reel-bg"><div class="reel-gradient" style="background:linear-gradient(135deg,#1a1500,#1a1000)"></div><div class="reel-play">▶</div></div><div class="reel-views">3.1K</div><div class="reel-info"><div class="reel-title">Skills Camp — Showcase Clip</div><div class="reel-meta">Jul 2024 · 1:52</div></div></div>
+    </div>
+    <button class="add-reel-btn">＋ Add YouTube / Vimeo Link or Upload Clip</button>
+  </div>
+</div>
+```
+
+  </div><!-- /left -->
+
+  <!-- RIGHT COLUMN -->
+
+  <div>
+
+```
+<!-- RECRUITING -->
+<div class="card a3">
+  <div class="card-header"><span class="card-title">Recruiting <span>/ Status</span></span></div>
+  <div class="recruit-status">
+    <div class="recruit-dot"></div>
+    <div><div class="recruit-label">Actively Recruiting</div><div class="recruit-sub">Open to D1 / D2 programs</div></div>
+  </div>
+  <div class="recruit-details">
+    <div class="recruit-row"><span class="recruit-key">Level Target</span><span class="recruit-val accent">D1 / D2</span></div>
+    <div class="recruit-row"><span class="recruit-key">Offers</span><span class="recruit-val gold">3 Received</span></div>
+    <div class="recruit-row"><span class="recruit-key">Visits</span><span class="recruit-val">2 Scheduled</span></div>
+    <div class="recruit-row"><span class="recruit-key">Commit Date</span><span class="recruit-val">Spring 2025</span></div>
+    <div class="recruit-row"><span class="recruit-key">Profile Views</span><span class="recruit-val accent">847 this month</span></div>
+  </div>
+  <div class="recruit-actions">
+    <button class="btn-primary" style="width:100%;padding:10px;">📬 Contact Athlete</button>
+    <button class="btn-outline" style="width:100%;padding:10px;">📋 Request Highlight Reel</button>
+  </div>
+</div>
+
+<!-- OFFER TRACKER -->
+<div class="card a3">
+  <div class="card-header"><span class="card-title">Offers <span>/ Tracker</span></span></div>
+  <div class="offer-timeline">
+    <div class="offer-item">
+      <div class="offer-dot" style="background:var(--accent);"></div>
+      <div class="offer-line"></div>
+      <div class="offer-school">
+        <div class="offer-school-name">Georgia Tech</div>
+        <div class="offer-school-meta">D1 · Atlantic Coast Conference</div>
+        <div class="offer-date">Received Mar 10, 2025</div>
+      </div>
+      <span class="offer-status status-visit">Visit Sched.</span>
+    </div>
+    <div class="offer-item">
+      <div class="offer-dot" style="background:var(--gold);"></div>
+      <div class="offer-line"></div>
+      <div class="offer-school">
+        <div class="offer-school-name">Georgia Southern</div>
+        <div class="offer-school-meta">D1 · Sun Belt Conference</div>
+        <div class="offer-date">Received Feb 22, 2025</div>
+      </div>
+      <span class="offer-status status-pending">Pending</span>
+    </div>
+    <div class="offer-item">
+      <div class="offer-dot" style="background:var(--accent2);"></div>
+      <div class="offer-line"></div>
+      <div class="offer-school">
+        <div class="offer-school-name">Kennesaw State</div>
+        <div class="offer-school-meta">D1 · ASUN Conference</div>
+        <div class="offer-date">Received Jan 8, 2025</div>
+      </div>
+      <span class="offer-status status-received">Received</span>
+    </div>
+  </div>
+</div>
+
+<!-- AVAILABILITY CALENDAR -->
+<div class="card a4">
+  <div class="cal-header">
+    <span class="cal-month">April 2025</span>
+    <div class="cal-nav">
+      <button class="cal-nav-btn">‹</button>
+      <button class="cal-nav-btn">›</button>
+    </div>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+  <div class="cal-legend">
+    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgba(0,230,118,0.4);border:1px solid var(--green);"></div>Available</div>
+    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgba(0,229,255,0.4);border:1px solid var(--accent);"></div>Clutch Event</div>
+    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--border2);"></div>Unavailable</div>
+  </div>
+</div>
+
+<!-- SCHOOL / TEAM -->
+<div class="card a4">
+  <div class="card-header"><span class="card-title">Team <span>/ School</span></span></div>
+  <div class="school-card">
+    <div class="school-logo">W</div>
+    <div class="school-info"><h4>Westview High School</h4><p>Atlanta, GA · Region 6-AAAAA</p></div>
+  </div>
+  <div class="school-stats">
+    <div class="school-stat"><div class="school-stat-val" style="color:var(--accent)">18–4</div><div class="school-stat-key">Season Record</div></div>
+    <div class="school-stat"><div class="school-stat-val" style="color:var(--gold)">#3</div><div class="school-stat-key">State Rank</div></div>
+    <div class="school-stat"><div class="school-stat-val">12</div><div class="school-stat-key">Roster</div></div>
+    <div class="school-stat"><div class="school-stat-val" style="color:var(--green)">QF</div><div class="school-stat-key">Playoffs</div></div>
+  </div>
+</div>
+
+<!-- CONTACT -->
+<div class="card a4">
+  <div class="card-header"><span class="card-title">Contact <span>/ Info</span></span></div>
+  <div class="contact-list">
+    <div class="contact-item"><div class="contact-icon">👤</div><div class="contact-text"><strong>Marcus Williams</strong>Parent / Guardian</div></div>
+    <div class="contact-item"><div class="contact-icon">📧</div><div class="contact-text"><strong>jwilliams23@gmail.com</strong>Personal Email</div></div>
+    <div class="contact-item"><div class="contact-icon">📱</div><div class="contact-text"><strong>Available via Clutch DM</strong>Direct Message</div></div>
+    <div class="contact-item"><div class="contact-icon">🏫</div><div class="contact-text"><strong>Coach Davis</strong>Varsity Head Coach · Westview HS</div></div>
+  </div>
+</div>
+
+<!-- ACTIVITY -->
+<div class="card a5">
+  <div class="card-header"><span class="card-title">Activity <span>/ Recent</span></span></div>
+  <div class="activity-list">
+    <div class="activity-item"><div class="activity-dot" style="background:var(--green)"></div><div><div class="activity-text"><strong>New offer</strong> from Georgia Tech Athletics</div><div class="activity-time">2h ago</div></div></div>
+    <div class="activity-item"><div class="activity-dot" style="background:var(--orange)"></div><div><div class="activity-text">Ranked <strong>#94 Nationally</strong> — up 12 spots</div><div class="activity-time">1d ago</div></div></div>
+    <div class="activity-item"><div class="activity-dot" style="background:var(--accent)"></div><div><div class="activity-text">Registered for <strong>Southeast Regional Combine</strong></div><div class="activity-time">2d ago</div></div></div>
+    <div class="activity-item"><div class="activity-dot" style="background:var(--accent2)"></div><div><div class="activity-text"><strong>Coach Davis</strong> verified season stats</div><div class="activity-time">3d ago</div></div></div>
+    <div class="activity-item"><div class="activity-dot" style="background:var(--gold)"></div><div><div class="activity-text">Earned <strong>Region Player of the Year</strong> badge</div><div class="activity-time">5d ago</div></div></div>
+  </div>
+</div>
+```
+
+  </div><!-- /right -->
+  </div><!-- /grid -->
+</div><!-- /page -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<script>
+// CHART
+const datasets = {
+  pts:{label:'Points Per Game',data:[18,20,22,19,25,24,21,27,22,26,28,23,22,25,24],color:'#00e5ff'},
+  ast:{label:'Assists Per Game',data:[6,7,8,5,9,7,8,10,7,8,9,7,8,9,8],color:'#7b61ff'},
+  reb:{label:'Rebounds Per Game',data:[4,5,4,6,4,5,3,5,4,6,5,4,5,4,5],color:'#f5c842'}
+};
+const labels=['Oct','Oct','Nov','Nov','Nov','Dec','Dec','Jan','Jan','Jan','Feb','Feb','Feb','Mar','Mar'];
+const ctx=document.getElementById('statsChart').getContext('2d');
+const chart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:datasets.pts.label,data:datasets.pts.data,borderColor:datasets.pts.color,backgroundColor:datasets.pts.color+'12',borderWidth:2,pointRadius:3,pointBackgroundColor:datasets.pts.color,fill:true,tension:.4}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#111116',borderColor:'#2a2a38',borderWidth:1,titleColor:'#9898aa',bodyColor:'#f0f0f5',titleFont:{family:'Barlow Condensed',size:11},bodyFont:{family:'Barlow Condensed',size:14,weight:'700'}}},scales:{x:{grid:{color:'#1f1f2a'},ticks:{color:'#6b6b80',font:{family:'Share Tech Mono',size:10}}},y:{grid:{color:'#1f1f2a'},ticks:{color:'#6b6b80',font:{family:'Share Tech Mono',size:10}}}}}});
+function switchTab(el,key){document.querySelectorAll('.chart-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');const d=datasets[key];chart.data.datasets[0].label=d.label;chart.data.datasets[0].data=d.data;chart.data.datasets[0].borderColor=d.color;chart.data.datasets[0].backgroundColor=d.color+'12';chart.data.datasets[0].pointBackgroundColor=d.color;chart.update();}
+
+// PERCENTILE RINGS
+const percentiles=[
+  {label:'Speed',scope:'vs State PGs',val:96,color:'#00e5ff'},
+  {label:'Passing',scope:'vs State PGs',val:91,color:'#7b61ff'},
+  {label:'Shooting',scope:'vs State PGs',val:84,color:'#f5c842'},
+  {label:'Defense',scope:'vs Regional',val:78,color:'#00e676'},
+  {label:'Court IQ',scope:'vs National',val:89,color:'#ff8c00'},
+  {label:'Athleticism',scope:'vs Regional',val:93,color:'#00e5ff'},
+];
+const grid=document.getElementById('pctGrid');
+percentiles.forEach(p=>{
+  const circ=2*Math.PI*28;
+  const offset=circ*(1-p.val/100);
+  grid.innerHTML+=`<div class="pct-card">
+    <div class="pct-ring-wrap">
+      <svg viewBox="0 0 70 70" width="70" height="70">
+        <circle class="pct-ring-bg" cx="35" cy="35" r="28"/>
+        <circle class="pct-ring-fill" cx="35" cy="35" r="28"
+          stroke="${p.color}"
+          stroke-dasharray="${circ}"
+          stroke-dashoffset="${offset}"/>
+      </svg>
+      <div class="pct-num" style="color:${p.color}">${p.val}<sup style="font-size:9px">th</sup></div>
+    </div>
+    <div class="pct-label">${p.label}</div>
+    <div class="pct-scope">${p.scope}</div>
+  </div>`;
+});
+
+// CALENDAR
+const calGrid=document.getElementById('calGrid');
+const days=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+days.forEach(d=>{calGrid.innerHTML+=`<div class="cal-day-label">${d}</div>`;});
+// April 2025 starts on Tuesday (index 2)
+const avail=[5,7,8,9,14,15,16,21,22,23,28,29,30];
+const events=[12,13];
+const unavail=[1,2,3,4,6,10,11,17,18,19,20,24,25,26,27];
+for(let i=0;i<2;i++){calGrid.innerHTML+=`<div class="cal-day empty"></div>`;}
+for(let d=1;d<=30;d++){
+  let cls='cal-day';
+  if(events.includes(d)) cls+=' event';
+  else if(avail.includes(d)) cls+=' avail';
+  else if(unavail.includes(d)) cls+=' unavail';
+  calGrid.innerHTML+=`<div class="${cls}">${d}</div>`;
+}
+</script>
+
 </body>
 </html>
