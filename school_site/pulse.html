@@ -1,132 +1,3060 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clutch • Pulse</title>
-  <link rel="stylesheet" href="styles.css">
-  <script type="module" src="js/app.js"></script>
-  <script type="module" src="js/pulse.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clutch — Rankings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&family=Bebas+Neue&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─────────────────────────────────────────────
+       DESIGN TOKENS
+    ───────────────────────────────────────────── */
+    :root {
+      --bg:           #09090b;
+      --surface:      #101013;
+      --surface-2:    #16161b;
+      --surface-3:    #1c1c23;
+      --border:       rgba(255,255,255,0.065);
+      --border-soft:  rgba(255,255,255,0.032);
+      --red:          #e02020;
+      --red-dim:      rgba(224,32,32,0.10);
+      --red-glow:     rgba(224,32,32,0.22);
+      --gold:         #c9a84c;
+      --gold-dim:     rgba(201,168,76,0.10);
+      --silver:       #9aafc4;
+      --bronze:       #b87340;
+      --green:        #1fbb6e;
+      --blue:         #3b9eff;
+      --white:        #ffffff;
+      --off-white:    #e6e6ea;
+      --muted:        #64647a;
+      --subtle:       #33333d;
+
+      --f-display:  'Bebas Neue', sans-serif;
+      --f-heading:  'Barlow Condensed', sans-serif;
+      --f-body:     'Barlow', sans-serif;
+
+      --r-sm: 5px;
+      --r-md: 10px;
+      --r-lg: 16px;
+      --ease: 0.2s cubic-bezier(.4,0,.2,1);
+
+      --sidebar: 216px;
+      --sidebar-col: 60px;
+    }
+
+    /* ─────────────────────────────────────────────
+       BASE
+    ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--off-white);
+      font-family: var(--f-body);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; color: inherit; }
+    ul { list-style: none; }
+
+    /* ─────────────────────────────────────────────
+       LAYOUT SHELL
+    ───────────────────────────────────────────── */
+    .shell {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ─────────────────────────────────────────────
+       SIDEBAR
+    ───────────────────────────────────────────── */
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: var(--sidebar);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      transition: width var(--ease);
+      overflow: hidden;
+    }
+    .sidebar.collapsed { width: var(--sidebar-col); }
+
+    .sb-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 18px 16px;
+      border-bottom: 1px solid var(--border);
+      min-height: 60px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .sb-mark {
+      flex-shrink: 0;
+      width: 30px; height: 30px;
+      background: var(--red);
+      border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--f-display);
+      font-size: 17px;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+    .sb-name {
+      font-family: var(--f-display);
+      font-size: 21px;
+      letter-spacing: 2px;
+      color: var(--white);
+      transition: opacity var(--ease);
+    }
+    .sidebar.collapsed .sb-name { opacity: 0; pointer-events: none; }
+
+    .sb-toggle {
+      width: 28px; height: 28px;
+      margin: 10px auto 2px;
+      border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted);
+      transition: color var(--ease), background var(--ease);
+      flex-shrink: 0;
+    }
+    .sb-toggle:hover { color: var(--white); background: var(--surface-3); }
+    .sb-toggle svg { transition: transform var(--ease); }
+    .sidebar.collapsed .sb-toggle svg { transform: rotate(180deg); }
+
+    .sb-nav {
+      flex: 1;
+      padding: 6px 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .sb-nav::-webkit-scrollbar { width: 0; }
+
+    .sb-section {
+      font-family: var(--f-heading);
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 14px 16px 5px;
+      white-space: nowrap;
+      transition: opacity var(--ease);
+    }
+    .sidebar.collapsed .sb-section { opacity: 0; }
+
+    .sb-item {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 9px 16px;
+      color: var(--muted);
+      font-family: var(--f-heading);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+      position: relative;
+      transition: color var(--ease), background var(--ease);
+      width: 100%;
+      text-align: left;
+    }
+    .sb-item:hover { color: var(--off-white); background: var(--surface-2); }
+    .sb-item.active { color: var(--white); background: var(--red-dim); }
+    .sb-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 5px; bottom: 5px;
+      width: 3px;
+      background: var(--red);
+      border-radius: 0 3px 3px 0;
+    }
+    .sb-icon { flex-shrink: 0; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+    .sb-label { transition: opacity var(--ease); }
+    .sidebar.collapsed .sb-label { opacity: 0; pointer-events: none; }
+    .sb-badge {
+      margin-left: auto;
+      background: var(--red);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 10px;
+      transition: opacity var(--ease);
+    }
+    .sidebar.collapsed .sb-badge { opacity: 0; }
+
+    .sb-bottom {
+      padding: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .sb-profile {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 8px;
+      border-radius: var(--r-md);
+      cursor: pointer;
+      transition: background var(--ease);
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .sb-profile:hover { background: var(--surface-3); }
+    .sb-profile-av {
+      flex-shrink: 0;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg,#1e1e24,#2a2a32);
+      border: 2px solid var(--red);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--f-heading);
+      font-weight: 800;
+      font-size: 12px;
+      color: var(--red);
+    }
+    .sb-profile-name {
+      font-family: var(--f-heading);
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--white);
+      transition: opacity var(--ease);
+    }
+    .sb-profile-handle {
+      font-size: 11px;
+      color: var(--muted);
+      transition: opacity var(--ease);
+    }
+    .sidebar.collapsed .sb-profile-name,
+    .sidebar.collapsed .sb-profile-handle { opacity: 0; }
+
+    /* ─────────────────────────────────────────────
+       MAIN AREA
+    ───────────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar);
+      flex: 1;
+      min-width: 0;
+      transition: margin-left var(--ease);
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar.collapsed ~ .main { margin-left: var(--sidebar-col); }
+
+    /* ─────────────────────────────────────────────
+       TOP BAR
+    ───────────────────────────────────────────── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(9,9,11,0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .topbar-left {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .topbar-title {
+      font-family: var(--f-display);
+      font-size: 26px;
+      letter-spacing: 2px;
+      color: var(--white);
+      line-height: 1;
+    }
+    .topbar-title span { color: var(--red); }
+    .topbar-sub {
+      font-family: var(--f-heading);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .topbar-integrity {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(59,158,255,0.07);
+      border: 1px solid rgba(59,158,255,0.16);
+      border-radius: var(--r-sm);
+      padding: 5px 10px;
+      font-family: var(--f-heading);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--blue);
+      white-space: nowrap;
+    }
+    .topbar-updated {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* ─────────────────────────────────────────────
+       PAGE CONTENT WRAPPER
+    ───────────────────────────────────────────── */
+    .page {
+      padding: 28px 28px 60px;
+      max-width: 1180px;
+      width: 100%;
+    }
+
+    /* ─────────────────────────────────────────────
+       FILTER BAR
+    ───────────────────────────────────────────── */
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+    .filter-group {
+      display: flex;
+      align-items: stretch;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      overflow: hidden;
+    }
+    .filter-group-label {
+      display: flex;
+      align-items: center;
+      padding: 0 10px 0 12px;
+      font-family: var(--f-heading);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+      background: var(--surface-2);
+    }
+    .filter-btn {
+      padding: 0 13px;
+      height: 32px;
+      font-family: var(--f-heading);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      color: var(--muted);
+      border-right: 1px solid var(--border);
+      transition: color var(--ease), background var(--ease);
+      white-space: nowrap;
+    }
+    .filter-btn:last-child { border-right: none; }
+    .filter-btn:hover { color: var(--off-white); background: var(--surface-2); }
+    .filter-btn.active { color: var(--white); background: var(--red); }
+
+    /* ─────────────────────────────────────────────
+       SECTION LABEL
+    ───────────────────────────────────────────── */
+    .sec-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--f-heading);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .sec-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .sec-label-badge {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    /* ─────────────────────────────────────────────
+       PODIUM — TOP 3
+    ───────────────────────────────────────────── */
+    .podium {
+      display: grid;
+      grid-template-columns: 1fr 1.14fr 1fr;
+      gap: 10px;
+      margin-bottom: 36px;
+      align-items: end;
+    }
+
+    /* Each podium card */
+    .podium-card {
+      border-radius: var(--r-lg);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform var(--ease), box-shadow var(--ease);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 28px 18px 22px;
+      /* staggered fade-up on load */
+      opacity: 0;
+      transform: translateY(18px);
+      animation: fadeUp 0.45s var(--ease) forwards;
+    }
+    .podium-card:nth-child(1) { animation-delay: 0.05s; }
+    .podium-card:nth-child(2) { animation-delay: 0.0s;  }
+    .podium-card:nth-child(3) { animation-delay: 0.10s; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .podium-card:hover { transform: translateY(-4px); }
+
+    /* #1 */
+    .podium-card.p1 {
+      background: linear-gradient(160deg, #131209 0%, #0e0e10 55%);
+      border-color: rgba(201,168,76,0.28);
+      box-shadow: 0 0 48px rgba(201,168,76,0.05), inset 0 1px 0 rgba(201,168,76,0.1);
+    }
+    .podium-card.p1:hover { box-shadow: 0 8px 40px rgba(201,168,76,0.12), inset 0 1px 0 rgba(201,168,76,0.15); }
+    /* #2 */
+    .podium-card.p2 {
+      background: linear-gradient(160deg, #0f1016 0%, #0e0e10 55%);
+      border-color: rgba(154,175,196,0.18);
+    }
+    .podium-card.p2:hover { box-shadow: 0 8px 32px rgba(154,175,196,0.07); }
+    /* #3 */
+    .podium-card.p3 {
+      background: linear-gradient(160deg, #0f0d09 0%, #0e0e10 55%);
+      border-color: rgba(184,115,64,0.18);
+    }
+    .podium-card.p3:hover { box-shadow: 0 8px 32px rgba(184,115,64,0.07); }
+
+    /* Shimmer top edge */
+    .podium-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .podium-card.p1::before { background: linear-gradient(90deg, transparent 0%, var(--gold) 50%, transparent 100%); }
+    .podium-card.p2::before { background: linear-gradient(90deg, transparent 0%, var(--silver) 50%, transparent 100%); }
+    .podium-card.p3::before { background: linear-gradient(90deg, transparent 0%, var(--bronze) 50%, transparent 100%); }
+
+    /* Large watermark rank number */
+    .podium-card::after {
+      content: attr(data-rank);
+      position: absolute;
+      right: -8px; bottom: -20px;
+      font-family: var(--f-display);
+      font-size: 130px;
+      line-height: 1;
+      pointer-events: none;
+    }
+    .podium-card.p1::after { color: rgba(201,168,76,0.05); }
+    .podium-card.p2::after { color: rgba(154,175,196,0.04); }
+    .podium-card.p3::after { color: rgba(184,115,64,0.04); }
+
+    /* Rank badge (top-left pill) */
+    .podium-rank-pill {
+      position: absolute;
+      top: 13px; left: 13px;
+      font-family: var(--f-heading);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .p1 .podium-rank-pill { background: rgba(201,168,76,0.13); color: var(--gold); border: 1px solid rgba(201,168,76,0.28); }
+    .p2 .podium-rank-pill { background: rgba(154,175,196,0.10); color: var(--silver); border: 1px solid rgba(154,175,196,0.22); }
+    .p3 .podium-rank-pill { background: rgba(184,115,64,0.10); color: var(--bronze); border: 1px solid rgba(184,115,64,0.22); }
+
+    /* Verified top-right */
+    .podium-verified {
+      position: absolute;
+      top: 13px; right: 13px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-family: var(--f-heading);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--blue);
+      background: rgba(59,158,255,0.09);
+      border: 1px solid rgba(59,158,255,0.18);
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    /* Avatar */
+    .podium-av {
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--f-heading);
+      font-weight: 800;
+      position: relative;
+      margin-bottom: 14px;
+      flex-shrink: 0;
+    }
+    .p1 .podium-av { width: 84px; height: 84px; font-size: 28px; background: linear-gradient(135deg, #211a07, #14120a); border: 3px solid rgba(201,168,76,0.45); color: var(--gold); box-shadow: 0 0 24px rgba(201,168,76,0.14); }
+    .p2 .podium-av { width: 68px; height: 68px; font-size: 22px; background: linear-gradient(135deg, #0d1018, #0e0e12); border: 2px solid rgba(154,175,196,0.3); color: var(--silver); }
+    .p3 .podium-av { width: 68px; height: 68px; font-size: 22px; background: linear-gradient(135deg, #130f0a, #0e0e12); border: 2px solid rgba(184,115,64,0.3); color: var(--bronze); }
+
+    /* Name / meta */
+    .podium-name {
+      font-family: var(--f-heading);
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1.1;
+      position: relative;
+    }
+    .p1 .podium-name { font-size: 22px; }
+    .p2 .podium-name, .p3 .podium-name { font-size: 18px; }
+
+    .podium-pos {
+      font-family: var(--f-heading);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 5px 0 4px;
+    }
+    .podium-school {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    /* Key stat chip */
+    .podium-stat {
+      width: 100%;
+      border-radius: var(--r-sm);
+      padding: 10px 12px;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 6px;
+      position: relative;
+    }
+    .p1 .podium-stat { background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.18); }
+    .p2 .podium-stat { background: var(--surface-2); border: 1px solid var(--border); }
+    .p3 .podium-stat { background: var(--surface-2); border: 1px solid var(--border); }
+
+    .podium-stat-val {
+      font-family: var(--f-heading);
+      font-weight: 900;
+      line-height: 1;
+      color: var(--white);
+    }
+    .p1 .podium-stat-val { font-size: 28px; color: var(--gold); }
+    .p2 .podium-stat-val, .p3 .podium-stat-val { font-size: 22px; }
+
+    .podium-stat-lbl {
+      font-family: var(--f-heading);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* Secondary stats row */
+    .podium-secondaries {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      position: relative;
+    }
+    .podium-sec-stat {
+      flex: 1;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 7px 8px;
+      text-align: center;
+    }
+    .podium-sec-val {
+      font-family: var(--f-heading);
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--off-white);
+    }
+    .podium-sec-lbl {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Movement on podium */
+    .podium-move {
+      margin-top: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--f-heading);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 3px 9px;
+      border-radius: 4px;
+      position: relative;
+    }
+    .podium-move.up   { background: rgba(31,187,110,0.1); color: var(--green); }
+    .podium-move.down { background: rgba(255,94,94,0.1); color: #ff5e5e; }
+    .podium-move.same { background: var(--surface-3); color: var(--muted); }
+
+    /* ─────────────────────────────────────────────
+       LEADERBOARD TABLE
+    ───────────────────────────────────────────── */
+    .leaderboard {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      margin-bottom: 36px;
+    }
+
+    /* Column grid: rank | athlete | school | pos | stat | move */
+    .lb-cols { grid-template-columns: 56px 1fr 200px 90px 110px 80px; }
+
+    .lb-head {
+      display: grid;
+      padding: 9px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+    .lb-head-cell {
+      font-family: var(--f-heading);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .lb-head-cell.right  { text-align: right; }
+    .lb-head-cell.center { text-align: center; }
+
+    .lb-row {
+      display: grid;
+      padding: 11px 18px;
+      border-bottom: 1px solid var(--border-soft);
+      align-items: center;
+      cursor: pointer;
+      transition: background var(--ease);
+      /* staggered animation */
+      opacity: 0;
+      animation: fadeUp 0.35s var(--ease) forwards;
+    }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-row:hover { background: var(--surface-2); }
+
+    /* highlighted "you" row */
+    .lb-row.is-me {
+      background: var(--red-dim);
+      border-left: 3px solid var(--red);
+    }
+    .lb-row.is-me:hover { background: rgba(224,32,32,0.14); }
+
+    /* rank cell */
+    .lb-rank {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .lb-rank-num {
+      font-family: var(--f-heading);
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--muted);
+      width: 22px;
+      text-align: center;
+    }
+    .lb-row.top3 .lb-rank-num { color: var(--white); }
+
+    /* athlete cell */
+    .lb-athlete {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+    }
+    .lb-av {
+      flex-shrink: 0;
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--f-heading);
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .lb-name {
+      font-family: var(--f-heading);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--white);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .lb-meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    .you-badge {
+      display: inline-flex;
+      align-items: center;
+      background: var(--red);
+      color: #fff;
+      font-family: var(--f-heading);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .verified-dot {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 4px;
+      color: var(--blue);
+      vertical-align: middle;
+    }
+
+    /* school */
+    .lb-school {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* position */
+    .lb-pos {
+      font-family: var(--f-heading);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* stat */
+    .lb-stat { text-align: right; }
+    .lb-stat-val {
+      font-family: var(--f-heading);
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1;
+    }
+    .lb-stat-lbl {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--subtle);
+      margin-top: 2px;
+    }
+
+    /* movement chip */
+    .lb-move { display: flex; align-items: center; justify-content: flex-end; }
+    .move-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-family: var(--f-heading);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 4px;
+    }
+    .move-chip.up   { background: rgba(31,187,110,0.10); color: var(--green); }
+    .move-chip.down { background: rgba(255,94,94,0.10);  color: #ff5e5e; }
+    .move-chip.same { background: var(--surface-3); color: var(--muted); }
+
+    /* ─────────────────────────────────────────────
+       TOP MOVERS SECTION
+    ───────────────────────────────────────────── */
+    .movers-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 36px;
+    }
+    .mover-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 16px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform var(--ease), border-color var(--ease);
+      opacity: 0;
+      animation: fadeUp 0.4s var(--ease) forwards;
+    }
+    .mover-card:nth-child(1) { animation-delay: 0.05s; }
+    .mover-card:nth-child(2) { animation-delay: 0.10s; }
+    .mover-card:nth-child(3) { animation-delay: 0.15s; }
+    .mover-card:nth-child(4) { animation-delay: 0.20s; }
+    .mover-card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 80px; height: 80px;
+      background: radial-gradient(circle at top right, rgba(31,187,110,0.06), transparent 70%);
+      pointer-events: none;
+    }
+    .mover-card:hover { transform: translateY(-3px); border-color: rgba(31,187,110,0.22); }
+
+    .mover-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .mover-av {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--f-heading);
+      font-weight: 800;
+      font-size: 13px;
+    }
+    .mover-name {
+      font-family: var(--f-heading);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.2;
+    }
+    .mover-pos { font-size: 11px; color: var(--muted); }
+
+    .mover-delta-row {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+    .mover-delta {
+      font-family: var(--f-display);
+      font-size: 36px;
+      line-height: 1;
+      color: var(--green);
+    }
+    .mover-delta-lbl {
+      font-family: var(--f-heading);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    .mover-snapshot {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .mover-snapshot strong { color: var(--off-white); }
+
+    .mover-reason {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      font-family: var(--f-heading);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mover-reason-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+    }
+
+    /* ─────────────────────────────────────────────
+       PERFORMANCE METHODOLOGY CARD
+    ───────────────────────────────────────────── */
+    .methodology {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      overflow: hidden;
+      margin-bottom: 36px;
+    }
+    .methodology-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+    .methodology-icon { color: var(--blue); }
+    .methodology-title {
+      font-family: var(--f-heading);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .methodology-body {
+      padding: 18px 20px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+    .method-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .method-icon-wrap {
+      width: 32px; height: 32px;
+      border-radius: var(--r-sm);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted);
+    }
+    .method-label {
+      font-family: var(--f-heading);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--off-white);
+      line-height: 1.3;
+    }
+    .method-sub {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .not-counted {
+      grid-column: 1 / -1;
+      margin-top: 6px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-soft);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .not-counted-label {
+      font-family: var(--f-heading);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .strike-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 9px;
+      font-size: 11px;
+      color: var(--muted);
+      text-decoration: line-through;
+    }
+
+    /* ─────────────────────────────────────────────
+       EMPTY STATE
+    ───────────────────────────────────────────── */
+    .empty-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 64px 32px;
+      text-align: center;
+      gap: 10px;
+    }
+    .empty-state.visible { display: flex; }
+    .empty-icon { color: var(--subtle); margin-bottom: 4px; }
+    .empty-title {
+      font-family: var(--f-heading);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .empty-sub { font-size: 13px; color: var(--subtle); }
+
+    /* ─────────────────────────────────────────────
+       MOBILE OVERLAY & TOP BAR
+    ───────────────────────────────────────────── */
+    .mobile-bar {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 50px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      z-index: 99;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+    }
+    .mobile-ham {
+      width: 38px; height: 38px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: var(--r-sm);
+      color: var(--muted);
+    }
+    .mobile-ham:hover { color: var(--white); }
+    .overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 98;
+    }
+    .overlay.on { display: block; }
+
+    /* ─────────────────────────────────────────────
+       RESPONSIVE
+    ───────────────────────────────────────────── */
+    @media (max-width: 1100px) {
+      .methodology-body { grid-template-columns: repeat(3, 1fr); }
+      .movers-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 900px) {
+      .podium { grid-template-columns: 1fr 1.08fr 1fr; }
+      .lb-cols { grid-template-columns: 48px 1fr 130px 80px 100px 70px; }
+    }
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+        width: var(--sidebar) !important;
+        transition: transform var(--ease), width var(--ease);
+      }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0 !important; padding-top: 50px; }
+      .mobile-bar { display: flex; }
+      .podium { grid-template-columns: 1fr; }
+      .podium-card.p1 { order: -1; }
+      .lb-head { display: none; }
+      .lb-cols { grid-template-columns: 40px 1fr 90px; }
+      .lb-school, .lb-pos { display: none; }
+      .methodology-body { grid-template-columns: repeat(2, 1fr); }
+      .movers-grid { grid-template-columns: 1fr 1fr; }
+      .page { padding: 20px 14px 48px; }
+      .topbar { padding: 0 16px; }
+    }
+    @media (max-width: 480px) {
+      .movers-grid { grid-template-columns: 1fr; }
+      .filter-bar { gap: 6px; }
+      .filter-group { flex-wrap: wrap; }
+    }
+
+    /* ─────────────────────────────────────────────
+       POSITION FILTER — swap transition
+    ───────────────────────────────────────────── */
+    #posFilterGroup {
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+    #posFilterGroup.swapping {
+      opacity: 0;
+      transform: translateY(-4px);
+      pointer-events: none;
+    }
+
+    /* ─────────────────────────────────────────────
+       ACTIVE FILTER CONTEXT BAR
+    ───────────────────────────────────────────── */
+    .filter-context {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: -20px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      min-height: 28px;
+    }
+    .fc-crumb {
+      display: inline-flex;
+      align-items: center;
+      font-family: var(--f-heading);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .fc-crumb.is-sport {
+      color: var(--white);
+      background: var(--red-dim);
+      border: 1px solid rgba(224,32,32,0.22);
+      padding: 3px 10px;
+      border-radius: 4px;
+    }
+    .fc-crumb.is-active {
+      color: var(--off-white);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 4px;
+    }
+    .fc-crumb.is-dim { color: var(--muted); }
+    .fc-sep {
+      color: var(--subtle);
+      font-size: 11px;
+      user-select: none;
+    }
+    .fc-count {
+      margin-left: auto;
+      font-family: var(--f-heading);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .fc-count strong {
+      color: var(--off-white);
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+
+    /* ─────────────────────────────────────────────
+       LEADERBOARD ROW — refined hover & medal colors
+    ───────────────────────────────────────────── */
+    .lb-row {
+      border-left: 3px solid transparent;
+      transition: background var(--ease), border-left-color var(--ease);
+    }
+    .lb-row:hover {
+      background: var(--surface-2);
+      border-left-color: var(--subtle);
+    }
+    .lb-row.top3:hover    { border-left-color: var(--red); }
+    .lb-row.is-me         { border-left-color: var(--red) !important; }
+    .lb-row.rank-gold   .lb-rank-num { color: var(--gold); }
+    .lb-row.rank-silver .lb-rank-num { color: var(--silver); }
+    .lb-row.rank-bronze .lb-rank-num { color: var(--bronze); }
+
+    /* Row slide-in animation (re-triggered by JS on re-render) */
+    @keyframes rowSlide {
+      from { opacity: 0; transform: translateX(-8px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .lb-row.row-in { animation: rowSlide 0.22s var(--ease) both; }
+
+    /* Future nav arrow on hover */
+    .lb-nav-arrow {
+      display: none;
+      align-items: center;
+      color: var(--subtle);
+      transition: color var(--ease);
+    }
+    .lb-row:hover .lb-nav-arrow { display: flex; color: var(--muted); }
+
+    /* ─────────────────────────────────────────────
+       PODIUM — JS-driven entrance, no CSS animation
+    ───────────────────────────────────────────── */
+    .podium-card {
+      opacity: 0;
+      transform: translateY(14px);
+      animation: none;
+      transition: opacity 0.32s cubic-bezier(.22,.68,0,1.1),
+                  transform 0.32s cubic-bezier(.22,.68,0,1.1),
+                  box-shadow var(--ease),
+                  border-color var(--ease);
+    }
+    .podium-card.entered {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .podium-card.p1:hover { transform: translateY(-6px); }
+    .podium-card.p2:hover,
+    .podium-card.p3:hover { transform: translateY(-4px); }
+
+    /* ─────────────────────────────────────────────
+       MOVERS — empty state when no data for sport
+    ───────────────────────────────────────────── */
+    .movers-empty {
+      grid-column: 1 / -1;
+      padding: 30px;
+      text-align: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      font-family: var(--f-heading);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+    }
+
+    /* ─────────────────────────────────────────────
+       PLAYER DETAIL PANEL
+    ───────────────────────────────────────────── */
+
+    /* Backdrop */
+    .pdp-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 500;
+      align-items: flex-start;
+      justify-content: flex-end;
+    }
+    .pdp-backdrop.open { display: flex; }
+
+    /* Slide-in panel */
+    .pdp {
+      position: relative;
+      width: 520px;
+      max-width: 100vw;
+      height: 100vh;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: translateX(100%);
+      transition: transform 0.32s cubic-bezier(.22,.68,0,1.05);
+    }
+    .pdp-backdrop.open .pdp { transform: translateX(0); }
+
+    /* Header stripe */
+    .pdp-header {
+      position: relative;
+      padding: 24px 24px 20px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(160deg, #110a0a 0%, var(--surface) 60%);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    /* Large watermark initial behind header */
+    .pdp-header::before {
+      content: attr(data-init);
+      position: absolute;
+      right: -10px; bottom: -24px;
+      font-family: var(--f-display);
+      font-size: 140px;
+      line-height: 1;
+      color: rgba(224,32,32,0.05);
+      pointer-events: none;
+      user-select: none;
+    }
+    /* Red top accent */
+    .pdp-header::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--red) 0%, transparent 70%);
+    }
+
+    .pdp-close {
+      position: absolute;
+      top: 16px; right: 16px;
+      width: 32px; height: 32px;
+      border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted);
+      transition: color var(--ease), background var(--ease);
+      z-index: 2;
+    }
+    .pdp-close:hover { color: var(--white); background: var(--surface-3); }
+
+    .pdp-header-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      position: relative;
+    }
+    .pdp-av {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--f-heading);
+      font-weight: 800;
+      font-size: 22px;
+      flex-shrink: 0;
+      border: 3px solid rgba(224,32,32,0.35);
+      background: linear-gradient(135deg, #1e0808, #120e0e);
+      color: var(--red);
+    }
+    .pdp-identity { flex: 1; min-width: 0; }
+    .pdp-name {
+      font-family: var(--f-heading);
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--white);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .pdp-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .pdp-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--f-heading);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .pdp-chip.sport  { background: var(--red-dim); border: 1px solid rgba(224,32,32,0.22); color: var(--red); }
+    .pdp-chip.school { background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); }
+    .pdp-chip.verif  { background: rgba(59,158,255,0.09); border: 1px solid rgba(59,158,255,0.2); color: var(--blue); }
+    .pdp-chip.year   { background: var(--surface-3); border: 1px solid var(--border); color: var(--muted); }
+
+    /* Rank + key stat row */
+    .pdp-stats-strip {
+      display: flex;
+      gap: 0;
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      overflow: hidden;
+    }
+    .pdp-stat-cell {
+      flex: 1;
+      background: var(--surface-2);
+      padding: 10px 14px;
+      border-right: 1px solid var(--border);
+      text-align: center;
+    }
+    .pdp-stat-cell:last-child { border-right: none; }
+    .pdp-stat-val {
+      font-family: var(--f-heading);
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--white);
+      line-height: 1;
+    }
+    .pdp-stat-val.gold   { color: var(--gold); }
+    .pdp-stat-val.red    { color: var(--red); }
+    .pdp-stat-val.green  { color: var(--green); }
+    .pdp-stat-lbl {
+      font-family: var(--f-heading);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* Scrollable body */
+    .pdp-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .pdp-body::-webkit-scrollbar { width: 4px; }
+    .pdp-body::-webkit-scrollbar-track { background: transparent; }
+    .pdp-body::-webkit-scrollbar-thumb { background: var(--subtle); border-radius: 2px; }
+
+    /* Section label inside panel */
+    .pdp-sec-label {
+      font-family: var(--f-heading);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .pdp-sec-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    /* ── PROGRESSION CHART ── */
+    .pdp-chart-wrap {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 20px 16px 14px;
+      position: relative;
+    }
+    .pdp-chart-title {
+      font-family: var(--f-heading);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--off-white);
+      margin-bottom: 4px;
+    }
+    .pdp-chart-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .pdp-chart-svg-wrap {
+      position: relative;
+      width: 100%;
+    }
+    /* Y-axis grid lines drawn as CSS */
+    .chart-grid-line {
+      position: absolute;
+      left: 32px; right: 0;
+      height: 1px;
+      background: var(--border-soft);
+    }
+    .chart-y-label {
+      position: absolute;
+      left: 0;
+      font-family: var(--f-heading);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--subtle);
+      transform: translateY(-50%);
+      width: 28px;
+      text-align: right;
+    }
+
+    /* SVG chart */
+    #pdpChartSvg {
+      width: 100%;
+      overflow: visible;
+      display: block;
+    }
+    .chart-area-fill   { fill: url(#chartGrad); }
+    .chart-line        { fill: none; stroke: var(--red); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    .chart-dot {
+      fill: var(--surface-2);
+      stroke: var(--red);
+      stroke-width: 2;
+      cursor: pointer;
+      transition: r 0.12s ease;
+    }
+    .chart-dot:hover   { r: 6; fill: var(--red); }
+    .chart-dot.active  { r: 6; fill: var(--red); }
+    .chart-x-label {
+      font-family: var(--f-heading);
+      font-size: 10px;
+      fill: var(--muted);
+      text-anchor: middle;
+    }
+    /* Tooltip on chart */
+    .chart-tooltip {
+      position: absolute;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 6px 10px;
+      font-family: var(--f-heading);
+      font-size: 12px;
+      color: var(--white);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.1s ease;
+      white-space: nowrap;
+      z-index: 10;
+    }
+    .chart-tooltip.visible { opacity: 1; }
+    .chart-tooltip-val { font-size: 15px; font-weight: 800; color: var(--red); }
+
+    /* Season selector */
+    .pdp-season-tabs {
+      display: flex;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      overflow: hidden;
+      margin-bottom: 14px;
+      width: fit-content;
+    }
+    .pdp-season-tab {
+      padding: 5px 14px;
+      font-family: var(--f-heading);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      transition: background var(--ease), color var(--ease);
+    }
+    .pdp-season-tab:hover { color: var(--off-white); }
+    .pdp-season-tab.active { background: var(--surface-2); color: var(--white); }
+
+    /* ── MILESTONES ── */
+    .milestone-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .milestone-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-soft);
+      position: relative;
+    }
+    .milestone-item:last-child { border-bottom: none; }
+    /* Vertical connector */
+    .milestone-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 14px; top: 36px; bottom: -1px;
+      width: 1px;
+      background: var(--border);
+    }
+    .milestone-icon-wrap {
+      flex-shrink: 0;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+      z-index: 1;
+    }
+    .mi-varsity    { background: rgba(224,32,32,0.12); color: var(--red); border: 1px solid rgba(224,32,32,0.25); }
+    .mi-verified   { background: rgba(59,158,255,0.12); color: var(--blue); border: 1px solid rgba(59,158,255,0.25); }
+    .mi-mvp        { background: rgba(201,168,76,0.12); color: var(--gold); border: 1px solid rgba(201,168,76,0.25); }
+    .mi-rank       { background: rgba(31,187,110,0.12); color: var(--green); border: 1px solid rgba(31,187,110,0.25); }
+    .mi-offer      { background: rgba(201,168,76,0.12); color: var(--gold); border: 1px solid rgba(201,168,76,0.25); }
+    .mi-combine    { background: var(--surface-3); color: var(--muted); border: 1px solid var(--border); }
+
+    .milestone-content { flex: 1; padding-top: 4px; }
+    .milestone-event {
+      font-family: var(--f-heading);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.2;
+    }
+    .milestone-detail {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+      line-height: 1.5;
+    }
+    .milestone-date {
+      font-family: var(--f-heading);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--subtle);
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+      padding-top: 5px;
+    }
+
+    /* ── RANK MOVEMENT TIMELINE ── */
+    .rank-timeline {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 64px;
+      padding: 0 4px;
+    }
+    .rank-tl-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      flex: 1;
+    }
+    .rank-tl-bar-wrap {
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      width: 100%;
+    }
+    .rank-tl-bar {
+      width: 100%;
+      border-radius: 3px 3px 0 0;
+      background: var(--surface-3);
+      transition: background var(--ease);
+      min-height: 4px;
+    }
+    .rank-tl-col.current .rank-tl-bar { background: var(--red); }
+    .rank-tl-rank {
+      font-family: var(--f-heading);
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--muted);
+    }
+    .rank-tl-col.current .rank-tl-rank { color: var(--red); }
+    .rank-tl-period {
+      font-size: 9px;
+      color: var(--subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-family: var(--f-heading);
+      white-space: nowrap;
+    }
+
+    /* ── FOOTER ── */
+    .pdp-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+      display: flex;
+      gap: 8px;
+    }
+    .pdp-btn-primary {
+      flex: 1;
+      background: var(--red);
+      color: #fff;
+      border-radius: var(--r-sm);
+      font-family: var(--f-heading);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 11px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background var(--ease), box-shadow var(--ease);
+    }
+    .pdp-btn-primary:hover { background: #c91818; box-shadow: 0 0 20px var(--red-glow); }
+    .pdp-btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: var(--r-sm);
+      font-family: var(--f-heading);
+      font-size: 14px;
+      font-weight: 700;
+      padding: 11px 18px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: border-color var(--ease), color var(--ease);
+    }
+    .pdp-btn-ghost:hover { border-color: var(--subtle); color: var(--off-white); }
+
+    /* Mobile panel: full width */
+    @media (max-width: 600px) {
+      .pdp { width: 100vw; }
+    }
+  </style>
+
 </head>
-<body data-page="pulse" data-requires-session="true">
-  <div class="app-layout">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <div class="logo">Clutch</div>
-        <span class="role-pill" id="role-pill">guest</span>
-      </div>
+<body>
 
-      <div>
-        <p class="nav-label">Main</p>
-        <nav class="nav">
-          <a class="nav-btn" data-nav="home" href="index.html">Feed</a>
-          <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
-          <a class="nav-btn" data-nav="explore" href="explore.html">Discovery</a>
-          <a class="nav-btn" data-nav="highlights" href="highlights.html">Dashboards</a>
-          <a class="nav-btn" data-nav="profile" href="profile.html">Profile</a>
-        </nav>
-      </div>
+<!-- overlay for mobile sidebar -->
 
-      <div class="sidebar-foot">
-        <strong>Pulse</strong>
-        <span class="helper">Your following feed, trending posts, and platform news in one place.</span>
-      </div>
-    </aside>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
-    <div class="mobile-overlay" id="mobile-overlay"></div>
+<!-- mobile top bar -->
 
-    <div class="page-wrap">
-      <header class="site-header">
-        <button class="menu-btn" id="menu-btn" type="button">Menu</button>
-        <div class="search-wrap">
-          <input id="global-search" type="search" placeholder="Search people, schools, posts, news">
-        </div>
-        <button class="icon-btn" id="notif-btn" type="button" title="Notifications">🔔<span id="notif-count" class="badge">4</span></button>
-        <div class="session-chip" id="session-chip">Checking session...</div>
-        <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
-      </header>
+<div class="mobile-bar">
+  <button class="mobile-ham" id="mobileHam" onclick="openSidebar()" aria-label="Open menu" aria-expanded="false">
+    <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+  <span style="font-family:var(--f-display);font-size:19px;letter-spacing:2px;color:var(--white);">CLUTCH</span>
+  <div style="width:38px;"></div>
+</div>
 
-      <main>
-        <section class="hero">
-          <div>
-            <p class="eyebrow">Pulse</p>
-            <h1>Your follow feed, trending, and news stream.</h1>
-            <p class="lede">This page combines personalized posts from people you follow, trending highlights, and sports/platform news.</p>
-          </div>
-          <div class="card">
-            <p class="card-tag">Snapshot</p>
-            <div class="kpis">
-              <div class="metric">
-                <div class="metric-value" id="pulse-following-count">0</div>
-                <div class="metric-label">Following Posts</div>
-              </div>
-              <div class="metric">
-                <div class="metric-value" id="pulse-trending-count">0</div>
-                <div class="metric-label">Trending Posts</div>
-              </div>
-              <div class="metric">
-                <div class="metric-value" id="pulse-news-count">0</div>
-                <div class="metric-label">News Items</div>
-              </div>
-            </div>
-          </div>
-        </section>
+<div class="shell">
 
-        <section class="grid-3">
-          <article class="data-panel">
-            <div class="section-head">
-              <h2>Following</h2>
-              <span class="tag">Personalized</span>
-            </div>
-            <div class="table-card">
-              <div class="table-head">
-                <span>Author</span>
-                <span>Post</span>
-                <span>Sport</span>
-                <span>Date</span>
-              </div>
-              <div class="table-rows" id="pulse-following-list">
-                <div class="placeholder">Loading following posts...</div>
-              </div>
-            </div>
-          </article>
+  <!-- ══════════════════════════════════════
+       SIDEBAR
+  ══════════════════════════════════════ -->
 
-          <article class="data-panel">
-            <div class="section-head">
-              <h2>Trending</h2>
-              <span class="tag">This Week</span>
-            </div>
-            <div class="table-card">
-              <div class="table-head">
-                <span>Author</span>
-                <span>Post</span>
-                <span>Sport</span>
-                <span>Date</span>
-              </div>
-              <div class="table-rows" id="pulse-trending-list">
-                <div class="placeholder">Loading trending posts...</div>
-              </div>
-            </div>
-          </article>
+  <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
 
-          <article class="data-panel">
-            <div class="section-head">
-              <h2>News</h2>
-              <span class="tag">Latest</span>
-            </div>
-            <div class="cards" id="pulse-news-list">
-              <div class="placeholder">Loading news...</div>
-            </div>
-          </article>
-        </section>
+```
+<div class="sb-brand">
+  <div class="sb-mark">C</div>
+  <div class="sb-name">CLUTCH</div>
+</div>
 
-        <div id="pulse-status" class="helper">Checking session...</div>
-      </main>
+<button class="sb-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Toggle sidebar" aria-expanded="true">
+  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <polyline points="15 18 9 12 15 6"/>
+  </svg>
+</button>
 
-      <footer class="site-footer">
-        Clutch Website • Pulse page for Following, Trending, and News
-      </footer>
+<nav class="sb-nav">
+  <div class="sb-section">Navigate</div>
+
+  <button class="sb-item" onclick="setNav(this)" role="menuitem">
+    <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+    <span class="sb-label">Home</span>
+  </button>
+
+  <button class="sb-item" onclick="setNav(this)" role="menuitem">
+    <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+    <span class="sb-label">Discovery</span>
+  </button>
+
+  <button class="sb-item" onclick="setNav(this)" role="menuitem">
+    <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+    <span class="sb-label">Profile</span>
+  </button>
+
+  <button class="sb-item" onclick="setNav(this)" role="menuitem">
+    <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></span>
+    <span class="sb-label">Media</span>
+    <span class="sb-badge">3</span>
+  </button>
+
+  <button class="sb-item" onclick="setNav(this)" role="menuitem">
+    <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+    <span class="sb-label">Stats</span>
+  </button>
+
+  <button class="sb-item active" onclick="setNav(this)" role="menuitem" aria-current="page">
+    <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/><path d="M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/><path d="M17.07 3.37C18.6 4.13 19 5.28 19 6a3 3 0 0 1-2.16 2.88"/><path d="M6.93 3.37C5.4 4.13 5 5.28 5 6a3 3 0 0 0 2.16 2.88"/></svg></span>
+    <span class="sb-label">Rankings</span>
+  </button>
+
+  <button class="sb-item" onclick="setNav(this)" role="menuitem">
+    <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.44 14a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.35 3h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.5a16 16 0 0 0 5.59 5.59l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
+    <span class="sb-label">Recruiting</span>
+  </button>
+
+  <div class="sb-section">Account</div>
+
+  <button class="sb-item" onclick="setNav(this)" role="menuitem">
+    <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+    <span class="sb-label">Profile Link</span>
+  </button>
+
+  <button class="sb-item" onclick="setNav(this)" role="menuitem">
+    <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+    <span class="sb-label">Settings</span>
+  </button>
+</nav>
+
+<div class="sb-bottom">
+  <div class="sb-profile">
+    <div class="sb-profile-av">MW</div>
+    <div>
+      <div class="sb-profile-name">Marcus Williams</div>
+      <div class="sb-profile-handle">@mwilliams24</div>
     </div>
   </div>
+</div>
+```
+
+  </aside>
+
+  <!-- ══════════════════════════════════════
+       MAIN CONTENT
+  ══════════════════════════════════════ -->
+
+  <main class="main" id="main">
+
+```
+<!-- sticky top bar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-title">ATHLETE <span>RANKINGS</span></div>
+    <div class="topbar-sub">Performance Based</div>
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-integrity">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Performance Only — No Social Metrics
+    </div>
+    <div class="topbar-updated" id="lastUpdated"></div>
+  </div>
+</div>
+
+<!-- page body -->
+<div class="page">
+
+  <!-- ── METHODOLOGY CARD ── -->
+  <div class="methodology">
+    <div class="methodology-header">
+      <span class="methodology-icon">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </span>
+      <span class="methodology-title">How Rankings Are Calculated</span>
+    </div>
+    <div class="methodology-body">
+      <div class="method-item">
+        <div class="method-icon-wrap">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div class="method-label">Verified Season Stats</div>
+        <div class="method-sub">Coach-confirmed averages and totals across the current season</div>
+      </div>
+      <div class="method-item">
+        <div class="method-icon-wrap">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+        </div>
+        <div class="method-label">Tournament Performance</div>
+        <div class="method-sub">Output at high-level events, showcases, and live periods</div>
+      </div>
+      <div class="method-item">
+        <div class="method-icon-wrap">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="method-label">Measurable Improvement</div>
+        <div class="method-sub">Statistical growth tracked season over season</div>
+      </div>
+      <div class="method-item">
+        <div class="method-icon-wrap">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        </div>
+        <div class="method-label">Combine &amp; Event Results</div>
+        <div class="method-sub">Measurable output from official combines and scouting events</div>
+      </div>
+      <div class="method-item">
+        <div class="method-icon-wrap">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="method-label">Coach Verification</div>
+        <div class="method-sub">Credentials confirmed by coaching staff increases weighting</div>
+      </div>
+      <!-- not counted strip -->
+      <div class="not-counted">
+        <span class="not-counted-label">Never counted:</span>
+        <span class="strike-chip">Followers</span>
+        <span class="strike-chip">Likes</span>
+        <span class="strike-chip">Profile Views</span>
+        <span class="strike-chip">App Time</span>
+        <span class="strike-chip">Post Engagement</span>
+        <span class="strike-chip">Scout Views</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FILTER BAR ── -->
+  <div class="filter-bar" id="filterBar" role="group" aria-label="Ranking filters">
+
+    <div class="filter-group" role="group" aria-label="Sport filter">
+      <span class="filter-group-label">Sport</span>
+      <button class="filter-btn active" data-filter="sport" data-value="basketball" onclick="setFilter('sport', this)">Basketball</button>
+      <button class="filter-btn" data-filter="sport" data-value="track" onclick="setFilter('sport', this)">Track</button>
+      <button class="filter-btn" data-filter="sport" data-value="football" onclick="setFilter('sport', this)">Football</button>
+      <button class="filter-btn" data-filter="sport" data-value="soccer" onclick="setFilter('sport', this)">Soccer</button>
+      <button class="filter-btn" data-filter="sport" data-value="baseball" onclick="setFilter('sport', this)">Baseball</button>
+    </div>
+
+    <!-- Position filter — rebuilt dynamically by JS when sport changes -->
+    <div class="filter-group" id="posFilterGroup" role="group" aria-label="Position filter">
+      <!-- populated by renderPosFilter() on init and sport change -->
+    </div>
+
+    <div class="filter-group" role="group" aria-label="Region filter">
+      <span class="filter-group-label">Region</span>
+      <button class="filter-btn active" data-filter="region" data-value="all"       onclick="setFilter('region', this)">National</button>
+      <button class="filter-btn" data-filter="region" data-value="southeast" onclick="setFilter('region', this)">Southeast</button>
+      <button class="filter-btn" data-filter="region" data-value="midwest"   onclick="setFilter('region', this)">Midwest</button>
+      <button class="filter-btn" data-filter="region" data-value="northeast" onclick="setFilter('region', this)">Northeast</button>
+      <button class="filter-btn" data-filter="region" data-value="west"      onclick="setFilter('region', this)">West</button>
+    </div>
+
+    <div class="filter-group" role="group" aria-label="Class year filter">
+      <span class="filter-group-label">Class</span>
+      <button class="filter-btn active" data-filter="year" data-value="all"  onclick="setFilter('year', this)">All</button>
+      <button class="filter-btn" data-filter="year" data-value="2025" onclick="setFilter('year', this)">2025</button>
+      <button class="filter-btn" data-filter="year" data-value="2026" onclick="setFilter('year', this)">2026</button>
+      <button class="filter-btn" data-filter="year" data-value="2027" onclick="setFilter('year', this)">2027</button>
+    </div>
+
+  </div>
+
+  <!-- ── ACTIVE FILTER CONTEXT BAR ── -->
+  <div class="filter-context" id="filterContext" aria-live="polite"></div>
+
+  <!-- ── PODIUM (top 3) ── -->
+  <div class="sec-label">
+    Top Performers
+    <span class="sec-label-badge" id="podiumCount"></span>
+  </div>
+  <div class="podium" id="podium" role="list"></div>
+
+  <!-- ── LEADERBOARD ── -->
+  <div class="sec-label">
+    Full Leaderboard
+    <span class="sec-label-badge" id="lbCount"></span>
+  </div>
+  <div class="leaderboard" id="leaderboard" role="table" aria-label="Athlete rankings">
+    <div class="lb-head lb-cols" role="row">
+      <div class="lb-head-cell" role="columnheader">Rank</div>
+      <div class="lb-head-cell" role="columnheader">Athlete</div>
+      <div class="lb-head-cell" role="columnheader">School</div>
+      <div class="lb-head-cell center" role="columnheader">Pos</div>
+      <div class="lb-head-cell right" role="columnheader">Stat</div>
+      <div class="lb-head-cell right" role="columnheader">Move</div>
+    </div>
+    <div id="lbRows" role="rowgroup"></div>
+  </div>
+
+  <!-- empty state (inside leaderboard area) -->
+  <div class="empty-state" id="emptyState" role="status" aria-live="polite">
+    <div class="empty-icon">
+      <svg width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/>
+        <path d="M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+      </svg>
+    </div>
+    <div class="empty-title">No Athletes Found</div>
+    <div class="empty-sub">Try adjusting the sport, position, region, or class year filters.</div>
+  </div>
+
+  <!-- ── TOP MOVERS ── -->
+  <div class="sec-label" id="moversLabel" style="margin-top:8px;">Top Movers This Week</div>
+  <div class="movers-grid" id="moversGrid"></div>
+
+</div><!-- /page -->
+```
+
+  </main>
+</div><!-- /shell -->
+
+<!-- ══════════════════════════════════════════════
+     PLAYER DETAIL PANEL
+     Slides in from right when a leaderboard row
+     or podium card is clicked.
+════════════════════════════════════════════════ -->
+
+<div class="pdp-backdrop" id="pdpBackdrop" role="dialog" aria-modal="true" aria-labelledby="pdpAthlName">
+
+  <div class="pdp" id="pdpPanel">
+
+```
+<!-- HEADER -->
+<div class="pdp-header" id="pdpHeader" data-init="MW">
+  <button class="pdp-close" onclick="closePanel()" aria-label="Close player detail">
+    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+
+  <div class="pdp-header-top">
+    <div class="pdp-av" id="pdpAv">MW</div>
+    <div class="pdp-identity">
+      <div class="pdp-name" id="pdpAthlName">Marcus Williams</div>
+      <div class="pdp-meta-row">
+        <span class="pdp-chip sport" id="pdpSport">Basketball · PG</span>
+        <span class="pdp-chip school" id="pdpSchool">Lincoln Prep Academy, GA</span>
+      </div>
+      <div class="pdp-meta-row">
+        <span class="pdp-chip year"  id="pdpYear">Class of 2026</span>
+        <span class="pdp-chip verif" id="pdpVerif">&#10003; Coach Verified</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key stats strip -->
+  <div class="pdp-stats-strip">
+    <div class="pdp-stat-cell">
+      <div class="pdp-stat-val gold" id="pdpRank">#3</div>
+      <div class="pdp-stat-lbl">National Rank</div>
+    </div>
+    <div class="pdp-stat-cell">
+      <div class="pdp-stat-val" id="pdpStat1Val">22.4</div>
+      <div class="pdp-stat-lbl" id="pdpStat1Lbl">PPG</div>
+    </div>
+    <div class="pdp-stat-cell">
+      <div class="pdp-stat-val" id="pdpStat2Val">7.1</div>
+      <div class="pdp-stat-lbl" id="pdpStat2Lbl">APG</div>
+    </div>
+    <div class="pdp-stat-cell">
+      <div class="pdp-stat-val green" id="pdpMove">+3</div>
+      <div class="pdp-stat-lbl">This Week</div>
+    </div>
+  </div>
+</div>
+
+<!-- SCROLLABLE BODY -->
+<div class="pdp-body">
+
+  <!-- ── PERFORMANCE PROGRESSION ── -->
+  <div>
+    <div class="pdp-sec-label">Performance Progression</div>
+
+    <!-- Season selector -->
+    <div class="pdp-season-tabs" id="pdpSeasonTabs" role="group" aria-label="Select season view">
+      <button class="pdp-season-tab active" data-season="season" onclick="setPdpSeason(this)">By Season</button>
+      <button class="pdp-season-tab" data-season="monthly" onclick="setPdpSeason(this)">Monthly</button>
+      <button class="pdp-season-tab" data-season="games" onclick="setPdpSeason(this)">Last 10 Games</button>
+    </div>
+
+    <!-- Chart card -->
+    <div class="pdp-chart-wrap">
+      <div class="pdp-chart-title" id="pdpChartTitle">Points Per Game — Season Average</div>
+      <div class="pdp-chart-subtitle" id="pdpChartSub">Verified production across all games played</div>
+
+      <div class="pdp-chart-svg-wrap" id="pdpChartSvgWrap">
+        <!-- SVG chart injected by JS -->
+        <div class="chart-tooltip" id="chartTooltip">
+          <div class="chart-tooltip-val" id="chartTtVal">22.4</div>
+          <div id="chartTtLabel">PPG</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RANK MOVEMENT TIMELINE ── -->
+  <div>
+    <div class="pdp-sec-label">Ranking Journey</div>
+    <div class="rank-timeline" id="pdpRankTimeline">
+      <!-- injected by JS -->
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;" id="pdpRankPeriodRow">
+      <!-- period labels injected by JS -->
+    </div>
+  </div>
+
+  <!-- ── MILESTONES ── -->
+  <div>
+    <div class="pdp-sec-label">Development Milestones</div>
+    <div class="milestone-list" id="pdpMilestones">
+      <!-- injected by JS -->
+    </div>
+  </div>
+
+</div><!-- /pdp-body -->
+
+<!-- FOOTER -->
+<div class="pdp-footer">
+  <button class="pdp-btn-primary" onclick="closePanel()">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    View Full Profile
+  </button>
+  <button class="pdp-btn-ghost" onclick="closePanel()" aria-label="Share profile">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    Share
+  </button>
+</div>
+```
+
+  </div><!-- /pdp -->
+</div><!-- /pdp-backdrop -->
+
+<script>
+  /* ════════════════════════════════════════════
+     SPORT → POSITION MAP
+     Single source of truth. Adding a new sport
+     here automatically populates the filter.
+     Values must exactly match a.pos in ATHLETES.
+  ════════════════════════════════════════════ */
+  const SPORT_POSITIONS = {
+    basketball: [
+      { label: 'All',   value: 'all' },
+      { label: 'PG',    value: 'pg'  },
+      { label: 'SG',    value: 'sg'  },
+      { label: 'SF',    value: 'sf'  },
+      { label: 'PF',    value: 'pf'  },
+      { label: 'C',     value: 'c'   },
+    ],
+    football: [
+      { label: 'All',   value: 'all' },
+      { label: 'QB',    value: 'qb'  },
+      { label: 'RB',    value: 'rb'  },
+      { label: 'WR',    value: 'wr'  },
+      { label: 'TE',    value: 'te'  },
+      { label: 'LB',    value: 'lb'  },
+      { label: 'DB',    value: 'db'  },
+    ],
+    soccer: [
+      { label: 'All',   value: 'all' },
+      { label: 'GK',    value: 'gk'  },
+      { label: 'DF',    value: 'df'  },
+      { label: 'MF',    value: 'mf'  },
+      { label: 'FW',    value: 'fw'  },
+    ],
+    baseball: [
+      { label: 'All',   value: 'all' },
+      { label: 'SP',    value: 'sp'  },
+      { label: 'C',     value: 'c'   },
+      { label: 'IF',    value: 'if'  },
+      { label: 'OF',    value: 'of'  },
+      { label: 'CF',    value: 'cf'  },
+      { label: 'SS',    value: 'ss'  },
+    ],
+    track: [
+      { label: 'All',      value: 'all'       },
+      { label: '100m',     value: '100m'       },
+      { label: '200m',     value: '200m'       },
+      { label: '400m',     value: '400m'       },
+      { label: 'Long Jump',value: 'long jump'  },
+      { label: 'Hurdles',  value: 'hurdles'    },
+    ],
+  };
+
+  /* Sport display labels */
+  const SPORT_LABELS = {
+    basketball: 'Basketball',
+    football:   'Football',
+    soccer:     'Soccer',
+    baseball:   'Baseball',
+    track:      'Track & Field',
+  };
+
+  /* ════════════════════════════════════════════
+     ATHLETE DATA — performance fields only
+     pos values are lowercase to match filter map
+  ════════════════════════════════════════════ */
+  const ATHLETES = [
+    // ── Basketball ──────────────────────────────
+    { sport:'basketball', rank:1,  name:'Jordan Ellis',     init:'JE', school:'Riverside Prep, CA',       pos:'pg', year:'2026', region:'west',      statVal:'28.1', statLabel:'PPG', sec:[{v:'9.2',l:'APG'},{v:'46%',l:'FG%'}],  move:+1, verified:true  },
+    { sport:'basketball', rank:2,  name:'Darius Cole',      init:'DC', school:'Westfield Academy, TX',    pos:'sg', year:'2026', region:'midwest',   statVal:'24.8', statLabel:'PPG', sec:[{v:'4.1',l:'APG'},{v:'41%',l:'3PT%'}], move: 0, verified:true  },
+    { sport:'basketball', rank:3,  name:'Marcus Williams',  init:'MW', school:'Lincoln Prep Academy, GA', pos:'pg', year:'2026', region:'southeast', statVal:'22.4', statLabel:'PPG', sec:[{v:'7.1',l:'APG'},{v:'48%',l:'FG%'}],  move:+3, verified:true, isMe:true },
+    { sport:'basketball', rank:4,  name:'Devon Carr',       init:'DC', school:'Metro Heights HS, IL',     pos:'sf', year:'2026', region:'midwest',   statVal:'21.9', statLabel:'PPG', sec:[{v:'6.8',l:'RPG'},{v:'43%',l:'FG%'}],  move:-1, verified:false },
+    { sport:'basketball', rank:5,  name:'Trevon Jackson',   init:'TJ', school:'North Atlanta HS, GA',     pos:'pg', year:'2026', region:'southeast', statVal:'21.3', statLabel:'PPG', sec:[{v:'5.9',l:'APG'},{v:'44%',l:'FG%'}],  move:+6, verified:true  },
+    { sport:'basketball', rank:6,  name:'Malik Okafor',     init:'MO', school:'Pinnacle Academy, AZ',     pos:'c',  year:'2027', region:'west',      statVal:'18.4', statLabel:'PPG', sec:[{v:'9.8',l:'RPG'},{v:'58%',l:'FG%'}],  move:-2, verified:true  },
+    { sport:'basketball', rank:7,  name:'Kai Reeves',       init:'KR', school:'Dunbar Prep, OH',          pos:'sg', year:'2025', region:'midwest',   statVal:'18.1', statLabel:'PPG', sec:[{v:'3.4',l:'APG'},{v:'39%',l:'3PT%'}], move:+5, verified:false },
+    { sport:'basketball', rank:8,  name:'Chris Lamar',      init:'CL', school:'Summit Charter, FL',       pos:'pf', year:'2026', region:'southeast', statVal:'17.6', statLabel:'PPG', sec:[{v:'8.2',l:'RPG'},{v:'52%',l:'FG%'}],  move: 0, verified:true  },
+    { sport:'basketball', rank:9,  name:'Andre Washington', init:'AW', school:'Apex Charter, NC',         pos:'pf', year:'2026', region:'southeast', statVal:'17.2', statLabel:'PPG', sec:[{v:'11.4',l:'RPG'},{v:'2.3',l:'BPG'}], move:+4, verified:false },
+    { sport:'basketball', rank:10, name:'Isaiah Monroe',    init:'IM', school:'East Bay Prep, CA',        pos:'c',  year:'2027', region:'west',      statVal:'16.8', statLabel:'PPG', sec:[{v:'10.1',l:'RPG'},{v:'55%',l:'FG%'}], move:-1, verified:true  },
+    { sport:'basketball', rank:11, name:'Bryce Simmons',    init:'BS', school:'Oak Ridge Academy, TN',    pos:'sg', year:'2025', region:'southeast', statVal:'16.5', statLabel:'PPG', sec:[{v:'3.1',l:'APG'},{v:'37%',l:'3PT%'}], move: 0, verified:false },
+    { sport:'basketball', rank:12, name:'Jalen Cross',      init:'JC', school:'Heritage HS, VA',          pos:'pg', year:'2026', region:'northeast', statVal:'15.9', statLabel:'PPG', sec:[{v:'6.1',l:'APG'},{v:'43%',l:'FG%'}],  move:+2, verified:true  },
+    { sport:'basketball', rank:13, name:'Omari Banks',      init:'OB', school:'Eastview Prep, MD',        pos:'sf', year:'2025', region:'northeast', statVal:'15.4', statLabel:'PPG', sec:[{v:'5.3',l:'RPG'},{v:'40%',l:'FG%'}],  move:-3, verified:false },
+    { sport:'basketball', rank:14, name:'Lucas Grant',      init:'LG', school:'Westside HS, WA',          pos:'pg', year:'2027', region:'west',      statVal:'14.8', statLabel:'PPG', sec:[{v:'7.2',l:'APG'},{v:'41%',l:'FG%'}],  move:+1, verified:true  },
+    { sport:'basketball', rank:15, name:'Derrick Noel',     init:'DN', school:'Central Prep, GA',         pos:'c',  year:'2026', region:'southeast', statVal:'14.2', statLabel:'PPG', sec:[{v:'9.0',l:'RPG'},{v:'3.1',l:'BPG'}],  move: 0, verified:false },
+    // ── Track & Field ────────────────────────────
+    { sport:'track', rank:1, name:'DeShawn Price',   init:'DP', school:'Southwest HS, TX',         pos:'100m', year:'2026', region:'midwest',   statVal:'10.39', statLabel:'100m PR', sec:[{v:'1st',l:'State'},{v:'#2',l:'National'}],  move: 0, verified:true  },
+    { sport:'track', rank:2, name:'Marcus Williams', init:'MW', school:'Lincoln Prep Academy, GA', pos:'100m', year:'2026', region:'southeast', statVal:'10.44', statLabel:'100m PR', sec:[{v:'21.12',l:'200m PR'},{v:'#2',l:'State'}],   move:+1, verified:true, isMe:true },
+    { sport:'track', rank:3, name:'Connor Mills',    init:'CM', school:'Valley View Prep, CA',     pos:'200m', year:'2025', region:'west',      statVal:'20.88', statLabel:'200m PR', sec:[{v:'10.62',l:'100m PR'},{v:'3rd',l:'State'}],   move:+2, verified:false },
+    { sport:'track', rank:4, name:'Elias Webb',      init:'EW', school:'Crestwood HS, GA',         pos:'100m', year:'2026', region:'southeast', statVal:'10.61', statLabel:'100m PR', sec:[{v:'21.44',l:'200m PR'},{v:'4th',l:'Region'}],  move:-1, verified:true  },
+    { sport:'track', rank:5, name:'Dion Pryce',      init:'DP', school:'Harbor HS, NJ',            pos:'400m', year:'2026', region:'northeast', statVal:'46.82', statLabel:'400m PR', sec:[{v:'2nd',l:'State'},{v:'#9',l:'National'}],      move:+3, verified:true  },
+    // ── Football ─────────────────────────────────
+    { sport:'football', rank:1, name:'Terrell Boyd',   init:'TB', school:'Madison HS, GA',        pos:'qb', year:'2026', region:'southeast', statVal:'3,412', statLabel:'Pass Yds', sec:[{v:'31',l:'TDs'},{v:'68%',l:'Comp%'}],   move: 0, verified:true  },
+    { sport:'football', rank:2, name:'Elijah Stone',   init:'ES', school:'Lakeview Prep, TX',     pos:'rb', year:'2026', region:'midwest',   statVal:'1,880', statLabel:'Rush Yds', sec:[{v:'22',l:'TDs'},{v:'7.2',l:'YPC'}],     move:+1, verified:true  },
+    { sport:'football', rank:3, name:'Rico James',     init:'RJ', school:'Oak Park HS, CA',       pos:'wr', year:'2027', region:'west',      statVal:'1,340', statLabel:'Rec Yds',  sec:[{v:'14',l:'TDs'},{v:'17.8',l:'YPR'}],   move:-1, verified:false },
+    { sport:'football', rank:4, name:'Seth Cooper',    init:'SC', school:'North View HS, PA',     pos:'qb', year:'2025', region:'northeast', statVal:'2,918', statLabel:'Pass Yds', sec:[{v:'26',l:'TDs'},{v:'62%',l:'Comp%'}],   move:+2, verified:true  },
+    { sport:'football', rank:5, name:'Malik Steele',   init:'MS', school:'Riverside Charter, AL', pos:'lb', year:'2026', region:'southeast', statVal:'118',   statLabel:'Tackles',  sec:[{v:'12',l:'Sacks'},{v:'5',l:'INTs'}],    move:+1, verified:false },
+    // ── Soccer ───────────────────────────────────
+    { sport:'soccer', rank:1, name:'Pablo Reyes',     init:'PR', school:'Eastside Prep, FL',      pos:'fw', year:'2026', region:'southeast', statVal:'31',  statLabel:'Goals',    sec:[{v:'14',l:'Assists'},{v:'68%',l:'Shot%'}], move:+2, verified:true  },
+    { sport:'soccer', rank:2, name:'Lucas Fernandez', init:'LF', school:'Harbor View HS, CA',     pos:'mf', year:'2027', region:'west',      statVal:'18',  statLabel:'Goals',    sec:[{v:'21',l:'Assists'},{v:'91%',l:'Pass%'}], move: 0, verified:false },
+    { sport:'soccer', rank:3, name:'Omar Diallo',     init:'OD', school:'Greenfield Academy, NJ', pos:'fw', year:'2025', region:'northeast', statVal:'15',  statLabel:'Goals',    sec:[{v:'8',l:'Assists'},{v:'62%',l:'Shot%'}],  move:+1, verified:true  },
+    { sport:'soccer', rank:4, name:'Nico Vasquez',    init:'NV', school:'Southwest HS, TX',       pos:'mf', year:'2026', region:'midwest',   statVal:'8',   statLabel:'Clean Sh', sec:[{v:'94%',l:'Tkl%'},{v:'91%',l:'Pass%'}],   move:+3, verified:true  },
+    // ── Baseball ─────────────────────────────────
+    { sport:'baseball', rank:1, name:'Cole Bradshaw', init:'CB', school:'Apex HS, NC',          pos:'sp', year:'2026', region:'southeast', statVal:'0.88', statLabel:'ERA',  sec:[{v:'124',l:'Ks'},{v:'1.04',l:'WHIP'}], move: 0, verified:true  },
+    { sport:'baseball', rank:2, name:'Tyler Hines',   init:'TH', school:'Mesa View Prep, AZ',   pos:'cf', year:'2026', region:'west',      statVal:'.381', statLabel:'AVG',  sec:[{v:'12',l:'HRs'},{v:'56',l:'RBIs'}],   move:+2, verified:true  },
+    { sport:'baseball', rank:3, name:'Rylan Scott',   init:'RS', school:'Cardinal Prep, OH',    pos:'ss', year:'2027', region:'midwest',   statVal:'.362', statLabel:'AVG',  sec:[{v:'9',l:'HRs'},{v:'38',l:'SBs'}],     move:+1, verified:false },
+    { sport:'baseball', rank:4, name:'Marcus Price',  init:'MP', school:'Coastal Prep, FL',     pos:'sp', year:'2025', region:'southeast', statVal:'1.24', statLabel:'ERA',  sec:[{v:'98',l:'Ks'},{v:'1.18',l:'WHIP'}],  move:-1, verified:true  },
+  ];
+
+  /* ════════════════════════════════════════════
+     TOP MOVERS — keyed by sport so we can
+     show relevant movers for the active sport
+  ════════════════════════════════════════════ */
+  const MOVERS_BY_SPORT = {
+    basketball: [
+      { init:'TJ', name:'Trevon Jackson',   pos:'PG · North Atlanta HS, GA',     delta:6, snap:'Season avg jumped to <strong>21.3 PPG</strong> after back-to-back 30-point games in the region tournament.', reason:'Tournament Performance',   avBg:'#0a140a', avBorder:'rgba(31,187,110,.35)', avColor:'var(--green)' },
+      { init:'KR', name:'Kai Reeves',       pos:'SG · Dunbar Prep, OH',          delta:5, snap:'<strong>38.7% 3PT</strong> across 4 showcase games. Averaged 24.1 PPG at the Buckeye Invitational.', reason:'Showcase Performance',         avBg:'#0a0a14', avBorder:'rgba(59,158,255,.35)', avColor:'var(--blue)' },
+      { init:'AW', name:'Andre Washington', pos:'PF · Apex Charter, NC',         delta:4, snap:'RPG improved from <strong>8.1 to 11.4</strong> over the last 5 games. Added <strong>2.3 BPG</strong>.', reason:'Verified Stat Improvement',   avBg:'#14100a', avBorder:'rgba(201,168,76,.35)', avColor:'var(--gold)' },
+      { init:'MW', name:'Marcus Williams',  pos:'PG · Lincoln Prep Academy, GA', delta:3, snap:'Region Championship: <strong>34 PTS, 9 AST, 0 TO.</strong> Coach-verified stats updated same week.', reason:'Tournament + Coach Verified', avBg:'#1a0808', avBorder:'rgba(224,32,32,.35)',  avColor:'var(--red)', isMe:true },
+    ],
+    track: [
+      { init:'CM', name:'Connor Mills',  pos:'200m · Valley View Prep, CA', delta:2, snap:'New <strong>200m PR of 20.88s</strong> at the Coastal Invitational. Improved 0.32s from last month.', reason:'Meet PR Performance',        avBg:'#0a0a14', avBorder:'rgba(59,158,255,.35)', avColor:'var(--blue)' },
+      { init:'MW', name:'Marcus Williams', pos:'100m · Lincoln Prep Academy, GA', delta:1, snap:'Clocked <strong>10.44s</strong> at region meet — coach-verified. Moving up to #2 in state.', reason:'Verified Meet Result', avBg:'#1a0808', avBorder:'rgba(224,32,32,.35)', avColor:'var(--red)', isMe:true },
+      { init:'DP', name:'Dion Pryce',    pos:'400m · Harbor HS, NJ',        delta:3, snap:'Season-best <strong>46.82s in the 400m</strong>, placing 2nd at state. Jumped 3 spots nationally.', reason:'State Meet Performance',      avBg:'#0a140a', avBorder:'rgba(31,187,110,.35)', avColor:'var(--green)' },
+    ],
+    football: [
+      { init:'ES', name:'Elijah Stone', pos:'RB · Lakeview Prep, TX', delta:1, snap:'<strong>1,880 rushing yards</strong> with 22 TDs. Coach-verified stats added after playoff run.', reason:'Coach Verified + Playoffs', avBg:'#0a140a', avBorder:'rgba(31,187,110,.35)', avColor:'var(--green)' },
+      { init:'SC', name:'Seth Cooper',  pos:'QB · North View HS, PA', delta:2, snap:'Threw for <strong>2,918 yards and 26 TDs</strong> — performance data reviewed and certified post-season.', reason:'Post-Season Verification',  avBg:'#0a0a14', avBorder:'rgba(59,158,255,.35)', avColor:'var(--blue)' },
+    ],
+    soccer: [
+      { init:'PR', name:'Pablo Reyes',    pos:'FW · Eastside Prep, FL',      delta:2, snap:'<strong>31 goals</strong> across the season. Certified by club director post-state championship.', reason:'Season Stats Verified',  avBg:'#0a140a', avBorder:'rgba(31,187,110,.35)', avColor:'var(--green)' },
+      { init:'NV', name:'Nico Vasquez',   pos:'MF · Southwest HS, TX',       delta:3, snap:'Added <strong>8 clean sheets</strong> and a 94% tackle rate. Breakout defensive performance.', reason:'Verified Defensive Stats', avBg:'#14100a', avBorder:'rgba(201,168,76,.35)', avColor:'var(--gold)' },
+    ],
+    baseball: [
+      { init:'TH', name:'Tyler Hines',   pos:'CF · Mesa View Prep, AZ', delta:2, snap:'.381 AVG with <strong>12 HRs</strong> — jumped 2 spots after spring tournament stats certified.', reason:'Tournament Stats Verified', avBg:'#0a140a', avBorder:'rgba(31,187,110,.35)', avColor:'var(--green)' },
+      { init:'RS', name:'Rylan Scott',   pos:'SS · Cardinal Prep, OH',  delta:1, snap:'<strong>.362 AVG</strong> with 38 stolen bases. Coach-submitted stats added mid-season.', reason:'Coach Verified Stats',       avBg:'#0a0a14', avBorder:'rgba(59,158,255,.35)', avColor:'var(--blue)' },
+    ],
+  };
+
+  /* ════════════════════════════════════════════
+     FILTER STATE
+  ════════════════════════════════════════════ */
+  const filters = { sport:'basketball', pos:'all', region:'all', year:'all' };
+
+  /* Avatar palette — cycles */
+  const AV_STYLES = [
+    { bg:'#1a0808', border:'rgba(224,32,32,.35)',  color:'var(--red)'   },
+    { bg:'#0a0d14', border:'rgba(59,158,255,.3)',  color:'var(--blue)'  },
+    { bg:'#0a140a', border:'rgba(31,187,110,.3)',  color:'var(--green)' },
+    { bg:'#14100a', border:'rgba(201,168,76,.3)',  color:'var(--gold)'  },
+    { bg:'#0f0a14', border:'rgba(160,100,220,.3)', color:'#b06cdc'      },
+  ];
+  function avStyle(i) {
+    const s = AV_STYLES[i % AV_STYLES.length];
+    return `background:${s.bg};border:2px solid ${s.border};color:${s.color};`;
+  }
+
+  /* ════════════════════════════════════════════
+     RENDER POSITION FILTER
+     Rebuilds the #posFilterGroup DOM from
+     SPORT_POSITIONS[sport] with an animated swap.
+     Smart reset: keeps current pos if it exists
+     in the new sport's position list.
+  ════════════════════════════════════════════ */
+  function renderPosFilter(sport, keepPosIfValid) {
+    const group = document.getElementById('posFilterGroup');
+    const positions = SPORT_POSITIONS[sport] || [];
+
+    /* Decide which position to activate */
+    const posExists = positions.some(p => p.value === filters.pos);
+    const activePos = (keepPosIfValid && posExists) ? filters.pos : 'all';
+    filters.pos = activePos;
+
+    /* Fade out, swap content, fade back in */
+    group.classList.add('swapping');
+
+    setTimeout(() => {
+      group.innerHTML =
+        `<span class="filter-group-label">Position</span>` +
+        positions.map(p => {
+          const isActive = p.value === activePos;
+          return `<button class="filter-btn${isActive ? ' active' : ''}" `
+               + `data-filter="pos" data-value="${p.value}" `
+               + `onclick="setFilter('pos', this)">${p.label}</button>`;
+        }).join('');
+
+      group.classList.remove('swapping');
+    }, 150); /* matches transition duration */
+  }
+
+  /* ════════════════════════════════════════════
+     FILTER HANDLER
+  ════════════════════════════════════════════ */
+  function setFilter(key, btn) {
+    filters[key] = btn.dataset.value;
+
+    /* Update active state in that button group */
+    btn.closest('.filter-group')
+       .querySelectorAll('.filter-btn')
+       .forEach(b => b.classList.toggle('active', b === btn));
+
+    /* When sport changes, rebuild position filter */
+    if (key === 'sport') {
+      /* keepPosIfValid = false on sport change (always reset) */
+      renderPosFilter(filters.sport, false);
+      /* Small delay so pos filter render completes before data render */
+      setTimeout(render, 160);
+      renderContextBar();
+      return;
+    }
+
+    render();
+    renderContextBar();
+  }
+
+  /* ════════════════════════════════════════════
+     FILTER CONTEXT BAR
+     Shows the active filter state as a readable
+     crumb string: Basketball · PG · Southeast · 2026
+  ════════════════════════════════════════════ */
+  function renderContextBar() {
+    const bar = document.getElementById('filterContext');
+    if (!bar) return;
+
+    const sportLabel = SPORT_LABELS[filters.sport] || filters.sport;
+
+    /* Pos label — find display label from map */
+    const posOptions = SPORT_POSITIONS[filters.sport] || [];
+    const posMatch   = posOptions.find(p => p.value === filters.pos);
+    const posLabel   = posMatch ? (posMatch.value === 'all' ? 'All Positions' : posMatch.label) : 'All Positions';
+
+    const regionLabel = filters.region === 'all' ? 'National' : capitalize(filters.region);
+    const yearLabel   = filters.year   === 'all' ? 'All Classes' : 'Class of ' + filters.year;
+
+    /* Get current filtered count */
+    const count = getFiltered().length;
+
+    bar.innerHTML =
+      `<span class="fc-crumb is-sport">${sportLabel}</span>`
+    + `<span class="fc-sep">·</span>`
+    + crumb(posLabel,    filters.pos    !== 'all')
+    + `<span class="fc-sep">·</span>`
+    + crumb(regionLabel, filters.region !== 'all')
+    + `<span class="fc-sep">·</span>`
+    + crumb(yearLabel,   filters.year   !== 'all')
+    + `<span class="fc-count"><strong>${count}</strong> athlete${count !== 1 ? 's' : ''}</span>`;
+  }
+
+  function crumb(text, isActive) {
+    const cls = isActive ? 'is-active' : 'is-dim';
+    return `<span class="fc-crumb ${cls}">${text}</span>`;
+  }
+
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  /* ════════════════════════════════════════════
+     FILTERED DATASET
+  ════════════════════════════════════════════ */
+  function getFiltered() {
+    return ATHLETES.filter(a => {
+      if (a.sport !== filters.sport) return false;
+      if (filters.pos !== 'all' && a.pos !== filters.pos) return false;
+      if (filters.region !== 'all' && a.region !== filters.region) return false;
+      if (filters.year !== 'all' && a.year !== filters.year) return false;
+      return true;
+    }).sort((a, b) => a.rank - b.rank);
+  }
+
+  /* ════════════════════════════════════════════
+     MOVE CHIP HTML
+  ════════════════════════════════════════════ */
+  function moveChip(move, large) {
+    const sz = large ? 'font-size:13px;padding:4px 10px;' : '';
+    if (move > 0)  return `<span class="move-chip up"   style="${sz}" aria-label="Up ${move}">&#8593; ${move}</span>`;
+    if (move < 0)  return `<span class="move-chip down" style="${sz}" aria-label="Down ${Math.abs(move)}">&#8595; ${Math.abs(move)}</span>`;
+    return             `<span class="move-chip same" style="${sz}" aria-label="No change">&mdash;</span>`;
+  }
+
+  /* ════════════════════════════════════════════
+     RENDER PODIUM (Top 3)
+     Uses requestAnimationFrame to trigger
+     entrance transitions after DOM insert.
+  ════════════════════════════════════════════ */
+  function renderPodium(athletes) {
+    const podium = document.getElementById('podium');
+    const count  = document.getElementById('podiumCount');
+    const top3   = athletes.slice(0, 3);
+
+    count.textContent = top3.length + ' athlete' + (top3.length !== 1 ? 's' : '');
+
+    if (top3.length === 0) { podium.innerHTML = ''; return; }
+
+    /* Layout: #2 left | #1 center | #3 right */
+    const hasThree = top3.length >= 3;
+    const order = hasThree ? [top3[1], top3[0], top3[2]] : top3;
+    const cls   = hasThree ? ['p2','p1','p3'] : ['p1','p2','p3'];
+    const ranks = hasThree ? [2, 1, 3]        : [1, 2, 3];
+
+    podium.innerHTML = order.map((a, i) => {
+      if (!a) return '';
+      const c  = cls[i];
+      const r  = ranks[i];
+      const verif = a.verified
+        ? `<span class="podium-verified"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Verified</span>` : '';
+      const secs = (a.sec || []).map(s =>
+        `<div class="podium-sec-stat"><div class="podium-sec-val">${s.v}</div><div class="podium-sec-lbl">${s.l}</div></div>`
+      ).join('');
+      const youBadge = a.isMe
+        ? `<span style="font-size:10px;background:var(--red);color:#fff;padding:1px 6px;border-radius:3px;margin-left:8px;font-family:var(--f-heading);letter-spacing:.7px;vertical-align:middle;">YOU</span>` : '';
+
+      /* Display position — look up label from SPORT_POSITIONS */
+      const posOptions = SPORT_POSITIONS[a.sport] || [];
+      const posMatch   = posOptions.find(p => p.value === a.pos);
+      const posDisplay = posMatch ? posMatch.label : a.pos.toUpperCase();
+
+      return `
+        <div class="podium-card ${c}" data-rank="${r}" role="listitem" tabindex="0"
+             aria-label="Rank ${r}: ${a.name} — click to view profile"
+             onclick="handlePodiumClick(${r})"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();handlePodiumClick(${r})}">
+          <span class="podium-rank-pill">#${r}</span>
+          ${verif}
+          <div class="podium-av">${a.init}</div>
+          <div class="podium-name">${a.name}${youBadge}</div>
+          <div class="podium-pos">${posDisplay} &nbsp;·&nbsp; ${a.year}</div>
+          <div class="podium-school">${a.school}</div>
+          <div class="podium-stat">
+            <span class="podium-stat-val">${a.statVal}</span>
+            <span class="podium-stat-lbl">${a.statLabel}</span>
+          </div>
+          <div class="podium-secondaries">${secs}</div>
+          ${moveChip(a.move, true)}
+        </div>`;
+    }).join('');
+
+    /* Staggered entrance: RAF ensures DOM is painted before transition */
+    requestAnimationFrame(() => {
+      const cards = podium.querySelectorAll('.podium-card');
+      /* Centre card (#1) enters first, flanks follow */
+      const entryOrder = hasThree ? [1, 0, 2] : [0, 1, 2];
+      entryOrder.forEach((idx, delay) => {
+        const card = cards[idx];
+        if (!card) return;
+        setTimeout(() => card.classList.add('entered'), delay * 70);
+      });
+    });
+  }
+
+  /* ════════════════════════════════════════════
+     RENDER LEADERBOARD
+  ════════════════════════════════════════════ */
+  function renderLeaderboard(athletes) {
+    const rows   = document.getElementById('lbRows');
+    const count  = document.getElementById('lbCount');
+    const lb     = document.getElementById('leaderboard');
+    const empty  = document.getElementById('emptyState');
+    const movers = document.getElementById('moversGrid');
+    const mLabel = document.getElementById('moversLabel');
+
+    count.textContent = athletes.length + ' athlete' + (athletes.length !== 1 ? 's' : '');
+
+    if (athletes.length === 0) {
+      rows.innerHTML = '';
+      lb.style.display = 'none';
+      empty.classList.add('visible');
+      movers.style.display = 'none';
+      mLabel.style.display = 'none';
+      return;
+    }
+
+    lb.style.display = '';
+    empty.classList.remove('visible');
+    movers.style.display = '';
+    mLabel.style.display = '';
+
+    /* Medal class for top 3 */
+    const medalClass = ['', 'rank-gold', 'rank-silver', 'rank-bronze'];
+
+    /* Position display label helper */
+    const posOptions = SPORT_POSITIONS[filters.sport] || [];
+    function posLabel(posVal) {
+      const m = posOptions.find(p => p.value === posVal);
+      return m ? m.label : posVal.toUpperCase();
+    }
+
+    rows.innerHTML = athletes.map((a, i) => {
+      const isTop3 = a.rank <= 3;
+      const medal  = medalClass[a.rank] || '';
+      const youB   = a.isMe ? `<span class="you-badge">YOU</span>` : '';
+      const verif  = a.verified
+        ? `<span class="verified-dot" title="Coach verified"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></span>` : '';
+
+      return `
+        <div class="lb-row lb-cols row-in${isTop3 ? ' top3' : ''}${a.isMe ? ' is-me' : ''} ${medal}"
+             style="animation-delay:${Math.min(i * 0.028, 0.42)}s"
+             role="row" tabindex="0"
+             aria-label="Rank ${a.rank}: ${a.name} — click to view profile"
+             title="View ${a.name}'s development profile"
+             onclick="handleAthleteClick(${i})"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();handleAthleteClick(${i});}">
+
+          <div class="lb-rank" role="cell">
+            <span class="lb-rank-num">${a.rank}</span>
+          </div>
+
+          <div class="lb-athlete" role="cell">
+            <div class="lb-av" style="${avStyle(i)}">${a.init}</div>
+            <div>
+              <div class="lb-name">${a.name}${youB}${verif}</div>
+              <div class="lb-meta">${a.year} &nbsp;&middot;&nbsp; ${SPORT_LABELS[a.sport] || a.sport}</div>
+            </div>
+          </div>
+
+          <div class="lb-school" role="cell">${a.school}</div>
+          <div class="lb-pos" role="cell">${posLabel(a.pos)}</div>
+
+          <div class="lb-stat" role="cell">
+            <div class="lb-stat-val">${a.statVal}</div>
+            <div class="lb-stat-lbl">${a.statLabel}</div>
+          </div>
+
+          <div class="lb-move" role="cell">
+            ${moveChip(a.move)}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  /* ════════════════════════════════════════════
+     RENDER TOP MOVERS
+     Shows sport-specific movers. Falls back to
+     a clean empty state if none defined.
+  ════════════════════════════════════════════ */
+  function renderMovers() {
+    const grid  = document.getElementById('moversGrid');
+    const label = document.getElementById('moversLabel');
+    const sport = filters.sport;
+    const data  = MOVERS_BY_SPORT[sport] || [];
+
+    /* Update section label to reflect current sport */
+    if (label) label.textContent = 'Top Movers This Week — ' + (SPORT_LABELS[sport] || sport);
+
+    if (data.length === 0) {
+      grid.innerHTML = `<div class="movers-empty">No mover data available for this sport yet.</div>`;
+      return;
+    }
+
+    grid.innerHTML = data.map(m => {
+      const avSt = `background:${m.avBg};border:2px solid ${m.avBorder};color:${m.avColor};`;
+      const youB = m.isMe
+        ? `<span style="font-size:9px;background:var(--red);color:#fff;padding:1px 5px;border-radius:3px;margin-left:5px;font-family:var(--f-heading);">YOU</span>` : '';
+      return `
+        <div class="mover-card">
+          <div class="mover-top">
+            <div class="mover-av" style="${avSt}">${m.init}</div>
+            <div>
+              <div class="mover-name">${m.name}${youB}</div>
+              <div class="mover-pos">${m.pos}</div>
+            </div>
+          </div>
+          <div class="mover-delta-row">
+            <span class="mover-delta">+${m.delta}</span>
+            <span class="mover-delta-lbl">spots this week</span>
+          </div>
+          <div class="mover-snapshot">${m.snap}</div>
+          <div class="mover-reason"><span class="mover-reason-dot"></span>${m.reason}</div>
+        </div>`;
+    }).join('');
+  }
+
+  /* ════════════════════════════════════════════
+     MASTER RENDER
+  ════════════════════════════════════════════ */
+  function render() {
+    const data = getFiltered();
+    renderPodium(data);
+    renderLeaderboard(data);
+    renderMovers();
+    renderContextBar();
+  }
+
+  /* ════════════════════════════════════════════
+     SIDEBAR
+  ════════════════════════════════════════════ */
+  let sbCollapsed = false;
+  function toggleSidebar() {
+    sbCollapsed = !sbCollapsed;
+    document.getElementById('sidebar').classList.toggle('collapsed', sbCollapsed);
+    document.getElementById('sidebarToggle').setAttribute('aria-expanded', String(!sbCollapsed));
+  }
+  let sbMobileOpen = false;
+  function openSidebar() {
+    sbMobileOpen = true;
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('overlay').classList.add('on');
+    document.getElementById('mobileHam').setAttribute('aria-expanded', 'true');
+  }
+  function closeSidebar() {
+    sbMobileOpen = false;
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('on');
+    document.getElementById('mobileHam').setAttribute('aria-expanded', 'false');
+  }
+  function setNav(el) {
+    document.querySelectorAll('.sb-item').forEach(b => { b.classList.remove('active'); b.removeAttribute('aria-current'); });
+    el.classList.add('active');
+    el.setAttribute('aria-current', 'page');
+    if (sbMobileOpen) closeSidebar();
+  }
+  window.addEventListener('resize', () => { if (window.innerWidth > 768 && sbMobileOpen) closeSidebar(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && sbMobileOpen) closeSidebar(); });
+
+  /* ════════════════════════════════════════════
+     TIMESTAMP
+  ════════════════════════════════════════════ */
+  function setTimestamp() {
+    const d = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+    document.getElementById('lastUpdated').textContent = 'Updated ' + d;
+  }
+
+  /* ════════════════════════════════════════════
+     INIT
+  ════════════════════════════════════════════ */
+  setTimestamp();
+  renderPosFilter('basketball', false); /* build initial position filter */
+  render();                             /* render all content */
+
+  /* ════════════════════════════════════════════
+     PLAYER DETAIL PANEL — DATA
+     Keyed by athlete name. Each entry carries:
+     - progression: seasonal stat data points
+     - rankHistory: rank at each period
+     - milestones: development timeline events
+  ════════════════════════════════════════════ */
+  const PLAYER_DETAIL = {
+    'Marcus Williams': {
+      statLabel: 'PPG',
+      seasons: [
+        { period:'Frosh',   val:8.4,  label:'8.4 PPG' },
+        { period:'Soph',    val:13.2, label:'13.2 PPG' },
+        { period:'JV →',    val:16.8, label:'16.8 PPG' },
+        { period:'Jr Var',  val:19.1, label:'19.1 PPG' },
+        { period:'24-25',   val:22.4, label:'22.4 PPG' },
+      ],
+      monthly: [
+        { period:'Nov',   val:17.2, label:'17.2 PPG' },
+        { period:'Dec',   val:19.6, label:'19.6 PPG' },
+        { period:'Jan',   val:21.0, label:'21.0 PPG' },
+        { period:'Feb',   val:22.8, label:'22.8 PPG' },
+        { period:'Mar',   val:25.1, label:'25.1 PPG (Playoffs)' },
+      ],
+      games: [
+        { period:'G1',  val:18, label:'18 pts' },
+        { period:'G2',  val:22, label:'22 pts' },
+        { period:'G3',  val:15, label:'15 pts' },
+        { period:'G4',  val:28, label:'28 pts' },
+        { period:'G5',  val:19, label:'19 pts' },
+        { period:'G6',  val:24, label:'24 pts' },
+        { period:'G7',  val:21, label:'21 pts' },
+        { period:'G8',  val:30, label:'30 pts' },
+        { period:'G9',  val:26, label:'26 pts' },
+        { period:'G10', val:34, label:'34 pts (Region Champ)' },
+      ],
+      rankHistory: [
+        { period:'Nov', rank:14 },
+        { period:'Dec', rank:11 },
+        { period:'Jan', rank:9  },
+        { period:'Feb', rank:6  },
+        { period:'Now', rank:3  },
+      ],
+      milestones: [
+        { type:'varsity',  icon:'V', label:'Earned Varsity Starter',       detail:'Broke starting lineup at 15 — youngest on roster.',                    date:'Oct 2022' },
+        { type:'combine',  icon:'C', label:'Clutch Combine — Top 10%',      detail:'Measured 6\'3", 40" vert, 3.1s pro-agility. Elite athleticism score.', date:'Jul 2023' },
+        { type:'verified', icon:'✓', label:'Coach Verified Stats',          detail:'Stats certified by Coach D. Harris. Season avg confirmed official.',   date:'Mar 2024' },
+        { type:'rank',     icon:'↑', label:'Jumped to #6 National PG',      detail:'Moved from #14 to #6 after region tournament performance.',            date:'Feb 2025' },
+        { type:'mvp',      icon:'★', label:'Region Tournament MVP',         detail:'34 PTS · 9 AST · 0 TO in championship. Clutch performance rating.',   date:'Mar 2025' },
+        { type:'offer',    icon:'$', label:'Offer — University of Georgia', detail:'Division I scholarship offer received. Visit scheduled Feb 2025.',     date:'Jan 2025' },
+        { type:'rank',     icon:'↑', label:'Climbed to #3 National PG',     detail:'Ranked #3 nationally after verified stats update and tourney run.',    date:'Mar 2025' },
+        { type:'offer',    icon:'$', label:'Offer — Auburn University',     detail:'Second D1 offer received following showcase weekend.',                 date:'Mar 2025' },
+      ],
+    },
+    'Jordan Ellis': {
+      statLabel: 'PPG',
+      seasons: [
+        { period:'Soph',   val:11.2, label:'11.2 PPG' },
+        { period:'JV',     val:17.4, label:'17.4 PPG' },
+        { period:'Jr',     val:22.6, label:'22.6 PPG' },
+        { period:'24-25',  val:28.1, label:'28.1 PPG' },
+      ],
+      monthly: [
+        { period:'Nov',  val:21.2, label:'21.2 PPG' },
+        { period:'Dec',  val:24.8, label:'24.8 PPG' },
+        { period:'Jan',  val:26.1, label:'26.1 PPG' },
+        { period:'Feb',  val:27.4, label:'27.4 PPG' },
+        { period:'Mar',  val:29.6, label:'29.6 PPG' },
+      ],
+      games: [
+        { period:'G1',  val:24, label:'24 pts' },{ period:'G2',  val:31, label:'31 pts' },
+        { period:'G3',  val:22, label:'22 pts' },{ period:'G4',  val:28, label:'28 pts' },
+        { period:'G5',  val:33, label:'33 pts' },{ period:'G6',  val:26, label:'26 pts' },
+        { period:'G7',  val:29, label:'29 pts' },{ period:'G8',  val:35, label:'35 pts' },
+        { period:'G9',  val:27, label:'27 pts' },{ period:'G10', val:38, label:'38 pts (Career High)' },
+      ],
+      rankHistory: [
+        { period:'Oct', rank:8 },{ period:'Nov', rank:5 },
+        { period:'Dec', rank:3 },{ period:'Feb', rank:2 },{ period:'Now', rank:1 },
+      ],
+      milestones: [
+        { type:'varsity',  icon:'V', label:'Varsity Starter — Age 14',       detail:'Youngest starter in school history.',                    date:'Sep 2022' },
+        { type:'mvp',      icon:'★', label:'State Showcase MVP',              detail:'Named MVP of California Elite Showcase. 33 pts, 10 ast.', date:'Jul 2024' },
+        { type:'verified', icon:'✓', label:'Stats Coach Verified',            detail:'Full season stats certified by Riverside Prep staff.',   date:'Feb 2025' },
+        { type:'rank',     icon:'↑', label:'Ranked #1 National PG',           detail:'First to reach #1 in California history for class 2026.', date:'Mar 2025' },
+        { type:'offer',    icon:'$', label:'5 D1 Scholarship Offers',         detail:'UCLA, Duke, UNC, Arizona, Kentucky.',                    date:'Jan 2025' },
+      ],
+    },
+    'Darius Cole': {
+      statLabel: 'PPG',
+      seasons: [
+        { period:'Soph',  val:10.8, label:'10.8 PPG' },
+        { period:'Jr',    val:17.2, label:'17.2 PPG' },
+        { period:'24-25', val:24.8, label:'24.8 PPG' },
+      ],
+      monthly: [
+        { period:'Nov',  val:18.4, label:'18.4 PPG' },{ period:'Dec',  val:21.0, label:'21.0 PPG' },
+        { period:'Jan',  val:23.6, label:'23.6 PPG' },{ period:'Feb',  val:25.1, label:'25.1 PPG' },
+        { period:'Mar',  val:26.8, label:'26.8 PPG' },
+      ],
+      games: [
+        { period:'G1',  val:20, label:'20 pts' },{ period:'G2',  val:26, label:'26 pts' },
+        { period:'G3',  val:22, label:'22 pts' },{ period:'G4',  val:30, label:'30 pts' },
+        { period:'G5',  val:18, label:'18 pts' },{ period:'G6',  val:27, label:'27 pts' },
+        { period:'G7',  val:24, label:'24 pts' },{ period:'G8',  val:29, label:'29 pts' },
+        { period:'G9',  val:26, label:'26 pts' },{ period:'G10', val:31, label:'31 pts' },
+      ],
+      rankHistory: [
+        { period:'Oct', rank:10 },{ period:'Nov', rank:7 },
+        { period:'Jan', rank:4  },{ period:'Feb', rank:2 },{ period:'Now', rank:2 },
+      ],
+      milestones: [
+        { type:'varsity',  icon:'V', label:'Varsity Debut',              detail:'Started first varsity game as sophomore.',           date:'Nov 2023' },
+        { type:'verified', icon:'✓', label:'Coach Verified — Full Year', detail:'All stats certified by Westfield coaching staff.',   date:'Jan 2025' },
+        { type:'rank',     icon:'↑', label:'Reached #2 National SG',    detail:'Consistent production locked in top 2 nationally.', date:'Feb 2025' },
+        { type:'offer',    icon:'$', label:'Offer — Baylor University',  detail:'Scholarship offer received after showcase weekend.', date:'Mar 2025' },
+      ],
+    },
+    /* Generic fallback used for all other athletes */
+    '__default__': {
+      statLabel: 'Stat',
+      seasons: [
+        { period:'Yr 1', val:40, label:'40' },{ period:'Yr 2', val:55, label:'55' },
+        { period:'Yr 3', val:68, label:'68' },{ period:'Now',  val:78, label:'78' },
+      ],
+      monthly: [
+        { period:'Nov', val:44, label:'44' },{ period:'Dec', val:58, label:'58' },
+        { period:'Jan', val:65, label:'65' },{ period:'Feb', val:72, label:'72' },
+        { period:'Mar', val:78, label:'78' },
+      ],
+      games: [
+        { period:'G1', val:50, label:'50' },{ period:'G2', val:62, label:'62' },
+        { period:'G3', val:48, label:'48' },{ period:'G4', val:71, label:'71' },
+        { period:'G5', val:66, label:'66' },{ period:'G6', val:74, label:'74' },
+        { period:'G7', val:69, label:'69' },{ period:'G8', val:80, label:'80' },
+        { period:'G9', val:75, label:'75' },{ period:'G10',val:83, label:'83' },
+      ],
+      rankHistory: [
+        { period:'Aug', rank:20 },{ period:'Oct', rank:14 },
+        { period:'Dec', rank:9  },{ period:'Feb', rank:5  },{ period:'Now', rank:3 },
+      ],
+      milestones: [
+        { type:'varsity',  icon:'V', label:'Earned Varsity Spot',     detail:'Made the jump from JV after strong pre-season.',                  date:'Sep 2023' },
+        { type:'verified', icon:'✓', label:'Coach Verified Stats',    detail:'Production confirmed by head coach post-season.',                  date:'Feb 2025' },
+        { type:'rank',     icon:'↑', label:'Top 10 National Ranking', detail:'Consistent output drove national ranking into top 10.',            date:'Jan 2025' },
+        { type:'combine',  icon:'C', label:'Clutch Combine — Elite',  detail:'Measured top-15% athleticism in combine testing.',                date:'Jul 2024' },
+        { type:'offer',    icon:'$', label:'First D1 Offer',          detail:'Scholarship offer received after strong tournament performance.',  date:'Mar 2025' },
+      ],
+    },
+  };
+
+  /* ════════════════════════════════════════════
+     PANEL STATE
+  ════════════════════════════════════════════ */
+  let pdpCurrentAthlete = null;
+  let pdpSeason = 'season'; /* 'season' | 'monthly' | 'games' */
+
+  /* ════════════════════════════════════════════
+     OPEN / CLOSE PANEL
+  ════════════════════════════════════════════ */
+  function openPanel(athlete) {
+    pdpCurrentAthlete = athlete;
+    pdpSeason = 'season';
+
+    /* Reset season tab UI */
+    document.querySelectorAll('.pdp-season-tab').forEach(t =>
+      t.classList.toggle('active', t.dataset.season === 'season')
+    );
+
+    populatePanel(athlete);
+
+    const backdrop = document.getElementById('pdpBackdrop');
+    backdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    /* Focus the close button for keyboard users */
+    setTimeout(() => document.querySelector('.pdp-close')?.focus(), 50);
+  }
+
+  function closePanel() {
+    document.getElementById('pdpBackdrop').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  /* Close on backdrop click */
+  document.getElementById('pdpBackdrop').addEventListener('click', function(e) {
+    if (e.target === this) closePanel();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closePanel();
+      if (typeof sbMobileOpen !== 'undefined' && sbMobileOpen) closeSidebar();
+    }
+  });
+
+  /* ════════════════════════════════════════════
+     POPULATE PANEL WITH ATHLETE DATA
+  ════════════════════════════════════════════ */
+  function populatePanel(a) {
+    const detail = PLAYER_DETAIL[a.name] || PLAYER_DETAIL['__default__'];
+
+    /* Look up display label for position */
+    const posOpts    = SPORT_POSITIONS[a.sport] || [];
+    const posMatch   = posOpts.find(p => p.value === a.pos);
+    const posDisplay = posMatch ? posMatch.label : a.pos.toUpperCase();
+    const sportLabel = SPORT_LABELS[a.sport] || a.sport;
+
+    /* Header */
+    document.getElementById('pdpHeader').setAttribute('data-init', a.init);
+    document.getElementById('pdpAv').textContent     = a.init;
+    document.getElementById('pdpAthlName').textContent = a.name;
+    document.getElementById('pdpSport').textContent  = sportLabel + ' · ' + posDisplay;
+    document.getElementById('pdpSchool').textContent = a.school;
+    document.getElementById('pdpYear').textContent   = 'Class of ' + a.year;
+
+    /* Verified badge */
+    const verifEl = document.getElementById('pdpVerif');
+    verifEl.textContent = a.verified ? '✓ Coach Verified' : 'Unverified';
+    verifEl.style.opacity = a.verified ? '1' : '0.4';
+
+    /* Stats strip */
+    const rankColors = { 1:'gold', 2:'gold', 3:'gold' };
+    const rc = rankColors[a.rank] || '';
+    const rankEl = document.getElementById('pdpRank');
+    rankEl.textContent = '#' + a.rank;
+    rankEl.className = 'pdp-stat-val ' + rc;
+
+    document.getElementById('pdpStat1Val').textContent = a.statVal;
+    document.getElementById('pdpStat1Lbl').textContent = a.statLabel;
+    document.getElementById('pdpStat2Val').textContent = (a.sec && a.sec[0]) ? a.sec[0].v : '—';
+    document.getElementById('pdpStat2Lbl').textContent = (a.sec && a.sec[0]) ? a.sec[0].l : '';
+
+    const moveEl = document.getElementById('pdpMove');
+    if (a.move > 0)      { moveEl.textContent = '+' + a.move; moveEl.className = 'pdp-stat-val green'; }
+    else if (a.move < 0) { moveEl.textContent = a.move;       moveEl.className = 'pdp-stat-val'; moveEl.style.color='#ff5e5e'; }
+    else                 { moveEl.textContent = '—';           moveEl.className = 'pdp-stat-val'; moveEl.style.color=''; }
+
+    /* Chart */
+    renderProgressionChart(detail, pdpSeason);
+
+    /* Rank timeline */
+    renderRankTimeline(detail.rankHistory);
+
+    /* Milestones */
+    renderMilestones(detail.milestones);
+  }
+
+  /* ════════════════════════════════════════════
+     SEASON TAB SWITCHER
+  ════════════════════════════════════════════ */
+  function setPdpSeason(btn) {
+    pdpSeason = btn.dataset.season;
+    document.querySelectorAll('.pdp-season-tab').forEach(t =>
+      t.classList.toggle('active', t === btn)
+    );
+    if (pdpCurrentAthlete) {
+      const detail = PLAYER_DETAIL[pdpCurrentAthlete.name] || PLAYER_DETAIL['__default__'];
+      renderProgressionChart(detail, pdpSeason);
+    }
+  }
+
+  /* ════════════════════════════════════════════
+     RENDER PROGRESSION CHART
+     Pure SVG line chart — no libraries.
+     Draws area fill, line, dots, x-labels.
+     Dots are interactive with tooltip.
+  ════════════════════════════════════════════ */
+  function renderProgressionChart(detail, season) {
+    const wrap  = document.getElementById('pdpChartSvgWrap');
+    const title = document.getElementById('pdpChartTitle');
+    const sub   = document.getElementById('pdpChartSub');
+
+    const seasonMap = {
+      season:  { data: detail.seasons, title: detail.statLabel + ' — Season Averages',           sub: 'Verified production across full seasons played' },
+      monthly: { data: detail.monthly, title: detail.statLabel + ' — Monthly Trend (2024-25)',    sub: 'Rolling average across current season months' },
+      games:   { data: detail.games,   title: detail.statLabel + ' — Last 10 Games',              sub: 'Game-by-game performance output' },
+    };
+
+    const cfg  = seasonMap[season] || seasonMap.season;
+    const data = cfg.data;
+    title.textContent = cfg.title;
+    sub.textContent   = cfg.sub;
+
+    const W = 440, H = 130;
+    const padL = 36, padR = 16, padT = 12, padB = 28;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    const vals = data.map(d => d.val);
+    const minV = Math.min(...vals);
+    const maxV = Math.max(...vals);
+    const range = maxV - minV || 1;
+
+    /* Map value → Y coordinate (inverted: higher val = lower Y) */
+    const xStep = plotW / (data.length - 1 || 1);
+    function cx(i)  { return padL + i * xStep; }
+    function cy(v)  { return padT + plotH - ((v - minV) / range) * plotH; }
+
+    /* Build SVG path strings */
+    const lineD = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${cx(i)},${cy(d.val)}`).join(' ');
+    const areaD = lineD + ` L${cx(data.length-1)},${padT + plotH} L${cx(0)},${padT + plotH} Z`;
+
+    /* Y-axis tick values */
+    const yTicks = [minV, minV + range * 0.5, maxV].map(v => Math.round(v * 10) / 10);
+
+    /* Dots */
+    const dots = data.map((d, i) =>
+      `<circle class="chart-dot" cx="${cx(i)}" cy="${cy(d.val)}" r="4"
+         data-idx="${i}" data-val="${d.val}" data-label="${d.label}"
+         onmouseenter="showChartTip(event,${i},'${d.label}')"
+         onmouseleave="hideChartTip()"
+         onclick="showChartTip(event,${i},'${d.label}')"
+       />`
+    ).join('');
+
+    /* X labels */
+    const xLabels = data.map((d, i) =>
+      `<text class="chart-x-label" x="${cx(i)}" y="${H - 4}">${d.period}</text>`
+    ).join('');
+
+    /* Y grid lines */
+    const gridLines = yTicks.map(v =>
+      `<line x1="${padL}" y1="${cy(v)}" x2="${W - padR}" y2="${cy(v)}"
+             stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`
+    ).join('');
+
+    /* Y labels */
+    const yLabels = yTicks.map(v =>
+      `<text x="${padL - 4}" y="${cy(v)}" text-anchor="end" alignment-baseline="middle"
+             style="font-family:var(--f-heading);font-size:9px;fill:var(--subtle);">${v}</text>`
+    ).join('');
+
+    wrap.innerHTML = `
+      <svg id="pdpChartSvg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"
+           style="width:100%;height:${H}px;" role="img" aria-label="Performance progression chart">
+        <defs>
+          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="rgba(224,32,32,0.22)"/>
+            <stop offset="100%" stop-color="rgba(224,32,32,0)"/>
+          </linearGradient>
+        </defs>
+        ${gridLines}
+        ${yLabels}
+        <path d="${areaD}" class="chart-area-fill"/>
+        <path d="${lineD}" class="chart-line"/>
+        ${xLabels}
+        ${dots}
+      </svg>
+      <div class="chart-tooltip" id="chartTooltip">
+        <div class="chart-tooltip-val" id="chartTtVal"></div>
+        <div id="chartTtLabel"></div>
+      </div>`;
+  }
+
+  function showChartTip(e, idx, label) {
+    const tt  = document.getElementById('chartTooltip');
+    if (!tt) return;
+    const parts = label.split(' ');
+    const val   = parts[0];
+    const rest  = parts.slice(1).join(' ');
+    document.getElementById('chartTtVal').textContent   = val;
+    document.getElementById('chartTtLabel').textContent = rest || '';
+    tt.classList.add('visible');
+
+    /* Position relative to the wrap */
+    const wrap = document.getElementById('pdpChartSvgWrap');
+    const wRect = wrap.getBoundingClientRect();
+    const eRect = e.target.getBoundingClientRect();
+    let left = eRect.left - wRect.left + 8;
+    let top  = eRect.top  - wRect.top  - 44;
+    if (left + 120 > wRect.width) left = left - 130;
+    tt.style.left = left + 'px';
+    tt.style.top  = top  + 'px';
+  }
+  function hideChartTip() {
+    const tt = document.getElementById('chartTooltip');
+    if (tt) tt.classList.remove('visible');
+  }
+
+  /* ════════════════════════════════════════════
+     RENDER RANK TIMELINE (bar chart style)
+  ════════════════════════════════════════════ */
+  function renderRankTimeline(history) {
+    const container = document.getElementById('pdpRankTimeline');
+    if (!container || !history || history.length === 0) return;
+
+    /* Lower rank number = better = taller bar */
+    const ranks  = history.map(h => h.rank);
+    const worst  = Math.max(...ranks);          /* biggest number = shortest bar */
+    const best   = Math.min(...ranks);
+    const spread = worst - best || 1;
+    const maxBarPct = 90; /* % of container height at best rank */
+    const minBarPct = 14;
+
+    container.innerHTML = history.map((h, i) => {
+      const isCurrent = i === history.length - 1;
+      const pct = maxBarPct - ((h.rank - best) / spread) * (maxBarPct - minBarPct);
+      return `
+        <div class="rank-tl-col${isCurrent ? ' current' : ''}" title="Rank #${h.rank} — ${h.period}">
+          <div class="rank-tl-bar-wrap">
+            <div class="rank-tl-bar" style="height:${pct}%;"></div>
+          </div>
+          <div class="rank-tl-rank">#${h.rank}</div>
+          <div class="rank-tl-period">${h.period}</div>
+        </div>`;
+    }).join('');
+  }
+
+  /* ════════════════════════════════════════════
+     RENDER MILESTONES
+  ════════════════════════════════════════════ */
+  function renderMilestones(milestones) {
+    const list = document.getElementById('pdpMilestones');
+    if (!list) return;
+
+    const iconSvg = {
+      varsity: `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`,
+      verified:`<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+      mvp:     `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/><path d="M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></svg>`,
+      rank:    `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`,
+      offer:   `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="m3 9 9 6 9-6"/></svg>`,
+      combine: `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
+    };
+
+    list.innerHTML = milestones.map(m => {
+      const cls = `milestone-icon-wrap mi-${m.type}`;
+      const svg = iconSvg[m.type] || iconSvg.combine;
+      return `
+        <div class="milestone-item">
+          <div class="${cls}">${svg}</div>
+          <div class="milestone-content">
+            <div class="milestone-event">${m.label}</div>
+            <div class="milestone-detail">${m.detail}</div>
+          </div>
+          <div class="milestone-date">${m.date}</div>
+        </div>`;
+    }).join('');
+  }
+
+  /* ════════════════════════════════════════════
+     WIRE LEADERBOARD + PODIUM CLICK → PANEL
+     Called from renderLeaderboard() and
+     renderPodium() via data-idx + onclick
+  ════════════════════════════════════════════ */
+  function handleAthleteClick(idx) {
+    const data = getFiltered();
+    if (data[idx]) openPanel(data[idx]);
+  }
+  function handlePodiumClick(rankPos) {
+    /* rankPos is the display rank (1,2,3) — find in filtered data */
+    const data    = getFiltered();
+    const athlete = data.find(a => a.rank === rankPos);
+    if (athlete) openPanel(athlete);
+  }
+</script>
+
 </body>
 </html>
