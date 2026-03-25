@@ -9,15 +9,69 @@ const aboutTitleEl = document.querySelector("#profile-about-title");
 const primaryActionBtn = document.querySelector("#profile-primary-action");
 const secondaryActionBtn = document.querySelector("#profile-secondary-action");
 const postsEl = document.querySelector("#profile-activity");
+const postGalleryEl = document.querySelector("#profile-post-gallery");
 const statsTableEl = document.querySelector("#profile-stats-table");
 const mediaEl = document.querySelector("#profile-media");
 const recruitingEl = document.querySelector("#profile-recruiting");
+const sportTabs = Array.from(document.querySelectorAll("#profile-sport-tabs button"));
+const chartTitleEl = document.querySelector("#profile-chart-title");
+const breakdownTitleEl = document.querySelector("#profile-breakdown-title");
+const chartStackEl = document.querySelector("#profile-chart-stack");
+const sportBreakdownEl = document.querySelector("#profile-sport-breakdown");
+const postsLinkEl = document.querySelector("#profile-posts-link");
 
 let viewerUserId = null;
 let targetUserId = null;
 let isSelfProfile = false;
 let isFollowing = false;
 let targetDirectory = null;
+let activeSport = "basketball";
+let currentDisplayName = "Profile";
+
+const genericSportProfiles = {
+  basketball: {
+    title: "Basketball profile",
+    metrics: [
+      { label: "Scoring", value: 88, display: "22.4 PPG" },
+      { label: "Playmaking", value: 76, display: "7.1 APG" },
+      { label: "Shooting", value: 71, display: "48.2 FG%" },
+      { label: "Defense", value: 69, display: "2.3 STL" },
+    ],
+    cards: [
+      { tag: "Game Impact", title: "Primary initiator", text: "Controls pace, gets downhill, and creates good shots late in possessions." },
+      { tag: "Shot Profile", title: "Three-level scoring", text: "Comfortable creating off the bounce, getting to the line, and finishing through contact." },
+      { tag: "Projection", title: "Lead guard ceiling", text: "Generic projection card based on the old profile’s more editorial athlete presentation." },
+    ],
+  },
+  track: {
+    title: "Track profile",
+    metrics: [
+      { label: "Acceleration", value: 84, display: "Elite first 30m" },
+      { label: "Top Speed", value: 79, display: "State-level range" },
+      { label: "Endurance", value: 67, display: "Late-race hold" },
+      { label: "Consistency", value: 81, display: "Meet-to-meet reliability" },
+    ],
+    cards: [
+      { tag: "Explosiveness", title: "Fast out of the blocks", text: "Strong drive phase and rapid transition into upright sprint mechanics." },
+      { tag: "Meet Notes", title: "Competitive closer", text: "Holds form well under pressure and performs best in high-level events." },
+      { tag: "Projection", title: "Two-sport upside", text: "Track profile is shown as an alternate sport tab, similar to the older profile concept." },
+    ],
+  },
+  football: {
+    title: "Football profile",
+    metrics: [
+      { label: "Read Speed", value: 74, display: "Quick pre-snap processing" },
+      { label: "Burst", value: 82, display: "Explosive first step" },
+      { label: "Contact Balance", value: 77, display: "Finishes through traffic" },
+      { label: "Coverage IQ", value: 72, display: "Reliable leverage discipline" },
+    ],
+    cards: [
+      { tag: "Versatility", title: "Multiple usage paths", text: "Can be profiled as a space athlete, situational weapon, or matchup defender." },
+      { tag: "Film Summary", title: "Strong situational instincts", text: "Processes quickly and flashes good timing in high-pressure reps." },
+      { tag: "Projection", title: "Scheme-flex athlete", text: "Generic football tab that mirrors the previous profile page’s richer multi-sport framing." },
+    ],
+  },
+};
 
 function queryParam(name) {
   const params = new URLSearchParams(window.location.search);
@@ -174,7 +228,7 @@ async function fetchPosts() {
 
   const { data, error } = await supabase
     .from("post")
-    .select("author_role,caption,post_type,created_at,visibility")
+    .select("post_id,author_role,caption,post_type,created_at,visibility,post_media(media_url,media_type)")
     .eq("author_user_id", targetUserId)
     .in("visibility", filters)
     .order("created_at", { ascending: false })
@@ -182,6 +236,11 @@ async function fetchPosts() {
 
   if (error) throw error;
   return data || [];
+}
+
+function primaryMedia(post) {
+  const mediaList = Array.isArray(post?.post_media) ? post.post_media : [];
+  return mediaList.find((item) => item?.media_url) || null;
 }
 
 async function fetchAthleteStats(athleteId) {
@@ -292,6 +351,7 @@ function renderPosts(posts, displayName) {
   }
 
   posts.forEach((post) => {
+    const media = primaryMedia(post);
     const item = document.createElement("article");
     item.className = "post-card";
     item.innerHTML = `
@@ -302,12 +362,45 @@ function renderPosts(posts, displayName) {
         </div>
         <span class="tag">${formatTime(post.created_at)}</span>
       </div>
+      ${media ? `<div class="post-media"><img src="${media.media_url}" alt="${displayName} post media"></div>` : ""}
       <p class="post-caption">${post.caption || "(No caption)"}</p>
       <div class="post-card-foot">
         <span class="pill">${post.visibility || "public"}</span>
       </div>
     `;
     postsEl.appendChild(item);
+  });
+}
+
+function renderPostGallery(posts, displayName) {
+  if (!postGalleryEl) return;
+  postGalleryEl.innerHTML = "";
+
+  const galleryRows = posts.length
+    ? posts.slice(0, 6).map((post, index) => ({
+        title: post.caption || `Post ${index + 1}`,
+        meta: `${post.post_type || "text"} • ${formatTime(post.created_at)}`,
+        mediaUrl: primaryMedia(post)?.media_url || "",
+      }))
+    : [
+        { title: `${displayName} highlight post`, meta: "Placeholder • featured", mediaUrl: "" },
+        { title: "Game recap", meta: "Placeholder • recap", mediaUrl: "" },
+        { title: "Training session", meta: "Placeholder • workout", mediaUrl: "" },
+      ];
+
+  galleryRows.forEach((row, index) => {
+    const item = document.createElement("article");
+    item.className = "gallery-card";
+    item.innerHTML = `
+      <div class="gallery-visual gallery-tone-${(index % 3) + 1}">
+        ${row.mediaUrl ? `<img src="${row.mediaUrl}" alt="${displayName} gallery post">` : ""}
+      </div>
+      <div class="gallery-copy">
+        <strong>${row.title}</strong>
+        <span class="helper">${row.meta}</span>
+      </div>
+    `;
+    postGalleryEl.appendChild(item);
   });
 }
 
@@ -332,6 +425,59 @@ function renderStats(stats) {
       <span>${row.source || "-"}</span>
     `;
     statsTableEl.appendChild(item);
+  });
+}
+
+function renderSportPanels() {
+  const profile = genericSportProfiles[activeSport];
+  if (!profile) return;
+
+  if (chartTitleEl) {
+    chartTitleEl.textContent = `${currentDisplayName} • ${profile.title}`;
+  }
+  if (breakdownTitleEl) {
+    breakdownTitleEl.textContent = `${profile.title} breakdown`;
+  }
+  if (chartStackEl) {
+    chartStackEl.innerHTML = "";
+    profile.metrics.forEach((metric) => {
+      const row = document.createElement("div");
+      row.className = "chart-row";
+      row.innerHTML = `
+        <div class="chart-row-head">
+          <strong>${metric.label}</strong>
+          <span>${metric.display}</span>
+        </div>
+        <div class="chart-track">
+          <div class="chart-fill" style="width:${metric.value}%"></div>
+        </div>
+      `;
+      chartStackEl.appendChild(row);
+    });
+  }
+
+  if (sportBreakdownEl) {
+    sportBreakdownEl.innerHTML = "";
+    profile.cards.forEach((card) => {
+      const el = document.createElement("article");
+      el.className = "card";
+      el.innerHTML = `
+        <p class="card-tag">${card.tag}</p>
+        <h3>${card.title}</h3>
+        <p>${card.text}</p>
+      `;
+      sportBreakdownEl.appendChild(el);
+    });
+  }
+}
+
+function bindSportTabs() {
+  sportTabs.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeSport = btn.dataset.sportTab;
+      sportTabs.forEach((tab) => tab.classList.toggle("active", tab === btn));
+      renderSportPanels();
+    });
   });
 }
 
@@ -391,6 +537,7 @@ window.addEventListener("session-ready", async ({ detail }) => {
     isFollowing = await fetchIsFollowing();
 
     const displayName = bestDisplayName(profile);
+    currentDisplayName = displayName;
     const schoolName = profile.athleteRow?.school_id ? await fetchSchoolName(profile.athleteRow.school_id) : (profile.schoolRow?.name || "");
     const posts = await fetchPosts();
     const stats = await fetchAthleteStats(profile.athleteRow?.athlete_id);
@@ -398,13 +545,19 @@ window.addEventListener("session-ready", async ({ detail }) => {
     if (nameEl) nameEl.textContent = displayName;
     if (subtitleEl) subtitleEl.textContent = isSelfProfile ? "Your Untitle Atheletics profile" : `${displayName}'s Untitle Atheletics profile`;
     if (aboutTitleEl) aboutTitleEl.textContent = displayName;
+    if (postsLinkEl) {
+      postsLinkEl.href = isSelfProfile ? "profile-posts.html" : `profile-posts.html?user_id=${encodeURIComponent(targetUserId)}`;
+    }
 
     renderMeta(profile, isSelfProfile);
     renderFacts(profile, schoolName);
     renderPosts(posts, displayName);
+    renderPostGallery(posts, displayName);
     renderStats(stats);
     renderMedia(displayName);
     renderRecruiting(profile, schoolName);
+    bindSportTabs();
+    renderSportPanels();
 
     if (primaryActionBtn) {
       primaryActionBtn.textContent = isSelfProfile ? "Edit Profile" : (isFollowing ? "Following" : "Follow");

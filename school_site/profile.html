@@ -166,6 +166,25 @@
           </div>
         </section>
 
+        <section class="data-panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Post Highlights</p>
+              <h2>Post highlights</h2>
+            </div>
+            <a id="profile-posts-link" class="btn" href="profile-posts.html">Check all posts</a>
+          </div>
+          <div class="post-gallery" id="profile-post-gallery">
+            <article class="gallery-card">
+              <div class="gallery-visual"></div>
+              <div class="gallery-copy">
+                <strong>Loading posts...</strong>
+                <span class="helper">Preparing gallery</span>
+              </div>
+            </article>
+          </div>
+        </section>
+
         <section class="grid-2 page-panels">
           <article class="panel">
             <div class="section-head">
@@ -207,6 +226,48 @@
               </article>
             </div>
           </article>
+        </section>
+
+        <section class="data-panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Performance Lab</p>
+              <h2>Multi-sport stat view</h2>
+            </div>
+            <div class="segmented" id="profile-sport-tabs">
+              <button type="button" data-sport-tab="basketball" class="active">Basketball</button>
+              <button type="button" data-sport-tab="track">Track</button>
+              <button type="button" data-sport-tab="football">Football</button>
+            </div>
+          </div>
+          <div class="grid-2 page-panels">
+            <article class="panel">
+              <div class="section-head">
+                <div>
+                  <p class="eyebrow">Chart View</p>
+                  <h2 id="profile-chart-title">Basketball profile</h2>
+                </div>
+              </div>
+              <div class="chart-stack" id="profile-chart-stack">
+                <div class="placeholder">Loading chart view...</div>
+              </div>
+            </article>
+            <article class="panel">
+              <div class="section-head">
+                <div>
+                  <p class="eyebrow">Breakdown</p>
+                  <h2 id="profile-breakdown-title">Key performance markers</h2>
+                </div>
+              </div>
+              <div class="cards" id="profile-sport-breakdown">
+                <article class="card">
+                  <p class="card-tag">Loading</p>
+                  <h3>Preparing breakdown</h3>
+                  <p>Stat cards are loading.</p>
+                </article>
+              </div>
+            </article>
+          </div>
         </section>
       </main>
 
