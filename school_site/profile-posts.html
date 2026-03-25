@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Untitle Atheletics • Posts</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/profilePosts.js"></script>
+</head>
+<body data-page="profile" data-requires-session="true">
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="logo">Untitle Atheletics</div>
+        <span class="role-pill" id="role-pill">guest</span>
+      </div>
+
+      <div>
+        <p class="nav-label">Main</p>
+        <nav class="nav">
+          <a class="nav-btn" data-nav="home" href="index.html">Home Feed</a>
+          <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
+          <a class="nav-btn" data-nav="search" href="explore.html">Search</a>
+          <a class="nav-btn" data-nav="profile" href="profile.html">Profile</a>
+        </nav>
+      </div>
+
+      <div class="sidebar-foot">
+        <strong>Post archive</strong>
+        <span class="helper">Dedicated profile post view with a denser media-first layout.</span>
+      </div>
+    </aside>
+
+    <div class="mobile-overlay" id="mobile-overlay"></div>
+
+    <div class="page-wrap">
+      <header class="site-header">
+        <button class="menu-btn" id="menu-btn" type="button">Menu</button>
+        <div class="search-wrap">
+          <input id="global-search" type="search" placeholder="Search by athlete name or email">
+        </div>
+        <button class="icon-btn" id="notif-btn" type="button" title="Notifications">🔔<span id="notif-count" class="badge">4</span></button>
+        <div class="session-chip" id="session-chip">Checking session...</div>
+        <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
+      </header>
+
+      <main>
+        <section class="profile-posts-hero">
+          <div class="profile-posts-avatar" id="profile-posts-avatar">
+            <span id="profile-posts-initials">UA</span>
+          </div>
+          <div class="profile-posts-summary">
+            <div class="profile-posts-title-row">
+              <h1 id="profile-posts-name">Loading profile...</h1>
+              <div class="profile-actions">
+                <a id="back-to-profile-link" class="btn" href="profile.html">Back to profile</a>
+                <button id="profile-posts-primary" type="button" class="btn primary">Follow</button>
+              </div>
+            </div>
+            <p class="lede" id="profile-posts-subtitle">Preparing posts.</p>
+            <div class="profile-posts-meta" id="profile-posts-meta">
+              <span>Loading counts...</span>
+            </div>
+            <div class="profile-posts-note" id="profile-posts-note">Loading post archive...</div>
+          </div>
+        </section>
+
+        <section class="data-panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Highlights</p>
+              <h2>Featured story circles</h2>
+            </div>
+          </div>
+          <div class="story-row" id="profile-story-row">
+            <div class="placeholder">Loading highlights...</div>
+          </div>
+        </section>
+
+        <section class="data-panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">All Posts</p>
+              <h2>Media grid</h2>
+            </div>
+          </div>
+          <div class="media-grid" id="profile-media-grid">
+            <div class="placeholder">Loading media posts...</div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        Untitle Atheletics • Profile post archive
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

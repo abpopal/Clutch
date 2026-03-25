@@ -2,3 +2,7 @@ school_site/
 !school_site/
 school_site/*
 !school_site/_redirects
+!school_site/profile-posts.html
+!school_site/js/
+school_site/js/*
+!school_site/js/profilePosts.js
