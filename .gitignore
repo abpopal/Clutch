@@ -1,1 +1,4 @@
 school_site/
+!school_site/
+school_site/*
+!school_site/_redirects
