@@ -1,177 +1,1500 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clutch • Dashboards</title>
-  <link rel="stylesheet" href="styles.css">
-  <script type="module" src="js/app.js"></script>
-  <script type="module" src="js/dashboard.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clutch — Highlights Feed</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&family=Bebas+Neue&display=swap" rel="stylesheet" />
+  <style>
+    /* =============================================
+       DESIGN TOKENS
+    ============================================= */
+    :root {
+      --bg:          #09090b;
+      --surface:     #101013;
+      --surface-2:   #16161b;
+      --surface-3:   #1c1c23;
+      --border:      rgba(255,255,255,0.065);
+      --border-soft: rgba(255,255,255,0.032);
+      --red:         #e02020;
+      --red-dim:     rgba(224,32,32,0.10);
+      --red-glow:    rgba(224,32,32,0.24);
+      --gold:        #c9a84c;
+      --green:       #1fbb6e;
+      --blue:        #3b9eff;
+      --white:       #ffffff;
+      --off-white:   #e6e6ea;
+      --muted:       #64647a;
+      --subtle:      #2e2e38;
+      --f-display: 'Bebas Neue', sans-serif;
+      --f-heading: 'Barlow Condensed', sans-serif;
+      --f-body:    'Barlow', sans-serif;
+      --sidebar:     216px;
+      --sidebar-col: 60px;
+      --feed-max:    520px;
+      --r-sm: 5px;
+      --r-md: 10px;
+      --r-lg: 16px;
+      --ease: 0.2s cubic-bezier(.4,0,.2,1);
+    }
+
+```
+/* =============================================
+   RESET
+============================================= */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--off-white);
+  font-family: var(--f-body);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+button { cursor: pointer; border: none; background: none; font-family: inherit; color: inherit; }
+input, textarea, select { font-family: inherit; }
+
+/* =============================================
+   LAYOUT SHELL
+============================================= */
+.shell { display: flex; min-height: 100vh; }
+
+/* =============================================
+   SIDEBAR
+============================================= */
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--sidebar);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  transition: width var(--ease);
+  overflow: hidden;
+}
+.sidebar.collapsed { width: var(--sidebar-col); }
+.sb-brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 18px 16px; border-bottom: 1px solid var(--border);
+  min-height: 60px; white-space: nowrap; overflow: hidden;
+}
+.sb-mark {
+  flex-shrink: 0; width: 30px; height: 30px;
+  background: var(--red); border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--f-display); font-size: 17px; color: #fff;
+}
+.sb-name { font-family: var(--f-display); font-size: 21px; letter-spacing: 2px; color: var(--white); transition: opacity var(--ease); }
+.sidebar.collapsed .sb-name { opacity: 0; pointer-events: none; }
+.sb-toggle {
+  width: 28px; height: 28px; margin: 10px auto 2px;
+  border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center;
+  color: var(--muted); transition: color var(--ease), background var(--ease);
+}
+.sb-toggle:hover { color: var(--white); background: var(--surface-3); }
+.sb-toggle svg { transition: transform var(--ease); }
+.sidebar.collapsed .sb-toggle svg { transform: rotate(180deg); }
+.sb-nav { flex: 1; padding: 6px 0; overflow-y: auto; overflow-x: hidden; }
+.sb-nav::-webkit-scrollbar { width: 0; }
+.sb-section { font-family: var(--f-heading); font-size: 9.5px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); padding: 14px 16px 5px; white-space: nowrap; transition: opacity var(--ease); }
+.sidebar.collapsed .sb-section { opacity: 0; }
+.sb-item {
+  display: flex; align-items: center; gap: 11px; padding: 9px 16px;
+  color: var(--muted); font-family: var(--f-heading); font-size: 14px; font-weight: 700; letter-spacing: 0.4px;
+  white-space: nowrap; position: relative; transition: color var(--ease), background var(--ease);
+  width: 100%; text-align: left;
+}
+.sb-item:hover  { color: var(--off-white); background: var(--surface-2); }
+.sb-item.active { color: var(--white); background: var(--red-dim); }
+.sb-item.active::before { content: ''; position: absolute; left: 0; top: 5px; bottom: 5px; width: 3px; background: var(--red); border-radius: 0 3px 3px 0; }
+.sb-icon  { flex-shrink: 0; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+.sb-label { transition: opacity var(--ease); }
+.sidebar.collapsed .sb-label { opacity: 0; pointer-events: none; }
+.sb-badge { margin-left: auto; background: var(--red); color: #fff; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 10px; transition: opacity var(--ease); }
+.sidebar.collapsed .sb-badge { opacity: 0; }
+.sb-bottom { padding: 10px; border-top: 1px solid var(--border); }
+.sb-profile { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: var(--r-md); cursor: pointer; transition: background var(--ease); overflow: hidden; white-space: nowrap; }
+.sb-profile:hover { background: var(--surface-3); }
+.sb-profile-av { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #1e1e24, #2a2a32); border: 2px solid var(--red); display: flex; align-items: center; justify-content: center; font-family: var(--f-heading); font-weight: 800; font-size: 12px; color: var(--red); }
+.sb-profile-name   { font-family: var(--f-heading); font-weight: 700; font-size: 13px; color: var(--white); transition: opacity var(--ease); }
+.sb-profile-handle { font-size: 11px; color: var(--muted); transition: opacity var(--ease); }
+.sidebar.collapsed .sb-profile-name,
+.sidebar.collapsed .sb-profile-handle { opacity: 0; }
+
+/* =============================================
+   MAIN
+============================================= */
+.main { margin-left: var(--sidebar); flex: 1; min-width: 0; transition: margin-left var(--ease); display: flex; flex-direction: column; }
+.sidebar.collapsed ~ .main { margin-left: var(--sidebar-col); }
+
+/* =============================================
+   TOP BAR
+============================================= */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(9,9,11,0.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px; height: 56px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.topbar-left  { display: flex; align-items: baseline; gap: 10px; }
+.topbar-title { font-family: var(--f-display); font-size: 26px; letter-spacing: 2px; color: var(--white); line-height: 1; }
+.topbar-title span { color: var(--red); }
+.topbar-sub   { font-family: var(--f-heading); font-size: 12px; font-weight: 600; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.feed-tabs { display: flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm); overflow: hidden; }
+.feed-tab { padding: 6px 14px; font-family: var(--f-heading); font-size: 12px; font-weight: 700; letter-spacing: 0.5px; color: var(--muted); transition: color var(--ease), background var(--ease); border-right: 1px solid var(--border); }
+.feed-tab:last-child { border-right: none; }
+.feed-tab:hover  { color: var(--off-white); }
+.feed-tab.active { background: var(--surface-3); color: var(--white); }
+.btn-create { display: flex; align-items: center; gap: 7px; background: var(--red); color: #fff; border-radius: var(--r-sm); font-family: var(--f-heading); font-size: 13px; font-weight: 700; letter-spacing: 0.5px; padding: 8px 16px; white-space: nowrap; transition: background var(--ease), box-shadow var(--ease); }
+.btn-create:hover { background: #c91818; box-shadow: 0 0 18px var(--red-glow); }
+
+/* =============================================
+   FEED PAGE
+============================================= */
+.feed-page { display: flex; justify-content: center; padding: 24px 20px 80px; gap: 24px; }
+.feed-col  { width: 100%; max-width: var(--feed-max); display: flex; flex-direction: column; gap: 20px; }
+.feed-aside { width: 280px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; padding-top: 4px; }
+.feed-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 64px 32px; text-align: center; gap: 12px; }
+.feed-empty-icon  { color: var(--subtle); margin-bottom: 4px; }
+.feed-empty-title { font-family: var(--f-heading); font-size: 20px; font-weight: 700; color: var(--muted); }
+.feed-empty-sub   { font-size: 13px; color: var(--subtle); }
+
+/* =============================================
+   COMPOSER CARD
+============================================= */
+.composer-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.composer-top  { display: flex; align-items: center; gap: 12px; }
+.composer-av   { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--f-heading); font-weight: 800; font-size: 14px; }
+.composer-prompt { flex: 1; background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; padding: 10px 16px; font-size: 14px; color: var(--muted); cursor: pointer; text-align: left; line-height: 1; transition: border-color var(--ease), background var(--ease), color var(--ease); }
+.composer-prompt:hover { border-color: rgba(255,255,255,0.1); background: var(--surface-3); color: var(--off-white); }
+.composer-actions { display: flex; align-items: center; gap: 6px; padding-top: 2px; border-top: 1px solid var(--border-soft); }
+.composer-btn { display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: var(--r-sm); font-family: var(--f-heading); font-size: 12px; font-weight: 700; letter-spacing: 0.3px; color: var(--muted); border: 1px solid var(--border); transition: color var(--ease), border-color var(--ease), background var(--ease); white-space: nowrap; }
+.composer-btn:hover { color: var(--off-white); border-color: rgba(255,255,255,0.12); background: var(--surface-2); }
+.composer-btn.accent { color: var(--red); border-color: rgba(224,32,32,0.22); background: var(--red-dim); }
+.composer-btn.accent:hover { background: rgba(224,32,32,0.16); }
+.composer-spacer { flex: 1; }
+
+/* =============================================
+   POST CARD
+============================================= */
+.post-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; transition: border-color var(--ease); opacity: 0; animation: postIn 0.36s cubic-bezier(.22,.68,0,1.1) forwards; }
+@keyframes postIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.post-card:hover { border-color: rgba(255,255,255,0.1); }
+
+.post-header { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px 11px; gap: 10px; }
+.post-header-left  { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.post-header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.post-avatar  { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--f-heading); font-weight: 800; font-size: 14px; }
+.post-name    { font-family: var(--f-heading); font-size: 16px; font-weight: 800; color: var(--white); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.post-school  { font-size: 12px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.post-time    { font-size: 11px; color: var(--muted); font-family: var(--f-heading); font-weight: 600; }
+
+.sport-tag { font-family: var(--f-heading); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; }
+.sport-tag.basketball { background: var(--red-dim); border: 1px solid rgba(224,32,32,0.22); color: var(--red); }
+.sport-tag.football   { background: rgba(201,168,76,0.10); border: 1px solid rgba(201,168,76,0.22); color: var(--gold); }
+.sport-tag.soccer     { background: rgba(31,187,110,0.10); border: 1px solid rgba(31,187,110,0.22); color: var(--green); }
+.sport-tag.baseball   { background: rgba(59,158,255,0.10); border: 1px solid rgba(59,158,255,0.22); color: var(--blue); }
+.sport-tag.volleyball { background: rgba(224,32,32,0.10); border: 1px solid rgba(224,32,32,0.22); color: #e06060; }
+.sport-tag.track      { background: rgba(201,168,76,0.10); border: 1px solid rgba(201,168,76,0.22); color: var(--gold); }
+.sport-tag.default    { background: var(--surface-3); border: 1px solid var(--border); color: var(--muted); }
+
+.post-media { position: relative; width: 100%; overflow: hidden; background: #000; }
+.post-media.vertical   { aspect-ratio: 9/16; max-height: 520px; }
+.post-media.horizontal { aspect-ratio: 16/9; }
+.post-media.square     { aspect-ratio: 1/1; }
+.post-media.auto       { min-height: 200px; max-height: 460px; }
+.post-media video, .post-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.post-media video { background: #000; }
+
+/* Loading shimmer shown before media is ready */
+.media-loading {
+  position: absolute; inset: 0; z-index: 2;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.media-loading.hidden { opacity: 0; pointer-events: none; }
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+/* Fade-in once media is ready */
+.post-media video.ready,
+.post-media img.ready { animation: mediaIn 0.3s ease both; }
+@keyframes mediaIn { from { opacity: 0; } to { opacity: 1; } }
+
+.media-muted-badge { position: absolute; bottom: 10px; left: 10px; z-index: 3; background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; padding: 3px 8px; display: flex; align-items: center; gap: 5px; font-family: var(--f-heading); font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.6); cursor: pointer; transition: background var(--ease), color var(--ease); }
+.media-muted-badge:hover { background: rgba(0,0,0,0.85); color: #fff; }
+
+.media-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; overflow: hidden; }
+.media-placeholder::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(-55deg, transparent, transparent 32px, rgba(255,255,255,0.008) 32px, rgba(255,255,255,0.008) 33px); }
+.media-ph-inner { position: relative; z-index: 1; text-align: center; }
+.media-ph-icon  { font-size: 38px; line-height: 1; margin-bottom: 8px; }
+.media-ph-stat  { font-family: var(--f-display); font-size: 26px; letter-spacing: 1px; color: var(--white); text-shadow: 0 2px 10px rgba(0,0,0,0.9); }
+.media-ph-sub   { font-family: var(--f-heading); font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+.media-ph-wm    { position: absolute; bottom: -12px; right: 6px; font-family: var(--f-display); font-size: 110px; line-height: 1; color: rgba(255,255,255,0.035); pointer-events: none; user-select: none; }
+
+.post-content { padding: 11px 14px 0; }
+.post-caption { font-size: 13.5px; color: var(--off-white); line-height: 1.48; margin-bottom: 7px; }
+.post-perf    { display: flex; align-items: center; flex-wrap: wrap; margin-bottom: 7px; gap: 0; }
+.post-perf-stat { display: flex; align-items: baseline; gap: 3px; padding: 3px 9px 3px 0; margin-right: 9px; border-right: 1px solid var(--border); }
+.post-perf-stat:last-child { border-right: none; margin-right: 0; }
+.post-perf-val { font-family: var(--f-heading); font-size: 15px; font-weight: 900; color: var(--white); line-height: 1; }
+.post-perf-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-family: var(--f-heading); font-weight: 700; }
+.post-tags     { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+.post-tag { font-family: var(--f-heading); font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; }
+.post-tag.game       { background: rgba(224,32,32,0.10);  color: var(--red);   border: 1px solid rgba(224,32,32,0.2); }
+.post-tag.tournament { background: rgba(201,168,76,0.10); color: var(--gold);  border: 1px solid rgba(201,168,76,0.2); }
+.post-tag.training   { background: rgba(31,187,110,0.10); color: var(--green); border: 1px solid rgba(31,187,110,0.2); }
+.post-tag.verified   { background: rgba(59,158,255,0.10); color: var(--blue);  border: 1px solid rgba(59,158,255,0.2); }
+.post-tag.winner     { background: rgba(201,168,76,0.12); color: var(--gold);  border: 1px solid rgba(201,168,76,0.3); }
+.post-tag.default    { background: var(--surface-3); color: var(--muted); border: 1px solid var(--border); }
+
+.post-footer        { display: flex; align-items: center; gap: 5px; padding: 8px 12px 12px; border-top: 1px solid var(--border-soft); margin-top: 8px; }
+.post-footer-spacer { flex: 1; }
+.post-action { display: flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: var(--r-sm); font-family: var(--f-heading); font-size: 12px; font-weight: 700; letter-spacing: 0.4px; color: var(--muted); border: 1px solid var(--border); background: transparent; transition: color var(--ease), border-color var(--ease), background var(--ease); }
+.post-action:hover   { color: var(--off-white); border-color: rgba(255,255,255,0.12); background: var(--surface-2); }
+.post-action.primary { background: var(--red-dim); border-color: rgba(224,32,32,0.22); color: var(--red); }
+.post-action.primary:hover { background: rgba(224,32,32,0.18); }
+.post-action.saved   { color: var(--gold); border-color: rgba(201,168,76,0.3); }
+
+/* =============================================
+   RIGHT ASIDE
+============================================= */
+.aside-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
+.aside-card-header { padding: 12px 16px; border-bottom: 1px solid var(--border); font-family: var(--f-heading); font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+.aside-card-body   { padding: 12px 16px; }
+.spotlight-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-soft); }
+.spotlight-item:last-child { border-bottom: none; }
+.spotlight-av   { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--f-heading); font-weight: 800; font-size: 11px; flex-shrink: 0; }
+.spotlight-name   { font-family: var(--f-heading); font-size: 13px; font-weight: 700; color: var(--white); }
+.spotlight-detail { font-size: 11px; color: var(--muted); }
+.spotlight-stat   { margin-left: auto; font-family: var(--f-heading); font-size: 13px; font-weight: 800; color: var(--red); }
+.sport-filter-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.sport-pill { padding: 5px 12px; border-radius: 20px; font-family: var(--f-heading); font-size: 12px; font-weight: 700; border: 1px solid var(--border); color: var(--muted); background: transparent; transition: all var(--ease); }
+.sport-pill:hover  { color: var(--off-white); border-color: rgba(255,255,255,0.12); }
+.sport-pill.active { background: var(--red); border-color: var(--red); color: #fff; }
+
+/* =============================================
+   MOBILE
+============================================= */
+.mobile-bar { display: none; position: fixed; top: 0; left: 0; right: 0; height: 50px; background: var(--surface); border-bottom: 1px solid var(--border); z-index: 99; align-items: center; justify-content: space-between; padding: 0 14px; }
+.mobile-ham { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: var(--r-sm); color: var(--muted); }
+.mobile-ham:hover { color: var(--white); }
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 98; }
+.overlay.on { display: block; }
+
+/* =============================================
+   MODAL
+============================================= */
+.modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.76); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 500; align-items: center; justify-content: center; padding: 20px; }
+.modal-backdrop.open { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; }
+.modal::-webkit-scrollbar { width: 4px; }
+.modal::-webkit-scrollbar-thumb { background: var(--subtle); border-radius: 2px; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--border); flex-shrink: 0; position: sticky; top: 0; background: var(--surface); z-index: 2; }
+.modal-title  { font-family: var(--f-heading); font-size: 20px; font-weight: 800; color: var(--white); letter-spacing: 0.5px; }
+.modal-close  { width: 32px; height: 32px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; color: var(--muted); transition: color var(--ease), background var(--ease); }
+.modal-close:hover { color: var(--white); background: var(--surface-3); }
+.modal-body   { padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+.modal-footer { padding: 16px 22px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-label { font-family: var(--f-heading); font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
+.form-input { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 10px 13px; font-family: var(--f-body); font-size: 14px; color: var(--off-white); outline: none; transition: border-color var(--ease); width: 100%; }
+.form-input:focus { border-color: var(--red); }
+.form-input::placeholder { color: var(--muted); }
+textarea.form-input { resize: vertical; min-height: 72px; }
+select.form-input   { cursor: pointer; }
+select.form-input option { background: var(--surface-2); }
+.perf-inputs     { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.perf-input-wrap { display: flex; flex-direction: column; gap: 4px; }
+.perf-input-lbl  { font-size: 10px; color: var(--muted); font-family: var(--f-heading); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.perf-input { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 8px 10px; font-family: var(--f-heading); font-size: 15px; font-weight: 800; color: var(--white); text-align: center; outline: none; transition: border-color var(--ease); width: 100%; }
+.perf-input:focus { border-color: var(--red); }
+.perf-input::placeholder { color: var(--subtle); font-weight: 600; font-size: 13px; }
+.upload-zone { border: 2px dashed var(--subtle); border-radius: var(--r-md); padding: 28px 20px; text-align: center; cursor: pointer; transition: border-color var(--ease), background var(--ease); position: relative; }
+.upload-zone:hover, .upload-zone.dragover { border-color: var(--red); background: var(--red-dim); }
+.upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-icon  { color: var(--muted); margin-bottom: 8px; transition: color var(--ease); }
+.upload-label { font-family: var(--f-heading); font-size: 14px; font-weight: 700; color: var(--muted); transition: color var(--ease); }
+.upload-zone:hover .upload-icon,
+.upload-zone:hover .upload-label { color: var(--red); }
+.upload-sub      { font-size: 11px; color: var(--subtle); margin-top: 4px; }
+.upload-preview  { margin-top: 10px; border-radius: var(--r-sm); overflow: hidden; border: 1px solid var(--border); display: none; }
+.upload-preview img, .upload-preview video { width: 100%; max-height: 200px; object-fit: cover; display: block; }
+.upload-filename { font-size: 12px; color: var(--green); margin-top: 6px; font-family: var(--f-heading); font-weight: 700; display: none; }
+.btn-ghost   { padding: 9px 18px; border-radius: var(--r-sm); font-family: var(--f-heading); font-size: 13px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); transition: color var(--ease), border-color var(--ease); }
+.btn-ghost:hover { color: var(--off-white); border-color: rgba(255,255,255,0.12); }
+.btn-primary { padding: 9px 22px; border-radius: var(--r-sm); background: var(--red); color: #fff; font-family: var(--f-heading); font-size: 13px; font-weight: 700; letter-spacing: 0.5px; transition: background var(--ease), box-shadow var(--ease); }
+.btn-primary:hover { background: #c91818; box-shadow: 0 0 16px var(--red-glow); }
+
+/* =============================================
+   TOAST
+============================================= */
+.toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(8px); background: var(--surface-3); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 10px 18px; font-family: var(--f-heading); font-size: 13px; font-weight: 700; color: var(--white); z-index: 600; pointer-events: none; white-space: nowrap; opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* =============================================
+   RESPONSIVE
+============================================= */
+@media (max-width: 1100px) { .feed-aside { display: none; } }
+@media (max-width: 768px)  {
+  .sidebar { transform: translateX(-100%); width: var(--sidebar) !important; transition: transform var(--ease); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0 !important; padding-top: 50px; }
+  .mobile-bar { display: flex; }
+  .topbar { padding: 0 12px; height: 52px; }
+  .topbar-sub { display: none; }
+  .feed-page { padding: 16px 12px 60px; }
+  .feed-col  { max-width: 100%; }
+}
+@media (max-width: 480px) {
+  .feed-tabs   { display: none; }
+  .form-row    { grid-template-columns: 1fr; }
+  .perf-inputs { grid-template-columns: 1fr 1fr; }
+}
+```
+
+  </style>
 </head>
-<body data-page="highlights" data-requires-session="true">
-  <div class="app-layout">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <div class="logo">Clutch</div>
-        <span class="role-pill" id="role-pill">guest</span>
+<body>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="overlay" id="overlay"></div>
+
+  <!-- Mobile bar -->
+
+  <div class="mobile-bar">
+    <button class="mobile-ham" id="mobileHam" aria-label="Open menu" aria-expanded="false">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <span style="font-family:var(--f-display);font-size:19px;letter-spacing:2px;color:var(--white);">CLUTCH</span>
+    <button class="btn-create" id="mobileCreateBtn" style="padding:6px 12px;font-size:12px;">Post</button>
+  </div>
+
+  <!-- Create Post Modal -->
+
+  <div class="modal-backdrop" id="createModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle">New Highlight Post</span>
+        <button class="modal-close" id="modalCloseBtn" aria-label="Close modal">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
-      <div>
-        <p class="nav-label">Main</p>
-        <nav class="nav">
-          <a class="nav-btn" data-nav="home" href="index.html">Feed</a>
-          <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
-          <a class="nav-btn" data-nav="explore" href="explore.html">Discovery</a>
-          <a class="nav-btn" data-nav="highlights" href="highlights.html">Dashboards</a>
-          <a class="nav-btn" data-nav="profile" href="profile.html">Profile</a>
-        </nav>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="f-name">Athlete Name</label>
+            <input type="text" id="f-name" class="form-input" placeholder="Your name" autocomplete="name" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-school">School</label>
+            <input type="text" id="f-school" class="form-input" placeholder="Your school" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="f-sport">Sport</label>
+            <select id="f-sport" class="form-input">
+              <option value="basketball">Basketball</option>
+              <option value="football">Football</option>
+              <option value="soccer">Soccer</option>
+              <option value="baseball">Baseball</option>
+              <option value="volleyball">Volleyball</option>
+              <option value="track">Track &amp; Field</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-tag">Post Tag</label>
+            <select id="f-tag" class="form-input">
+              <option value="game">Game</option>
+              <option value="tournament">Tournament</option>
+              <option value="training">Training</option>
+              <option value="winner">Game Winner</option>
+              <option value="verified">Verified</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f-caption">Caption</label>
+          <textarea id="f-caption" class="form-input" rows="2" placeholder="Describe the moment..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Performance Stats</label>
+          <div class="perf-inputs">
+            <div class="perf-input-wrap"><div class="perf-input-lbl">Val 1</div><input type="text" class="perf-input" id="p-val-1" placeholder="34" maxlength="6" /></div>
+            <div class="perf-input-wrap"><div class="perf-input-lbl">Lbl 1</div><input type="text" class="perf-input" id="p-lbl-1" placeholder="PTS" maxlength="8" /></div>
+            <div class="perf-input-wrap"><div class="perf-input-lbl">Val 2</div><input type="text" class="perf-input" id="p-val-2" placeholder="9"  maxlength="6" /></div>
+            <div class="perf-input-wrap"><div class="perf-input-lbl">Lbl 2</div><input type="text" class="perf-input" id="p-lbl-2" placeholder="AST" maxlength="8" /></div>
+            <div class="perf-input-wrap"><div class="perf-input-lbl">Val 3</div><input type="text" class="perf-input" id="p-val-3" placeholder="2"  maxlength="6" /></div>
+            <div class="perf-input-wrap"><div class="perf-input-lbl">Lbl 3</div><input type="text" class="perf-input" id="p-lbl-3" placeholder="STL" maxlength="8" /></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Media</label>
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" id="f-media" accept="video/*,image/*" aria-label="Upload video or image" />
+            <div class="upload-icon">
+              <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <div class="upload-label">Drop video or image here</div>
+            <div class="upload-sub">MP4 &middot; MOV &middot; JPG &middot; PNG &middot; GIF &middot; Max 500MB</div>
+          </div>
+          <div class="upload-preview"  id="uploadPreview"></div>
+          <div class="upload-filename" id="uploadFilename"></div>
+        </div>
       </div>
-      <div class="sidebar-foot">
-        <strong>Operations Layer</strong>
-        <span class="helper">School admin CRM, coach tools, scout pipeline, athlete stats, and fan engagement modules.</span>
+      <div class="modal-footer">
+        <button class="btn-ghost"   id="modalCancelBtn">Cancel</button>
+        <button class="btn-primary" id="modalSubmitBtn">Post Highlight</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Shell -->
+
+  <div class="shell">
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
+      <div class="sb-brand">
+        <div class="sb-mark">C</div>
+        <div class="sb-name">CLUTCH</div>
+      </div>
+      <button class="sb-toggle" id="sidebarToggle" aria-label="Toggle sidebar" aria-expanded="true">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <nav class="sb-nav">
+        <div class="sb-section">Navigate</div>
+        <button class="sb-item" data-nav="home">
+          <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+          <span class="sb-label">Home</span>
+        </button>
+        <button class="sb-item" data-nav="discovery">
+          <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+          <span class="sb-label">Discovery</span>
+        </button>
+        <button class="sb-item" data-nav="profile">
+          <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+          <span class="sb-label">Profile</span>
+        </button>
+        <button class="sb-item active" data-nav="highlights" aria-current="page">
+          <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></span>
+          <span class="sb-label">Highlights</span>
+          <span class="sb-badge" id="feedBadge">5</span>
+        </button>
+        <button class="sb-item" data-nav="stats">
+          <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+          <span class="sb-label">Stats</span>
+        </button>
+        <button class="sb-item" data-nav="rankings">
+          <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/><path d="M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></svg></span>
+          <span class="sb-label">Rankings</span>
+        </button>
+        <button class="sb-item" data-nav="recruiting">
+          <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.44 14a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.35 3h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.5a16 16 0 0 0 5.59 5.59l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
+          <span class="sb-label">Recruiting</span>
+        </button>
+        <div class="sb-section">Account</div>
+        <button class="sb-item" data-nav="settings">
+          <span class="sb-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+          <span class="sb-label">Settings</span>
+        </button>
+      </nav>
+      <div class="sb-bottom">
+        <div class="sb-profile">
+          <div class="sb-profile-av"     id="sbAv">MW</div>
+          <div>
+            <div class="sb-profile-name"   id="sbName">Marcus Williams</div>
+            <div class="sb-profile-handle" id="sbHandle">@marcuswilliams</div>
+          </div>
+        </div>
       </div>
     </aside>
 
-    <div class="mobile-overlay" id="mobile-overlay"></div>
-
-    <div class="page-wrap">
-      <header class="site-header">
-        <button class="menu-btn" id="menu-btn" type="button">Menu</button>
-        <div class="search-wrap">
-          <input id="global-search" type="search" placeholder="Jump to team, league, athlete, or request">
-        </div>
-        <button class="icon-btn" id="notif-btn" type="button">🔔<span id="notif-count" class="badge">4</span></button>
-        <div class="session-chip" id="session-chip">Checking session...</div>
-        <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
-      </header>
-
-      <main>
-        <section class="hero">
-          <div>
-            <p class="eyebrow">Role Dashboards</p>
-            <h1>Operational modules aligned with PRD phases.</h1>
-            <p class="lede">Each role sees a focused dashboard module. This includes school operations, roster and stats workflows, scout recruiting pipeline, and athlete/fan experiences.</p>
-          </div>
-          <div class="card">
-            <p class="card-tag">Coverage</p>
-            <div class="meta">
-              <span>School Admin</span>
-              <span>Coach</span>
-              <span>Scout</span>
-              <span>Athlete</span>
-              <span>General User</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel" id="admin" data-role-allow="school">
-          <div class="section-head">
-            <h2>School Admin Dashboard</h2>
-            <button class="btn">Export Calendar</button>
-          </div>
-          <div class="grid-4">
-            <article class="card"><p class="card-tag">Athletes</p><h3>428</h3><p>42 pending verifications</p></article>
-            <article class="card"><p class="card-tag">Teams</p><h3>21</h3><p>Across 8 sports</p></article>
-            <article class="card"><p class="card-tag">Events (7d)</p><h3>16</h3><p>Games, practices, tournaments</p></article>
-            <article class="card"><p class="card-tag">Pending Coaches</p><h3>5</h3><p>Require review</p></article>
-          </div>
-          <div class="cards">
-            <article class="card">
-              <p class="card-tag">Quick Actions</p>
-              <div class="segmented">
-                <button type="button">Add Athlete</button>
-                <button type="button">Invite Coach</button>
-                <button type="button">Schedule Game</button>
-                <button type="button">Create Announcement</button>
-              </div>
-            </article>
-            <article class="card">
-              <p class="card-tag">League Management</p>
-              <p>Bracket generator placeholder with seed-based playoff setup and public bracket visibility.</p>
-              <ul class="list">
-                <li>Set format (single elim / round robin)</li>
-                <li>Auto standings from approved scores</li>
-                <li>Coach-submitted score approvals</li>
-              </ul>
-            </article>
-          </div>
-        </section>
-
-        <section class="panel" id="coach" data-role-allow="coach">
-          <div class="section-head">
-            <h2>Coach Dashboard</h2>
-            <button class="btn">Export Roster PDF</button>
-          </div>
-          <div class="cards">
-            <article class="card">
-              <p class="card-tag">My Teams</p>
-              <p>Varsity Basketball, JV Basketball</p>
-            </article>
-            <article class="card">
-              <p class="card-tag">Upcoming</p>
-              <p>3 events in next 72 hours</p>
-            </article>
-            <article class="card">
-              <p class="card-tag">Pending Stats</p>
-              <p>12 athlete-submitted stat entries need review</p>
-            </article>
-          </div>
-          <div class="grid-2">
-            <article class="card">
-              <p class="card-tag">Attendance Tracker</p>
-              <p>Practice attendance workflow represented with present/late/absent statuses per athlete.</p>
-            </article>
-            <article class="card">
-              <p class="card-tag">Notifications</p>
-              <p>Schedule reminders and send team-wide or individual athlete alerts.</p>
-            </article>
-          </div>
-        </section>
-
-        <section class="panel" id="scout" data-role-allow="scout">
-          <div class="section-head">
-            <h2>Scout Dashboard</h2>
-            <button class="btn">Save Current Search</button>
-          </div>
-          <div class="grid-3">
-            <article class="card"><p class="card-tag">Watchlist</p><h3>39 Athletes</h3><p>7 updated this week</p></article>
-            <article class="card"><p class="card-tag">Offers</p><h3>14 Sent</h3><p>6 pending responses</p></article>
-            <article class="card"><p class="card-tag">Requests</p><h3>9 Incoming</h3><p>3 unread</p></article>
-          </div>
-          <div class="table-card">
-            <div class="table-head"><span>Athlete</span><span>Offer Type</span><span>Status</span><span>Deadline</span></div>
-            <div class="table-rows" id="scout-pipeline-table"></div>
-          </div>
-        </section>
-
-        <section class="panel" id="athlete" data-role-allow="athlete">
-          <div class="section-head">
-            <h2>Athlete Dashboard</h2>
-            <button class="btn">Download Stats PDF</button>
-          </div>
-          <div class="cards">
-            <article class="card"><p class="card-tag">Performance</p><p>View season and career trends.</p></article>
-            <article class="card"><p class="card-tag">Recruitment Inbox</p><p>Accept, decline, or request more info from scout offers.</p></article>
-            <article class="card"><p class="card-tag">Highlight Builder</p><p>Create and share a recruitment profile card.</p></article>
-          </div>
-        </section>
-
-        <section class="panel" id="fan" data-role-allow="general">
-          <div class="section-head">
-            <h2>General User Experience</h2>
-            <button class="btn">View Schedules</button>
-          </div>
-          <div class="cards">
-            <article class="card"><p class="card-tag">Follow Feed</p><p>Read-only social feed and announcements.</p></article>
-            <article class="card"><p class="card-tag">Fan Polls</p><p>Vote in school and coach polls like Player of the Week.</p></article>
-            <article class="card"><p class="card-tag">Restrictions</p><p>No posting, no offers, no private recruitment access.</p></article>
-          </div>
-        </section>
-      </main>
-
-      <footer class="site-footer">
-        Clutch Website • Operational dashboard modules by role
-      </footer>
+```
+<main class="main" id="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">HIGHLIGHT <span>FEED</span></div>
+      <div class="topbar-sub">Performance Only</div>
+    </div>
+    <div class="topbar-right">
+      <div class="feed-tabs" role="group" aria-label="Filter by sport">
+        <button class="feed-tab active" data-sport="all">All</button>
+        <button class="feed-tab" data-sport="basketball">Basketball</button>
+        <button class="feed-tab" data-sport="football">Football</button>
+        <button class="feed-tab" data-sport="soccer">Soccer</button>
+        <button class="feed-tab" data-sport="baseball">Baseball</button>
+      </div>
+      <button class="btn-create" id="topCreateBtn">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Create Post
+      </button>
     </div>
   </div>
+
+  <div class="feed-page">
+    <div class="feed-col" id="feedCol">
+      <!-- Composer card (static HTML, JS drives avatar + buttons) -->
+      <div class="composer-card" id="composerCard">
+        <div class="composer-top">
+          <div class="composer-av" id="composerAv">MW</div>
+          <button class="composer-prompt" id="composerPromptBtn">Post your latest highlight&#8230;</button>
+        </div>
+        <div class="composer-actions">
+          <button class="composer-btn" id="composerVideoBtn">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            Upload Video
+          </button>
+          <button class="composer-btn" id="composerImageBtn">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Upload Image
+          </button>
+          <div class="composer-spacer"></div>
+          <button class="composer-btn accent" id="composerPostBtn">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+            Post
+          </button>
+        </div>
+      </div>
+      <!-- Post cards injected here by renderFeed() -->
+    </div>
+
+    <aside class="feed-aside">
+      <div class="aside-card">
+        <div class="aside-card-header">Share a Highlight</div>
+        <div class="aside-card-body" style="display:flex;flex-direction:column;gap:8px;">
+          <p style="font-size:13px;color:var(--muted);line-height:1.5;">Post your latest game clip, training footage, or performance moment.</p>
+          <button class="btn-create" id="asideCreateBtn" style="justify-content:center;">Create Post</button>
+        </div>
+      </div>
+      <div class="aside-card">
+        <div class="aside-card-header">Filter by Sport</div>
+        <div class="aside-card-body">
+          <div class="sport-filter-pills">
+            <button class="sport-pill active" data-sport="all">All Sports</button>
+            <button class="sport-pill" data-sport="basketball">&#127936; Basketball</button>
+            <button class="sport-pill" data-sport="football">&#127944; Football</button>
+            <button class="sport-pill" data-sport="soccer">&#9917; Soccer</button>
+            <button class="sport-pill" data-sport="baseball">&#9918; Baseball</button>
+            <button class="sport-pill" data-sport="volleyball">&#127952; Volleyball</button>
+          </div>
+        </div>
+      </div>
+      <div class="aside-card">
+        <div class="aside-card-header">Today's Spotlight</div>
+        <div class="aside-card-body" style="padding:8px 16px;">
+          <div class="spotlight-item">
+            <div class="spotlight-av" style="background:linear-gradient(135deg,#1a0808,#110a0a);border:2px solid rgba(224,32,32,0.3);color:var(--red);">MW</div>
+            <div><div class="spotlight-name">Marcus Williams</div><div class="spotlight-detail">PG &middot; Lincoln Prep, GA</div></div>
+            <div class="spotlight-stat">34 PTS</div>
+          </div>
+          <div class="spotlight-item">
+            <div class="spotlight-av" style="background:linear-gradient(135deg,#0a140a,#0a100a);border:2px solid rgba(31,187,110,0.3);color:var(--green);">PR</div>
+            <div><div class="spotlight-name">Pablo Reyes</div><div class="spotlight-detail">FW &middot; Eastside Prep, FL</div></div>
+            <div class="spotlight-stat">2 Goals</div>
+          </div>
+          <div class="spotlight-item">
+            <div class="spotlight-av" style="background:linear-gradient(135deg,#100a14,#0a0a14);border:2px solid rgba(201,168,76,0.3);color:var(--gold);">ES</div>
+            <div><div class="spotlight-name">Elijah Stone</div><div class="spotlight-detail">RB &middot; Lakeview Prep, TX</div></div>
+            <div class="spotlight-stat">128 YDS</div>
+          </div>
+          <div class="spotlight-item">
+            <div class="spotlight-av" style="background:linear-gradient(135deg,#0a0a14,#0e0e18);border:2px solid rgba(59,158,255,0.3);color:var(--blue);">AK</div>
+            <div><div class="spotlight-name">Amara Kofi</div><div class="spotlight-detail">OH &middot; Central HS, OH</div></div>
+            <div class="spotlight-stat">14 Kills</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+```
+
+  </div>
+
+  <script>
+    'use strict';
+
+    /* =====================================================================
+       CURRENT USER — swap this for real auth in production
+    ===================================================================== */
+    var CURRENT_USER = {
+      name:     'Marcus Williams',
+      initials: 'MW',
+      school:   'Lincoln Prep Academy, GA',
+      sport:    'basketball',
+      avStyle:  0
+    };
+
+    /* =====================================================================
+       CONSTANTS
+    ===================================================================== */
+    var AV_STYLES = [
+      { bg:'linear-gradient(135deg,#1a0808,#110a0a)', border:'rgba(224,32,32,0.38)',  color:'#e02020' },
+      { bg:'linear-gradient(135deg,#0a140a,#0a100a)', border:'rgba(31,187,110,0.38)', color:'#1fbb6e' },
+      { bg:'linear-gradient(135deg,#14100a,#100e0a)', border:'rgba(201,168,76,0.38)', color:'#c9a84c' },
+      { bg:'linear-gradient(135deg,#0a0a14,#0e0e18)', border:'rgba(59,158,255,0.38)', color:'#3b9eff' },
+      { bg:'linear-gradient(135deg,#140a14,#110a11)', border:'rgba(180,100,220,0.38)', color:'#b464dc' }
+    ];
+
+    /* Used only for the fallback placeholder block */
+    var SPORT_META = {
+      basketball: { icon:'&#127936;', accent:'#e02020', bg:'#160808' },
+      football:   { icon:'&#127944;', accent:'#c9a84c', bg:'#14100a' },
+      soccer:     { icon:'&#9917;',   accent:'#1fbb6e', bg:'#0a140a' },
+      baseball:   { icon:'&#9918;',   accent:'#3b9eff', bg:'#0a0a14' },
+      volleyball: { icon:'&#127952;', accent:'#e06060', bg:'#14080a' },
+      track:      { icon:'&#127939;', accent:'#c9a84c', bg:'#14100a' },
+      'default':  { icon:'&#127942;', accent:'#64647a', bg:'#0f0f12' }
+    };
+
+    var SPORT_LABELS = {
+      basketball:'Basketball', football:'Football', soccer:'Soccer',
+      baseball:'Baseball', volleyball:'Volleyball', track:'Track & Field'
+    };
+
+    var TAG_LABELS = {
+      game:'Game', tournament:'Tournament', training:'Training',
+      winner:'Game Winner', verified:'Verified'
+    };
+
+    /* =====================================================================
+       POSTS DATA STORE
+    ===================================================================== */
+    var POSTS = [
+      {
+        id:'post_1', athlete:{ name:'Marcus Williams', initials:'MW', school:'Lincoln Prep Academy, GA', avStyle:0 },
+        sport:'basketball', caption:'Region Championship. Said what I said. 34 and 9 on the biggest stage.',
+        perf:[{val:'34',lbl:'PTS'},{val:'9',lbl:'AST'},{val:'2',lbl:'STL'}],
+        tags:['tournament','winner'],
+        mediaType:'placeholder', mediaSrc:null, demoSrc:'./media/demo/basketball1.mp4',
+        mediaAspect:'vertical', gradStat:'34 PTS', gradSub:'Region Championship',
+        timestamp:'2 hours ago', saved:false
+      },
+      {
+        id:'post_2', athlete:{ name:'Pablo Reyes', initials:'PR', school:'Eastside Prep, FL', avStyle:1 },
+        sport:'soccer', caption:"2 goals in the first half. State playoff run starts now.",
+        perf:[{val:'2',lbl:'Goals'},{val:'1',lbl:'Assist'},{val:'82%',lbl:'Pass%'}],
+        tags:['game','verified'],
+        mediaType:'placeholder', mediaSrc:null, demoSrc:'./media/demo/soccer1.mp4',
+        mediaAspect:'vertical', gradStat:'2 Goals', gradSub:'State Playoff',
+        timestamp:'4 hours ago', saved:false
+      },
+      {
+        id:'post_3', athlete:{ name:'Elijah Stone', initials:'ES', school:'Lakeview Prep, TX', avStyle:2 },
+        sport:'football', caption:'128 yards on 18 carries. Two TDs. The O-line went absolutely crazy.',
+        perf:[{val:'128',lbl:'Rush Yds'},{val:'2',lbl:'TD'},{val:'7.1',lbl:'YPC'}],
+        tags:['game','tournament'],
+        mediaType:'placeholder', mediaSrc:null, demoSrc:'./media/demo/football1.mp4',
+        mediaAspect:'horizontal', gradStat:'128 YDS', gradSub:'District Championship',
+        timestamp:'6 hours ago', saved:false
+      },
+      {
+        id:'post_4', athlete:{ name:'Amara Kofi', initials:'AK', school:'Central HS, OH', avStyle:3 },
+        sport:'volleyball', caption:'Serve. Set. Terminate. 14 kills and 4 blocks in the regional semifinal.',
+        perf:[{val:'14',lbl:'Kills'},{val:'4',lbl:'Blocks'},{val:'88%',lbl:'Att%'}],
+        tags:['game','verified'],
+        mediaType:'placeholder', mediaSrc:null, demoSrc:null,
+        mediaAspect:'vertical', gradStat:'14 Kills', gradSub:'Regional Semifinal',
+        timestamp:'1 day ago', saved:false
+      },
+      {
+        id:'post_5', athlete:{ name:'Tyler Hines', initials:'TH', school:'Mesa View Prep, AZ', avStyle:0 },
+        sport:'baseball', caption:"3-for-4 with the go-ahead homer in the 7th. Four RBIs. Desert ball.",
+        perf:[{val:'3/4',lbl:'H/AB'},{val:'1',lbl:'HR'},{val:'4',lbl:'RBI'}],
+        tags:['game','winner'],
+        mediaType:'placeholder', mediaSrc:null, demoSrc:'./media/demo/baseball1.jpg',
+        mediaAspect:'horizontal', gradStat:'3-for-4', gradSub:'Section Qualifier',
+        timestamp:'1 day ago', saved:false
+      }
+    ];
+
+    var activeFeedSport = 'all';
+
+    /* =====================================================================
+       HELPERS
+    ===================================================================== */
+    function getAv(idx) { return AV_STYLES[idx % AV_STYLES.length]; }
+    function tagLabel(t) { return TAG_LABELS[t] || t; }
+
+    var _toastTimer = null;
+    function showToast(msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(function() { t.classList.remove('show'); }, 2800);
+    }
+
+    function updateBadge() {
+      var b = document.getElementById('feedBadge');
+      if (b) b.textContent = POSTS.length;
+    }
+
+    function syncFilters(sport) {
+      document.querySelectorAll('.feed-tab').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.sport === sport);
+      });
+      document.querySelectorAll('.sport-pill').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.sport === sport);
+      });
+    }
+
+    /* =====================================================================
+       MEDIA — DOM-based, no inline onerror, no escaped HTML in attributes
+    ===================================================================== */
+
+    function makePlaceholder(post) {
+      var meta = SPORT_META[post.sport] || SPORT_META['default'];
+      var wrap = document.createElement('div');
+      wrap.className = 'media-placeholder';
+      wrap.style.background = 'linear-gradient(160deg,' + meta.bg + ',#0a0a0b)';
+
+      var inner = document.createElement('div');
+      inner.className = 'media-ph-inner';
+
+      var icon = document.createElement('div');
+      icon.className = 'media-ph-icon';
+      icon.innerHTML = meta.icon;
+
+      var stat = document.createElement('div');
+      stat.className = 'media-ph-stat';
+      stat.style.color = meta.accent;
+      stat.textContent = post.gradStat || '';
+
+      var sub = document.createElement('div');
+      sub.className = 'media-ph-sub';
+      sub.textContent = post.gradSub || '';
+
+      inner.appendChild(icon);
+      inner.appendChild(stat);
+      inner.appendChild(sub);
+
+      var wm = document.createElement('div');
+      wm.className = 'media-ph-wm';
+      wm.textContent = post.athlete.initials;
+
+      wrap.appendChild(inner);
+      wrap.appendChild(wm);
+      return wrap;
+    }
+
+    /* Replace wrapper contents with placeholder — called on media error */
+    function fallbackToPlaceholder(wrapper, post) {
+      while (wrapper.firstChild) wrapper.removeChild(wrapper.firstChild);
+      wrapper.appendChild(makePlaceholder(post));
+    }
+
+    /* Build the .post-media DOM element with correct media priority:
+       1. mediaSrc (uploaded blob)
+       2. demoSrc  (local demo file path, error-handled)
+       3. placeholder (always works)
+       All fallbacks use addEventListener — no inline event attrs.
+    */
+    function buildMedia(post) {
+      var aspect  = post.mediaAspect || 'vertical';
+      var wrapper = document.createElement('div');
+      wrapper.className = 'post-media ' + aspect;
+
+      var src = post.mediaSrc || post.demoSrc || null;
+
+      var isVideo = src && (
+        post.mediaType === 'video' ||
+        /\.(mp4|webm|mov|m4v|ogv)(\?.*)?$/i.test(src) ||
+        src.indexOf('blob:') === 0
+      );
+      var isImage = src && !isVideo && (
+        post.mediaType === 'image' ||
+        /\.(jpe?g|png|gif|webp|avif|svg)(\?.*)?$/i.test(src)
+      );
+
+      if (isVideo) {
+        /* Loading shimmer — removed once video can play */
+        var shimmer = document.createElement('div');
+        shimmer.className = 'media-loading';
+        wrapper.appendChild(shimmer);
+
+        var vid = document.createElement('video');
+        vid.src = src;
+        vid.muted = true;
+        vid.loop  = true;
+        vid.setAttribute('playsinline', '');
+        vid.setAttribute('preload', 'metadata');
+        vid.setAttribute('aria-label', 'Highlight video by ' + post.athlete.name);
+
+        /* Optional poster — if post.poster path exists browsers will show it before playback */
+        if (post.poster) {
+          vid.setAttribute('poster', post.poster);
+        }
+
+        /* Remove shimmer once metadata (including dimensions) is available */
+        vid.addEventListener('loadedmetadata', function() {
+          shimmer.classList.add('hidden');
+          vid.classList.add('ready');
+          /* Auto-update aspect based on actual video dimensions */
+          if (vid.videoWidth && vid.videoHeight) {
+            var ratio = vid.videoWidth / vid.videoHeight;
+            var newAspect = ratio > 1.2 ? 'horizontal' : ratio < 0.85 ? 'vertical' : 'square';
+            if (newAspect !== aspect) {
+              wrapper.className = 'post-media ' + newAspect;
+            }
+          }
+        });
+
+        /* Error: log and swap to placeholder */
+        vid.addEventListener('error', function() {
+          console.error('[Clutch] Video load failed:', src, '(post:', post.id, ')');
+          fallbackToPlaceholder(wrapper, post);
+        });
+
+        wrapper.appendChild(vid);
+
+        /* Muted toggle badge */
+        var badge = document.createElement('button');
+        badge.className = 'media-muted-badge';
+        badge.setAttribute('type', 'button');
+        badge.setAttribute('aria-label', 'Toggle mute');
+        badge.innerHTML = '<svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2"/><line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2"/></svg> Muted';
+        badge.addEventListener('click', function() {
+          vid.muted = !vid.muted;
+          badge.innerHTML = vid.muted
+            ? '<svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2"/><line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2"/></svg> Muted'
+            : '<svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07" fill="none" stroke="currentColor" stroke-width="2"/></svg> Sound';
+        });
+        wrapper.appendChild(badge);
+
+      } else if (isImage) {
+        /* Loading shimmer for images too */
+        var imgShimmer = document.createElement('div');
+        imgShimmer.className = 'media-loading';
+        wrapper.appendChild(imgShimmer);
+
+        var img = document.createElement('img');
+        img.src     = src;
+        img.alt     = 'Highlight by ' + post.athlete.name;
+        img.loading = 'lazy';
+
+        img.addEventListener('load', function() {
+          imgShimmer.classList.add('hidden');
+          img.classList.add('ready');
+          /* Detect and apply correct aspect ratio from actual image dimensions */
+          if (img.naturalWidth && img.naturalHeight) {
+            var r = img.naturalWidth / img.naturalHeight;
+            var detected = r > 1.2 ? 'horizontal' : r < 0.85 ? 'vertical' : 'square';
+            if (detected !== aspect) {
+              wrapper.className = 'post-media ' + detected;
+            }
+          }
+        });
+
+        img.addEventListener('error', function() {
+          console.error('[Clutch] Image load failed:', src, '(post:', post.id, ')');
+          fallbackToPlaceholder(wrapper, post);
+        });
+
+        wrapper.appendChild(img);
+
+      } else {
+        /* No source at all — go straight to placeholder */
+        wrapper.appendChild(makePlaceholder(post));
+      }
+
+      return wrapper;
+    }
+
+    /* =====================================================================
+       POST CARD — fully DOM-based, no innerHTML for dynamic parts
+    ===================================================================== */
+    function buildPostCard(post, idx) {
+      var av    = getAv(post.athlete.avStyle);
+      var sport = post.sport || 'default';
+      var label = SPORT_LABELS[sport] || sport;
+
+      var article = document.createElement('article');
+      article.id = post.id;
+      article.className = 'post-card';
+      article.setAttribute('aria-label', 'Highlight post by ' + post.athlete.name);
+      article.style.animationDelay = Math.min(idx * 0.06, 0.42) + 's';
+
+      /* --- HEADER --- */
+      var header = document.createElement('div');
+      header.className = 'post-header';
+
+      var hLeft = document.createElement('div');
+      hLeft.className = 'post-header-left';
+
+      var avEl = document.createElement('div');
+      avEl.className = 'post-avatar';
+      avEl.setAttribute('aria-hidden', 'true');
+      avEl.textContent = post.athlete.initials;
+      avEl.style.cssText = 'background:' + av.bg + ';border:2px solid ' + av.border + ';color:' + av.color + ';';
+
+      var nameGroup = document.createElement('div');
+      var nameEl = document.createElement('div');
+      nameEl.className = 'post-name';
+      nameEl.textContent = post.athlete.name;
+      var schoolEl = document.createElement('div');
+      schoolEl.className = 'post-school';
+      schoolEl.textContent = post.athlete.school;
+      nameGroup.appendChild(nameEl);
+      nameGroup.appendChild(schoolEl);
+
+      hLeft.appendChild(avEl);
+      hLeft.appendChild(nameGroup);
+
+      var hRight = document.createElement('div');
+      hRight.className = 'post-header-right';
+
+      var tagEl = document.createElement('span');
+      tagEl.className = 'sport-tag ' + sport;
+      tagEl.textContent = label;
+
+      var timeEl = document.createElement('span');
+      timeEl.className = 'post-time';
+      timeEl.textContent = post.timestamp;
+
+      hRight.appendChild(tagEl);
+      hRight.appendChild(timeEl);
+      header.appendChild(hLeft);
+      header.appendChild(hRight);
+      article.appendChild(header);
+
+      /* --- MEDIA --- */
+      article.appendChild(buildMedia(post));
+
+      /* --- CONTENT --- */
+      var content = document.createElement('div');
+      content.className = 'post-content';
+
+      var caption = document.createElement('p');
+      caption.className = 'post-caption';
+      caption.textContent = post.caption;
+      content.appendChild(caption);
+
+      if (post.perf && post.perf.length) {
+        var perfRow = document.createElement('div');
+        perfRow.className = 'post-perf';
+        perfRow.setAttribute('role', 'group');
+        perfRow.setAttribute('aria-label', 'Performance stats');
+        post.perf.forEach(function(s) {
+          var cell = document.createElement('div');
+          cell.className = 'post-perf-stat';
+          var v = document.createElement('span');
+          v.className = 'post-perf-val';
+          v.textContent = s.val;
+          var l = document.createElement('span');
+          l.className = 'post-perf-lbl';
+          l.textContent = s.lbl;
+          cell.appendChild(v);
+          cell.appendChild(l);
+          perfRow.appendChild(cell);
+        });
+        content.appendChild(perfRow);
+      }
+
+      if (post.tags && post.tags.length) {
+        var tagsRow = document.createElement('div');
+        tagsRow.className = 'post-tags';
+        post.tags.forEach(function(t) {
+          var tg = document.createElement('span');
+          tg.className = 'post-tag ' + t;
+          tg.textContent = tagLabel(t);
+          tagsRow.appendChild(tg);
+        });
+        content.appendChild(tagsRow);
+      }
+
+      article.appendChild(content);
+
+      /* --- FOOTER --- */
+      var footer = document.createElement('div');
+      footer.className = 'post-footer';
+
+      var viewBtn = document.createElement('button');
+      viewBtn.className = 'post-action primary';
+      viewBtn.setAttribute('aria-label', 'View full highlight');
+      viewBtn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> View';
+      viewBtn.addEventListener('click', function() {
+        showToast('Full-screen player coming soon');
+      });
+
+      var shareBtn = document.createElement('button');
+      shareBtn.className = 'post-action';
+      shareBtn.setAttribute('aria-label', 'Share this post');
+      shareBtn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share';
+      shareBtn.addEventListener('click', function() {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(window.location.href + '#' + post.id)
+            .then(function() { showToast('Link copied'); })
+            .catch(function() { showToast('Highlight link copied'); });
+        } else {
+          showToast('Highlight link copied');
+        }
+      });
+
+      var spacer = document.createElement('div');
+      spacer.className = 'post-footer-spacer';
+
+      var saveBtn = document.createElement('button');
+      function refreshSave() {
+        saveBtn.className = 'post-action' + (post.saved ? ' saved' : '');
+        saveBtn.setAttribute('aria-pressed', String(post.saved));
+        saveBtn.setAttribute('aria-label', (post.saved ? 'Saved' : 'Save') + ' this post');
+        var f = post.saved ? 'currentColor' : 'none';
+        saveBtn.innerHTML = '<svg width="13" height="13" fill="' + f + '" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> ' + (post.saved ? 'Saved' : 'Save');
+      }
+      refreshSave();
+      saveBtn.addEventListener('click', function() {
+        post.saved = !post.saved;
+        refreshSave();
+        showToast(post.saved ? 'Highlight saved' : 'Removed from saved');
+      });
+
+      footer.appendChild(viewBtn);
+      footer.appendChild(shareBtn);
+      footer.appendChild(spacer);
+      footer.appendChild(saveBtn);
+      article.appendChild(footer);
+
+      return article;
+    }
+
+    /* =====================================================================
+       RENDER FEED
+       Removes only .post-card and .feed-empty nodes.
+       Composer card is left untouched.
+    ===================================================================== */
+    function renderFeed() {
+      try {
+        var col = document.getElementById('feedCol');
+
+        col.querySelectorAll('.post-card, .feed-empty').forEach(function(el) {
+          col.removeChild(el);
+        });
+
+        var filtered = POSTS.filter(function(p) {
+          return activeFeedSport === 'all' || p.sport === activeFeedSport;
+        });
+
+        if (filtered.length === 0) {
+          var empty = document.createElement('div');
+          empty.className = 'feed-empty';
+          empty.innerHTML =
+            '<div class="feed-empty-icon"><svg width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></div>' +
+            '<div class="feed-empty-title">No Highlights Yet</div>' +
+            '<div class="feed-empty-sub">Be the first to post a highlight for this sport.</div>';
+          var eb = document.createElement('button');
+          eb.className = 'btn-create';
+          eb.style.marginTop = '12px';
+          eb.textContent = 'Create Post';
+          eb.addEventListener('click', openModal);
+          empty.appendChild(eb);
+          col.appendChild(empty);
+        } else {
+          var frag = document.createDocumentFragment();
+          filtered.forEach(function(p, i) {
+            frag.appendChild(buildPostCard(p, i));
+          });
+          col.appendChild(frag);
+          setTimeout(initVideoObserver, 80);
+        }
+
+        updateBadge();
+      } catch (err) {
+        console.error('[Clutch] renderFeed error:', err);
+      }
+    }
+
+    /* =====================================================================
+       VIDEO AUTOPLAY via IntersectionObserver
+    ===================================================================== */
+    var _vidObserver = null;
+
+    function initVideoObserver() {
+      if (_vidObserver) _vidObserver.disconnect();
+
+      if (!('IntersectionObserver' in window)) {
+        document.querySelectorAll('.post-media video').forEach(function(v) {
+          v.play().catch(function() {});
+        });
+        return;
+      }
+
+      _vidObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.play().catch(function() {});
+          } else {
+            entry.target.pause();
+          }
+        });
+      }, { threshold: 0.5 });
+
+      document.querySelectorAll('.post-media video').forEach(function(v) {
+        _vidObserver.observe(v);
+      });
+    }
+
+    /* =====================================================================
+       FILTER WIRING
+    ===================================================================== */
+    document.querySelectorAll('.feed-tab').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        activeFeedSport = btn.dataset.sport;
+        syncFilters(activeFeedSport);
+        renderFeed();
+      });
+    });
+
+    document.querySelectorAll('.sport-pill').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        activeFeedSport = btn.dataset.sport;
+        syncFilters(activeFeedSport);
+        renderFeed();
+      });
+    });
+
+    /* =====================================================================
+       MODAL LOGIC
+    ===================================================================== */
+    function openModal() {
+      prefill();
+      document.getElementById('createModal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      setTimeout(function() {
+        var c = document.getElementById('f-caption');
+        if (c) c.focus();
+      }, 60);
+    }
+
+    function closeModal() {
+      document.getElementById('createModal').classList.remove('open');
+      document.body.style.overflow = '';
+      resetModal();
+    }
+
+    function prefill() {
+      var n = document.getElementById('f-name');
+      var s = document.getElementById('f-school');
+      var sp = document.getElementById('f-sport');
+      if (n  && !n.value)  n.value  = CURRENT_USER.name;
+      if (s  && !s.value)  s.value  = CURRENT_USER.school;
+      if (sp)              sp.value = CURRENT_USER.sport;
+    }
+
+    function resetModal() {
+      ['f-name','f-school','f-caption','p-val-1','p-lbl-1','p-val-2','p-lbl-2','p-val-3','p-lbl-3'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      var sp = document.getElementById('f-sport');
+      var tg = document.getElementById('f-tag');
+      if (sp) sp.value = 'basketball';
+      if (tg) tg.value = 'game';
+      _uploadFile = null;
+      _uploadURL  = null;
+      var pv = document.getElementById('uploadPreview');
+      var fn = document.getElementById('uploadFilename');
+      if (pv) { pv.style.display = 'none'; pv.innerHTML = ''; }
+      if (fn) { fn.style.display = 'none'; fn.textContent = ''; }
+      var fi = document.getElementById('f-media');
+      if (fi) { fi.value = ''; fi.accept = 'video/*,image/*'; }
+    }
+
+    /* Modal backdrop click */
+    document.getElementById('createModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    /* Button wiring */
+    document.getElementById('modalCloseBtn').addEventListener('click',  closeModal);
+    document.getElementById('modalCancelBtn').addEventListener('click', closeModal);
+    document.getElementById('modalSubmitBtn').addEventListener('click', submitPost);
+
+    ['topCreateBtn','asideCreateBtn','mobileCreateBtn','composerPostBtn','composerPromptBtn'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('click', openModal);
+    });
+
+    document.getElementById('composerVideoBtn').addEventListener('click', function() {
+      openModal();
+      setTimeout(function() {
+        var fi = document.getElementById('f-media');
+        if (fi) { fi.accept = 'video/*'; fi.click(); }
+      }, 120);
+    });
+
+    document.getElementById('composerImageBtn').addEventListener('click', function() {
+      openModal();
+      setTimeout(function() {
+        var fi = document.getElementById('f-media');
+        if (fi) { fi.accept = 'image/*'; fi.click(); }
+      }, 120);
+    });
+
+    /* =====================================================================
+       FILE UPLOAD
+    ===================================================================== */
+    var _uploadFile = null;
+    var _uploadURL  = null;
+
+    document.getElementById('f-media').addEventListener('change', function() {
+      var file = this.files && this.files[0];
+      if (!file) return;
+      _uploadFile = file;
+      if (_uploadURL) URL.revokeObjectURL(_uploadURL);
+      _uploadURL = URL.createObjectURL(file);
+
+      var pv = document.getElementById('uploadPreview');
+      var fn = document.getElementById('uploadFilename');
+      fn.textContent = 'File selected: ' + file.name;
+      fn.style.display = 'block';
+      pv.style.display = 'block';
+      pv.innerHTML = '';
+
+      if (file.type.startsWith('video/')) {
+        var pVid = document.createElement('video');
+        pVid.src = _uploadURL;
+        pVid.controls = true;
+        pVid.muted = true;
+        pVid.setAttribute('playsinline', '');
+        pVid.setAttribute('preload', 'metadata');
+        pVid.style.cssText = 'width:100%;max-height:200px;border-radius:6px;';
+        pv.appendChild(pVid);
+      } else {
+        var pImg = document.createElement('img');
+        pImg.src = _uploadURL;
+        pImg.alt = 'Upload preview';
+        pImg.style.cssText = 'width:100%;max-height:200px;object-fit:cover;border-radius:6px;';
+        pv.appendChild(pImg);
+      }
+    });
+
+    /* Drag-and-drop */
+    (function() {
+      var zone = document.getElementById('uploadZone');
+      zone.addEventListener('dragover', function(e) { e.preventDefault(); zone.classList.add('dragover'); });
+      zone.addEventListener('dragleave', function() { zone.classList.remove('dragover'); });
+      zone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        var file = e.dataTransfer && e.dataTransfer.files[0];
+        if (!file) return;
+        try {
+          var fi = document.getElementById('f-media');
+          var dt = new DataTransfer();
+          dt.items.add(file);
+          fi.files = dt.files;
+          fi.dispatchEvent(new Event('change'));
+        } catch (err) {
+          console.error('[Clutch] Drop error:', err);
+        }
+      });
+    }());
+
+    /* =====================================================================
+       SUBMIT POST
+       Detects uploaded media dimensions to set mediaAspect automatically.
+    ===================================================================== */
+    function submitPost() {
+      var name    = document.getElementById('f-name').value.trim();
+      var school  = document.getElementById('f-school').value.trim();
+      var sport   = document.getElementById('f-sport').value;
+      var tag     = document.getElementById('f-tag').value;
+      var caption = document.getElementById('f-caption').value.trim();
+
+      if (!name)    { document.getElementById('f-name').focus();    showToast('Please enter an athlete name'); return; }
+      if (!caption) { document.getElementById('f-caption').focus(); showToast('Please add a caption'); return; }
+
+      var perf = [];
+      for (var i = 1; i <= 3; i++) {
+        var vi = document.getElementById('p-val-' + i);
+        var li = document.getElementById('p-lbl-' + i);
+        var pv2 = vi ? vi.value.trim() : '';
+        var pl  = li ? li.value.trim() : '';
+        if (pv2 && pl) perf.push({ val: pv2, lbl: pl });
+      }
+
+      var mediaType = 'placeholder', mediaSrc = null;
+      if (_uploadFile && _uploadURL) {
+        mediaType = _uploadFile.type.startsWith('video/') ? 'video' : 'image';
+        mediaSrc  = _uploadURL;
+        _uploadURL = null;
+      }
+
+      var words = name.split(' ').filter(Boolean);
+      var initials = (words.length >= 2
+        ? words[0].charAt(0) + words[words.length - 1].charAt(0)
+        : name.slice(0, 2)).toUpperCase();
+
+      /* Build post object — aspect is refined after media loads in buildMedia */
+      var newPost = {
+        id:          'post_' + Date.now(),
+        athlete:     { name: name, initials: initials, school: school || 'Unknown School', avStyle: CURRENT_USER.avStyle },
+        sport:       sport,
+        caption:     caption,
+        perf:        perf,
+        tags:        [tag],
+        mediaType:   mediaType,
+        mediaSrc:    mediaSrc,
+        demoSrc:     null,
+        poster:      null,
+        /* Start with 'vertical' for video uploads, 'auto' for images.
+           buildMedia refines this on loadedmetadata/load using actual dims. */
+        mediaAspect: (mediaType === 'video') ? 'vertical' : (mediaType === 'image') ? 'auto' : 'vertical',
+        gradStat:    perf.length ? perf[0].val + ' ' + perf[0].lbl : initials,
+        gradSub:     school || 'Highlight',
+        timestamp:   'Just now',
+        saved:       false
+      };
+
+      /* If we have a blob and it's an image, peek at dimensions before posting */
+      if (mediaType === 'image' && mediaSrc) {
+        var peek = new Image();
+        peek.onload = function() {
+          if (peek.naturalWidth && peek.naturalHeight) {
+            var r = peek.naturalWidth / peek.naturalHeight;
+            newPost.mediaAspect = r > 1.2 ? 'horizontal' : r < 0.85 ? 'vertical' : 'square';
+          }
+          _addAndRender(newPost);
+        };
+        peek.onerror = function() { _addAndRender(newPost); };
+        peek.src = mediaSrc;
+      } else {
+        _addAndRender(newPost);
+      }
+    }
+
+    function _addAndRender(post) {
+      POSTS.unshift(post);
+      closeModal();
+      activeFeedSport = 'all';
+      syncFilters('all');
+      renderFeed();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showToast('Highlight posted!');
+    }
+
+    /* =====================================================================
+       SIDEBAR
+    ===================================================================== */
+    var _sbCollapsed = false;
+    var _sbOpen      = false;
+
+    document.getElementById('sidebarToggle').addEventListener('click', function() {
+      _sbCollapsed = !_sbCollapsed;
+      document.getElementById('sidebar').classList.toggle('collapsed', _sbCollapsed);
+      this.setAttribute('aria-expanded', String(!_sbCollapsed));
+    });
+
+    function closeSidebar() {
+      _sbOpen = false;
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('overlay').classList.remove('on');
+      document.getElementById('mobileHam').setAttribute('aria-expanded', 'false');
+    }
+
+    document.getElementById('mobileHam').addEventListener('click', function() {
+      _sbOpen = true;
+      document.getElementById('sidebar').classList.add('open');
+      document.getElementById('overlay').classList.add('on');
+      this.setAttribute('aria-expanded', 'true');
+    });
+
+    document.getElementById('overlay').addEventListener('click', closeSidebar);
+
+    document.querySelectorAll('.sb-item').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.sb-item').forEach(function(b) {
+          b.classList.remove('active');
+          b.removeAttribute('aria-current');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-current', 'page');
+        if (_sbOpen) closeSidebar();
+      });
+    });
+
+    window.addEventListener('resize', function() {
+      if (window.innerWidth > 768 && _sbOpen) closeSidebar();
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        if (document.getElementById('createModal').classList.contains('open')) {
+          closeModal();
+        } else if (_sbOpen) {
+          closeSidebar();
+        }
+      }
+    });
+
+    /* =====================================================================
+       INIT
+    ===================================================================== */
+    (function init() {
+      try {
+        /* Composer avatar */
+        var compAv = document.getElementById('composerAv');
+        if (compAv) {
+          var av = getAv(CURRENT_USER.avStyle);
+          compAv.textContent = CURRENT_USER.initials;
+          compAv.style.cssText = [
+            'background:' + av.bg,
+            'border:2px solid ' + av.border,
+            'color:' + av.color,
+            'flex-shrink:0',
+            'width:40px',
+            'height:40px',
+            'border-radius:50%',
+            'display:flex',
+            'align-items:center',
+            'justify-content:center',
+            'font-family:var(--f-heading)',
+            'font-weight:800',
+            'font-size:14px'
+          ].join(';');
+        }
+
+        /* Sidebar profile */
+        var sbAv = document.getElementById('sbAv');
+        var sbNm = document.getElementById('sbName');
+        var sbHd = document.getElementById('sbHandle');
+        if (sbAv) sbAv.textContent = CURRENT_USER.initials;
+        if (sbNm) sbNm.textContent = CURRENT_USER.name;
+        if (sbHd) sbHd.textContent = '@' + CURRENT_USER.name.toLowerCase().replace(/\s+/g, '');
+
+        renderFeed();
+      } catch (err) {
+        console.error('[Clutch] Init error:', err);
+      }
+    }());
+
+  </script>
+
 </body>
 </html>
