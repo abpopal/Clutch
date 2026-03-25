@@ -11,42 +11,62 @@ const newsCountEl = document.querySelector("#pulse-news-count");
 
 const trendingSeed = [
   {
-    author_role: "athlete",
-    caption: "Player of the week voting is now open.",
+    authorName: "Jordan Williams",
+    authorRole: "athlete",
+    caption: "34 points in the region final. Full clip thread is up now.",
     sport: "basketball",
-    created_at: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+    created_at: new Date(Date.now() - 1000 * 60 * 55).toISOString(),
   },
   {
-    author_role: "school",
-    caption: "Regional bracket announced for this weekend.",
-    sport: "soccer",
-    created_at: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
-  },
-  {
-    author_role: "coach",
-    caption: "Practice attendance tracker published for all teams.",
+    authorName: "North Valley Football",
+    authorRole: "school",
+    caption: "Spring install starts Monday. Captains report at 6:15 AM and film packets are live.",
     sport: "football",
-    created_at: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
+    created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+  },
+  {
+    authorName: "Coach Priya Shah",
+    authorRole: "coach",
+    caption: "Recruiting period opens next week. Updated board and target clips have been sent to staff.",
+    sport: "soccer",
+    created_at: new Date(Date.now() - 1000 * 60 * 260).toISOString(),
+  },
+];
+
+const followingSeed = [
+  {
+    authorName: "Westview Athletics",
+    authorRole: "school",
+    caption: "Travel list is final and the community sendoff starts at 4 PM in the main gym.",
+    sport: "basketball",
+    created_at: new Date(Date.now() - 1000 * 60 * 85).toISOString(),
+  },
+  {
+    authorName: "Ava Kim",
+    authorRole: "athlete",
+    caption: "Back training at full pace. Appreciate the messages and the support.",
+    sport: "soccer",
+    created_at: new Date(Date.now() - 1000 * 60 * 210).toISOString(),
   },
 ];
 
 const newsSeed = [
   {
-    title: "NCAA recruiting calendar updates",
-    summary: "Important dates for official visits and signing windows this month.",
-    source: "College Sports Wire",
+    title: "Recruiting calendars tighten this week",
+    summary: "Coaches are posting film requests and unofficial visit windows more aggressively as event season ramps up.",
+    source: "Clutch Watch",
     time: "2h ago",
   },
   {
-    title: "High school playoff seeding released",
-    summary: "State associations posted final seeds across major winter sports.",
-    source: "Prep Athletics",
+    title: "Regional playoff clips are driving the most saves",
+    summary: "High-pressure late-game possessions and commitment announcements are outperforming standard updates today.",
+    source: "Platform Signals",
     time: "5h ago",
   },
   {
-    title: "Athlete eligibility reminders",
-    summary: "Schools are asked to confirm academic eligibility before postseason play.",
-    source: "Clutch Newsroom",
+    title: "Schools are posting more roster and travel updates",
+    summary: "Program accounts are seeing strong reach when they publish clean recap graphics and schedule notes.",
+    source: "Clutch Watch",
     time: "Today",
   },
 ];
@@ -73,7 +93,17 @@ function normalizeSport(raw, caption = "") {
   return "general";
 }
 
-function renderPostRows(container, rows, emptyText) {
+function formatTime(isoString) {
+  if (!isoString) return "Now";
+  const diffMs = Date.now() - new Date(isoString).getTime();
+  const mins = Math.max(1, Math.round(diffMs / 60000));
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
+function renderPostCards(container, rows, emptyText, mode) {
   if (!container) return;
   container.innerHTML = "";
 
@@ -86,22 +116,22 @@ function renderPostRows(container, rows, emptyText) {
   }
 
   rows.forEach((row) => {
-    const item = document.createElement("div");
-    item.className = "row";
-
-    const author = document.createElement("strong");
-    author.textContent = row.author_role || "creator";
-
-    const content = document.createElement("span");
-    content.textContent = row.caption || "(No caption)";
-
-    const sport = document.createElement("span");
-    sport.textContent = normalizeSport(row.sport, row.caption);
-
-    const date = document.createElement("span");
-    date.textContent = row.created_at ? new Date(row.created_at).toLocaleDateString() : "-";
-
-    item.append(author, content, sport, date);
+    const item = document.createElement("article");
+    item.className = "post-card";
+    item.innerHTML = `
+      <div class="post-card-head">
+        <div>
+          <strong>${row.authorName || row.authorRole || "Creator"}</strong>
+          <div class="post-meta-line">${row.authorRole || "member"} • ${normalizeSport(row.sport, row.caption)}</div>
+        </div>
+        <span class="tag">${formatTime(row.created_at)}</span>
+      </div>
+      <p class="post-caption">${row.caption || "(No caption)"}</p>
+      <div class="post-card-foot">
+        <span class="pill">${mode === "trending" ? "Trending" : "Following highlight"}</span>
+        <span class="helper">${mode === "trending" ? "Visible beyond your network" : "From accounts you follow"}</span>
+      </div>
+    `;
     container.appendChild(item);
   });
 }
@@ -113,7 +143,7 @@ function renderNews(items) {
   if (!items.length) {
     const empty = document.createElement("div");
     empty.className = "placeholder";
-    empty.textContent = "No news available right now.";
+    empty.textContent = "No watchlist notes available right now.";
     newsListEl.appendChild(empty);
     return;
   }
@@ -140,7 +170,7 @@ async function fetchFollowingPosts(authUserId) {
 
   if (userError) throw userError;
   const appUserId = userData?.user_id;
-  if (!appUserId) return [];
+  if (!appUserId) return followingSeed;
 
   const { data: followRows, error: followError } = await supabase
     .from("follow")
@@ -150,17 +180,33 @@ async function fetchFollowingPosts(authUserId) {
   if (followError) throw followError;
 
   const followedIds = (followRows || []).map((row) => row.followed_user_id).filter(Boolean);
-  if (!followedIds.length) return [];
+  if (!followedIds.length) return followingSeed;
 
-  const { data: postsData, error: postsError } = await supabase
-    .from("post")
-    .select("author_role, caption, created_at")
-    .in("author_user_id", followedIds)
-    .order("created_at", { ascending: false })
-    .limit(30);
+  const [{ data: postsData, error: postsError }, { data: directoryData, error: directoryError }] = await Promise.all([
+    supabase
+      .from("post")
+      .select("author_user_id, author_role, caption, created_at")
+      .in("author_user_id", followedIds)
+      .order("created_at", { ascending: false })
+      .limit(12),
+    supabase
+      .from("user_directory")
+      .select("user_id,display_name")
+      .in("user_id", followedIds),
+  ]);
 
   if (postsError) throw postsError;
-  return postsData || [];
+  if (directoryError) console.warn("user_directory lookup skipped", directoryError.message);
+  if (!postsData?.length) return followingSeed;
+
+  const directoryByUserId = new Map((directoryData || []).map((row) => [row.user_id, row.display_name]));
+  return postsData.map((row) => ({
+    authorName: directoryByUserId.get(row.author_user_id) || row.author_role,
+    authorRole: row.author_role,
+    caption: row.caption,
+    created_at: row.created_at,
+    sport: normalizeSport("", row.caption),
+  }));
 }
 
 async function fetchTrendingPosts() {
@@ -169,11 +215,17 @@ async function fetchTrendingPosts() {
       .from("post")
       .select("author_role, caption, created_at")
       .order("created_at", { ascending: false })
-      .limit(60);
+      .limit(20);
 
     if (error || !data?.length) return trendingSeed;
 
-    return data.slice(0, 8);
+    return data.slice(0, 8).map((item) => ({
+      authorName: item.author_role,
+      authorRole: item.author_role,
+      caption: item.caption,
+      created_at: item.created_at,
+      sport: normalizeSport("", item.caption),
+    }));
   } catch (_error) {
     return trendingSeed;
   }
@@ -192,7 +244,7 @@ async function fetchNewsItems() {
     return data.map((item) => ({
       title: item.title,
       summary: item.summary,
-      source: item.source || "Clutch Newsroom",
+      source: item.source || "Clutch Watch",
       time: item.created_at ? new Date(item.created_at).toLocaleDateString() : "Today",
     }));
   } catch (_error) {
@@ -204,7 +256,7 @@ window.addEventListener("session-ready", async ({ detail }) => {
   const session = detail?.session;
   if (!session?.user?.id) return;
 
-  setStatus("Loading your pulse...");
+  setStatus("Loading pulse...");
 
   try {
     const [followingPosts, trendingPosts, newsItems] = await Promise.all([
@@ -213,8 +265,8 @@ window.addEventListener("session-ready", async ({ detail }) => {
       fetchNewsItems(),
     ]);
 
-    renderPostRows(followingListEl, followingPosts, "No posts from followed accounts yet.");
-    renderPostRows(trendingListEl, trendingPosts, "No trending posts yet.");
+    renderPostCards(followingListEl, followingPosts, "No following highlights yet.", "following");
+    renderPostCards(trendingListEl, trendingPosts, "No trending posts yet.", "trending");
     renderNews(newsItems);
 
     setMetric(followingCountEl, followingPosts.length);
@@ -224,11 +276,11 @@ window.addEventListener("session-ready", async ({ detail }) => {
     setStatus("Pulse is up to date.");
   } catch (error) {
     console.error("Pulse load failed", error);
-    renderPostRows(followingListEl, [], "Unable to load following posts.");
-    renderPostRows(trendingListEl, trendingSeed, "Showing fallback trending posts.");
+    renderPostCards(followingListEl, followingSeed, "Showing sample following highlights.", "following");
+    renderPostCards(trendingListEl, trendingSeed, "Showing sample trending posts.", "trending");
     renderNews(newsSeed);
 
-    setMetric(followingCountEl, 0);
+    setMetric(followingCountEl, followingSeed.length);
     setMetric(trendingCountEl, trendingSeed.length);
     setMetric(newsCountEl, newsSeed.length);
 

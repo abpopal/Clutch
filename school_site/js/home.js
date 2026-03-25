@@ -1,37 +1,43 @@
 import { supabase } from "./supabaseClient.js";
 
-const trendingSeed = [
+const fallbackFollowingSeed = [
   {
-    author_role: "athlete",
-    caption: "Triple-double tonight. Thanks for the support! #Basketball",
+    authorName: "Coach Elena Mendez",
+    authorRole: "coach",
     sport: "basketball",
-    created_at: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-    source: "trending",
+    caption: "Film session is up. We cleaned up late-clock spacing and transition defense from the last two games.",
+    created_at: new Date(Date.now() - 1000 * 60 * 42).toISOString(),
   },
   {
-    author_role: "school",
-    caption: "Bracket released for regional playoffs.",
+    authorName: "Westview Girls Basketball",
+    authorRole: "school",
+    sport: "basketball",
+    caption: "Final from tonight: Westview 68, North Ridge 61. Full recap and photo set coming after recovery and media upload.",
+    created_at: new Date(Date.now() - 1000 * 60 * 130).toISOString(),
+  },
+  {
+    authorName: "Ava Kim",
+    authorRole: "athlete",
     sport: "soccer",
+    caption: "Back on the field this week. Appreciate everyone who checked in during rehab.",
     created_at: new Date(Date.now() - 1000 * 60 * 300).toISOString(),
-    source: "trending",
-  },
-  {
-    author_role: "coach",
-    caption: "Match recap posted with standout performances.",
-    sport: "football",
-    created_at: new Date(Date.now() - 1000 * 60 * 480).toISOString(),
-    source: "trending",
   },
 ];
 
+const fallbackPulseSeed = [
+  { sport: "basketball" },
+  { sport: "football" },
+  { sport: "soccer" },
+  { sport: "track" },
+];
+
 const statusEl = document.querySelector("#connection-status");
-const feedListEl = document.querySelector("#feed-list");
+const feedListEl = document.querySelector("#home-feed");
 const metricFollowingEl = document.querySelector("#metric-following");
 const metricPostsEl = document.querySelector("#metric-posts");
 const metricTrendingEl = document.querySelector("#metric-trending");
 const metricUnreadEl = document.querySelector("#metric-unread");
 
-const feedTabs = Array.from(document.querySelectorAll("#feed-tabs button"));
 const filterTabs = Array.from(document.querySelectorAll("#feed-filters button"));
 const postTypeTabs = Array.from(document.querySelectorAll("#post-type-tabs button"));
 
@@ -50,12 +56,10 @@ const recapHighlights = document.querySelector("#recap-highlights");
 let currentSession = null;
 let currentRole = "general";
 let currentPostType = "standard";
-let activeFeedTab = "following";
 let activeFilter = "all";
 let appUserId = null;
 let followedIds = [];
-let followingRows = [];
-let trendingRows = [...trendingSeed];
+let followingRows = [...fallbackFollowingSeed];
 let uiBound = false;
 
 function setStatus(text, isError = false) {
@@ -87,6 +91,17 @@ function normalizeSport(raw, fallbackCaption = "") {
   return "general";
 }
 
+function formatTime(isoString) {
+  if (!isoString) return "Just now";
+  const diffMs = Date.now() - new Date(isoString).getTime();
+  const mins = Math.max(1, Math.round(diffMs / 60000));
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  return `${days}d ago`;
+}
+
 function roleCanPost(role) {
   return ["athlete", "coach", "school"].includes(role);
 }
@@ -104,33 +119,32 @@ function renderRows(rows) {
   }
 
   rows.forEach((row) => {
-    const item = document.createElement("div");
-    item.className = "row";
-
-    const author = document.createElement("strong");
-    author.textContent = row.author_role || "creator";
-
-    const content = document.createElement("span");
-    content.textContent = row.caption || "(No caption)";
-
-    const sport = document.createElement("span");
-    sport.textContent = normalizeSport(row.sport, row.caption);
-
-    const date = document.createElement("span");
-    date.textContent = row.created_at ? new Date(row.created_at).toLocaleDateString() : "-";
-
-    item.append(author, content, sport, date);
+    const item = document.createElement("article");
+    item.className = "post-card";
+    item.innerHTML = `
+      <div class="post-card-head">
+        <div>
+          <strong>${row.authorName || row.authorRole || "Creator"}</strong>
+          <div class="post-meta-line">${row.authorRole || "member"} • ${normalizeSport(row.sport, row.caption)}</div>
+        </div>
+        <span class="tag">${formatTime(row.created_at)}</span>
+      </div>
+      <p class="post-caption">${row.caption || "(No caption)"}</p>
+      <div class="post-card-foot">
+        <span class="pill">${row.source === "fallback" ? "Sample network post" : "Following"}</span>
+        <span class="helper">${row.visibility === "followers" ? "Followers only" : "Public update"}</span>
+      </div>
+    `;
     feedListEl.appendChild(item);
   });
 }
 
 function getFilteredRows() {
-  const baseRows = activeFeedTab === "following" ? followingRows : trendingRows;
-  return baseRows.filter((row) => {
+  return followingRows.filter((row) => {
     const sport = normalizeSport(row.sport, row.caption);
     if (activeFilter === "all") return true;
     if (["athlete", "coach", "school"].includes(activeFilter)) {
-      return (row.author_role || "").toLowerCase() === activeFilter;
+      return (row.authorRole || "").toLowerCase() === activeFilter;
     }
     return sport === activeFilter;
   });
@@ -140,8 +154,8 @@ function refreshView() {
   const rows = getFilteredRows();
   renderRows(rows);
   setMetric(metricPostsEl, rows.length);
-  setMetric(metricTrendingEl, trendingRows.length);
-  setMetric(metricFollowingEl, followedIds.length);
+  setMetric(metricTrendingEl, fallbackPulseSeed.length);
+  setMetric(metricFollowingEl, followedIds.length || fallbackFollowingSeed.length);
   setMetric(metricUnreadEl, currentSession?.user?.user_metadata?.unread_notifications ?? 4);
 }
 
@@ -161,9 +175,9 @@ async function loadFollowingFeed() {
 
   appUserId = await resolveAppUserId(currentSession.user.id);
   if (!appUserId) {
-    followingRows = [];
+    followingRows = fallbackFollowingSeed.map((row) => ({ ...row, source: "fallback" }));
     followedIds = [];
-    setStatus("No linked app profile found in users table.", true);
+    setStatus("No linked app profile found yet. Showing sample following posts.");
     refreshView();
     return;
   }
@@ -177,28 +191,41 @@ async function loadFollowingFeed() {
 
   followedIds = (followData || []).map((row) => row.followed_user_id).filter(Boolean);
   if (!followedIds.length) {
-    followingRows = [];
-    setStatus("Connected. Follow accounts to populate your personalized feed.");
+    followingRows = fallbackFollowingSeed.map((row) => ({ ...row, source: "fallback" }));
+    setStatus("Follow accounts to personalize this feed. Showing sample network posts for now.");
     refreshView();
     return;
   }
 
-  const { data: postsData, error: postsError } = await supabase
-    .from("post")
-    .select("author_user_id, author_role, caption, created_at")
-    .in("author_user_id", followedIds)
-    .order("created_at", { ascending: false })
-    .limit(40);
+  const [{ data: postsData, error: postsError }, { data: directoryData, error: directoryError }] = await Promise.all([
+    supabase
+      .from("post")
+      .select("author_user_id, author_role, caption, created_at, visibility")
+      .in("author_user_id", followedIds)
+      .order("created_at", { ascending: false })
+      .limit(40),
+    supabase
+      .from("user_directory")
+      .select("user_id,display_name,email")
+      .in("user_id", followedIds),
+  ]);
 
   if (postsError) throw postsError;
+  if (directoryError) console.warn("user_directory lookup skipped", directoryError.message);
 
-  followingRows = (postsData || []).map((row) => ({
-    ...row,
+  const directoryByUserId = new Map((directoryData || []).map((row) => [row.user_id, row]));
+
+  followingRows = ((postsData || []).length ? postsData : fallbackFollowingSeed).map((row) => ({
+    authorName: row.author_user_id ? directoryByUserId.get(row.author_user_id)?.display_name || row.author_role : row.authorName,
+    authorRole: row.author_role || row.authorRole,
+    caption: row.caption,
+    created_at: row.created_at,
     sport: normalizeSport("", row.caption),
-    source: "following",
+    visibility: row.visibility || "public",
+    source: (postsData || []).length ? "following" : "fallback",
   }));
 
-  setStatus("Connected to Supabase feed.");
+  setStatus((postsData || []).length ? "Connected to your following feed." : "No live posts found yet. Showing sample feed content.");
   refreshView();
 }
 
@@ -227,7 +254,7 @@ async function handleComposerSubmit(event) {
 
   let finalCaption = caption;
   if (currentPostType === "recap") {
-    finalCaption = `${caption}\n[Match Recap] Score: ${recapScore?.value || "-"}; Standouts: ${recapStandout?.value || "-"}; Highlights: ${recapHighlights?.value || "-"}`;
+    finalCaption = `${caption}\n[Game Recap] Score: ${recapScore?.value || "-"}; Standouts: ${recapStandout?.value || "-"}; Highlights: ${recapHighlights?.value || "-"}`;
   }
 
   try {
@@ -242,7 +269,7 @@ async function handleComposerSubmit(event) {
     if (isScheduled) {
       const scheduledDate = new Date(scheduleValue);
       if (scheduledDate.getTime() > Date.now()) {
-        setComposerStatus("Scheduled post saved in UI placeholder. Backend scheduler required to publish later.", "success");
+        setComposerStatus("Scheduled post captured in UI. Backend scheduling is still pending.", "success");
         return;
       }
     }
@@ -250,7 +277,9 @@ async function handleComposerSubmit(event) {
     const { error } = await supabase.from("post").insert({
       author_user_id: appUserId,
       author_role: currentRole,
-      caption: `${finalCaption}${composerTags?.value ? `\nTags: ${composerTags.value}` : ""}${composerVisibility?.value === "followers" ? "\nVisibility: followers" : ""}`,
+      caption: `${finalCaption}${composerTags?.value ? `\nTags: ${composerTags.value}` : ""}`,
+      visibility: composerVisibility?.value || "public",
+      post_type: currentPostType,
     });
 
     if (error) throw error;
@@ -266,14 +295,6 @@ async function handleComposerSubmit(event) {
 }
 
 function bindUI() {
-  feedTabs.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      activeFeedTab = btn.dataset.feedTab;
-      feedTabs.forEach((tab) => tab.classList.toggle("active", tab === btn));
-      refreshView();
-    });
-  });
-
   filterTabs.forEach((btn) => {
     btn.addEventListener("click", () => {
       activeFilter = btn.dataset.filter;
@@ -305,7 +326,8 @@ window.addEventListener("session-ready", ({ detail }) => {
   }
   loadFollowingFeed().catch((error) => {
     console.error("Feed load failed", error);
-    setStatus(error.message || "Failed to load feed data.", true);
+    followingRows = fallbackFollowingSeed.map((row) => ({ ...row, source: "fallback" }));
+    setStatus(error.message || "Failed to load feed data. Showing sample content.", true);
     refreshView();
   });
 });

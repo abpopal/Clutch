@@ -10,16 +10,10 @@ const ROLE_LABELS = {
 };
 
 const COMMANDS = [
-  { label: "Go to Feed", hint: "Social feed and composer", href: "index.html" },
-  { label: "Open Pulse", hint: "Following, trending, and news", href: "pulse.html" },
-  { label: "Go to Discovery", hint: "Search athletes, schools, posts", href: "explore.html" },
-  { label: "Open Dashboards", hint: "Role operations", href: "highlights.html" },
-  { label: "Open Profile", hint: "Profile and privacy", href: "profile.html" },
-  { label: "School Admin CRM", hint: "Verifications, league, schedule", href: "highlights.html#admin", roles: ["school"] },
-  { label: "Coach Workspace", hint: "Roster, stats, attendance", href: "highlights.html#coach", roles: ["coach"] },
-  { label: "Scout Discovery", hint: "Athlete cards and filters", href: "explore.html#scout-discovery", roles: ["scout"] },
-  { label: "Athlete Stats", hint: "Performance and recruitment", href: "highlights.html#athlete", roles: ["athlete"] },
-  { label: "Fan Zone", hint: "Polls and announcements", href: "highlights.html#fan", roles: ["general"] },
+  { label: "Go to Home Feed", hint: "Posts from followed accounts", href: "index.html" },
+  { label: "Open Pulse", hint: "Trending posts and momentum", href: "pulse.html" },
+  { label: "Open Search", hint: "Find athletes, coaches, schools, and posts", href: "explore.html" },
+  { label: "Open Profile", hint: "Profile and athlete details", href: "profile.html" },
 ];
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -80,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
     palette.className = "command-palette";
     palette.innerHTML = `
       <div class="command-card" role="dialog" aria-label="Command palette">
-        <input id="command-input" type="text" placeholder="Jump to page, team, athlete...">
+        <input id="command-input" type="text" placeholder="Jump to page or search topic...">
         <div id="command-results" class="command-results"></div>
       </div>
     `;
@@ -177,7 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
         { onConflict: "user_id" }
       );
     } catch (_error) {
-      // No-op when user_directory table is not present yet.
+      // Ignore missing user_directory deployments.
     }
   }
 
@@ -239,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   notifBtn?.addEventListener("click", () => {
     const count = notifCount?.textContent || "0";
-    window.alert(`Notifications center: ${count} unread. Connect to realtime notifications feed for full list.`);
+    window.alert(`Notifications center: ${count} unread. Connect realtime notifications for a full panel.`);
   });
 
   signOutBtn?.addEventListener("click", async () => {

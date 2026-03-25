@@ -3,31 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clutch • Discovery</title>
+  <title>Untitle Atheletics • Search</title>
   <link rel="stylesheet" href="styles.css">
   <script type="module" src="js/app.js"></script>
   <script type="module" src="js/explore.js"></script>
 </head>
-<body data-page="explore" data-requires-session="true">
+<body data-page="search" data-requires-session="true">
   <div class="app-layout">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <div class="logo">Clutch</div>
+        <div class="logo">Untitle Atheletics</div>
         <span class="role-pill" id="role-pill">guest</span>
       </div>
       <div>
         <p class="nav-label">Main</p>
         <nav class="nav">
-          <a class="nav-btn" data-nav="home" href="index.html">Feed</a>
+          <a class="nav-btn" data-nav="home" href="index.html">Home Feed</a>
           <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
-          <a class="nav-btn" data-nav="explore" href="explore.html">Discovery</a>
-          <a class="nav-btn" data-nav="highlights" href="highlights.html">Dashboards</a>
+          <a class="nav-btn" data-nav="search" href="explore.html">Search</a>
           <a class="nav-btn" data-nav="profile" href="profile.html">Profile</a>
         </nav>
       </div>
       <div class="sidebar-foot">
-        <strong>Search Scope</strong>
-        <span class="helper">People, schools, posts, and dedicated scout athlete discovery.</span>
+        <strong>Search results</strong>
+        <span class="helper">The top bar and this page share the same search flow. Email search is supported directly.</span>
       </div>
     </aside>
 
@@ -37,7 +36,7 @@
       <header class="site-header">
         <button class="menu-btn" id="menu-btn" type="button">Menu</button>
         <div class="search-wrap">
-          <input id="global-search" type="search" placeholder="Search by name, school, position, location">
+          <input id="global-search" type="search" placeholder="Search by athlete name or email">
         </div>
         <button class="icon-btn" id="notif-btn" type="button">🔔<span id="notif-count" class="badge">4</span></button>
         <div class="session-chip" id="session-chip">Checking session...</div>
@@ -45,116 +44,67 @@
       </header>
 
       <main>
-        <section class="hero">
+        <section class="hero hero-search">
           <div>
-            <p class="eyebrow">Search & Discovery</p>
-            <h1>Global search plus dedicated scout athlete discovery.</h1>
-            <p class="lede">Implements PRD search tabs, advanced filters, and suggested accounts. Scout-focused discovery supports sport, position, GPA, location, and grad year filters.</p>
+            <p class="eyebrow">Search</p>
+            <h1>Find athletes, coaches, schools, and matching posts.</h1>
+            <p class="lede">Search by email or name. Results are grouped so users can quickly see the best match and the related activity around that person.</p>
+            <div class="meta" id="search-summary">
+              <span>Waiting for query</span>
+            </div>
           </div>
-          <div class="card">
-            <p class="card-tag">Search Tabs</p>
-            <div class="meta">
-              <span>People</span>
-              <span>Schools</span>
-              <span>Posts</span>
+          <div class="card hero-callout">
+            <p class="card-tag">Search Input</p>
+            <div class="form-grid">
+              <label class="full">
+                Name or Email
+                <input id="exact-query" type="search" placeholder="e.g. jordan@westview.edu or Jordan Williams">
+              </label>
+              <label>
+                Role
+                <select id="filter-role">
+                  <option value="all">All Roles</option>
+                  <option value="athlete">Athletes</option>
+                  <option value="coach">Coaches</option>
+                  <option value="school">Schools</option>
+                  <option value="scout">Scouts</option>
+                </select>
+              </label>
+              <label>
+                Sport / Position
+                <input id="filter-sport" type="text" placeholder="Basketball or Point Guard">
+              </label>
             </div>
           </div>
         </section>
 
         <section class="panel">
           <div class="section-head">
-            <h2>Search Results</h2>
-            <div class="segmented" id="search-tabs">
-              <button class="active" type="button" data-tab="people">People</button>
-              <button type="button" data-tab="schools">Schools</button>
-              <button type="button" data-tab="posts">Posts (coming soon)</button>
+            <div>
+              <p class="eyebrow">People Results</p>
+              <h2>Best matches</h2>
             </div>
           </div>
-
-          <div class="form-grid">
-            <label class="full">
-              Exact Name or Email
-              <input id="exact-query" type="search" placeholder="e.g. Jordan Lee or jordan@school.edu">
-            </label>
-            <label>
-              Sport
-              <select id="filter-sport">
-                <option value="all">All Sports</option>
-                <option value="basketball">Basketball</option>
-                <option value="soccer">Soccer</option>
-                <option value="football">Football</option>
-                <option value="track">Track</option>
-              </select>
-            </label>
-            <label>
-              Position
-              <input id="filter-position" type="text" placeholder="Point Guard">
-            </label>
-            <label>
-              Location
-              <input id="filter-location" type="text" placeholder="Denver, CO">
-            </label>
-            <label>
-              School Type
-              <select id="filter-school-type">
-                <option value="all">All</option>
-                <option value="high school">High School</option>
-                <option value="college">College</option>
-                <option value="university">University</option>
-                <option value="academy">Academy</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="table-card">
-            <div class="table-head">
-              <span>Name</span>
-              <span>Role / Email</span>
-              <span>School / Position</span>
-              <span>Actions</span>
-            </div>
-            <div id="search-results" class="table-rows"></div>
+          <div id="search-results" class="search-results-grid">
+            <div class="placeholder">Start typing a name or email to search.</div>
           </div>
         </section>
 
-        <section class="data-panel" id="scout-discovery" data-role-allow="scout">
+        <section class="data-panel">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Scout Dashboard</p>
-              <h2>Athlete Discovery</h2>
-            </div>
-            <div class="meta">
-              <span>Card + table toggle</span>
-              <span>Watchlist actions</span>
-              <span>Saved searches</span>
+              <p class="eyebrow">Related Activity</p>
+              <h2>Posts matching your search</h2>
             </div>
           </div>
-
-          <div class="form-grid">
-            <label>
-              GPA Minimum
-              <input id="scout-gpa" type="number" step="0.1" min="0" max="4" placeholder="3.0">
-            </label>
-            <label>
-              Grad Year
-              <input id="scout-grad" type="number" min="2025" max="2035" placeholder="2027">
-            </label>
-            <label>
-              Radius (miles)
-              <input id="scout-radius" type="number" min="5" max="1000" placeholder="200">
-            </label>
-            <label>
-              Position
-              <input id="scout-position" type="text" placeholder="Winger">
-            </label>
+          <div id="search-post-results" class="feed-stack">
+            <div class="placeholder">Matching posts will appear here.</div>
           </div>
-
-          <div class="cards" id="athlete-discovery-cards"></div>
         </section>
       </main>
 
       <footer class="site-footer">
-        Clutch Website • Scout discovery treated as first-class feature
+        Untitle Atheletics • Search by name or email with grouped results
       </footer>
     </div>
   </div>
