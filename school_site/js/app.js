@@ -12,8 +12,8 @@ const ROLE_LABELS = {
 const COMMANDS = [
   { label: "Go to Home Feed", hint: "Posts from followed accounts", href: "index.html" },
   { label: "Open Pulse", hint: "Trending posts and momentum", href: "pulse.html" },
-  { label: "Open Search", hint: "Find athletes, coaches, schools, and posts", href: "explore.html" },
-  { label: "Open Profile", hint: "Profile and athlete details", href: "profile.html" },
+  { label: "Open Search", hint: "Find athletes by name, ID, school, sport, or email", href: "explore.html" },
+  { label: "Open Athlete Profile", hint: "Structured recruiting and athlete details", href: "profile.html" },
 ];
 
 document.addEventListener("DOMContentLoaded", () => {

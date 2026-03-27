@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Untitle Atheletics • Posts</title>
-  <link rel="stylesheet" href="styles.css">
-  <script type="module" src="js/app.js"></script>
-  <script type="module" src="js/profilePosts.js"></script>
+  <title>Untitled Athletic • All Posts</title>
+  <link rel="stylesheet" href="styles.css?v=20260327c">
+  <script type="module" src="js/app.js?v=20260327c"></script>
+  <script type="module" src="js/profilePosts.js?v=20260327c"></script>
 </head>
 <body data-page="profile" data-requires-session="true">
   <div class="app-layout">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <div class="logo">Untitle Atheletics</div>
+        <div class="logo">Untitled Athletic</div>
         <span class="role-pill" id="role-pill">guest</span>
       </div>
 
@@ -22,13 +22,13 @@
           <a class="nav-btn" data-nav="home" href="index.html">Home Feed</a>
           <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
           <a class="nav-btn" data-nav="search" href="explore.html">Search</a>
-          <a class="nav-btn" data-nav="profile" href="profile.html">Profile</a>
+          <a class="nav-btn" data-nav="profile" href="profile.html">Athlete</a>
         </nav>
       </div>
 
       <div class="sidebar-foot">
-        <strong>Post archive</strong>
-        <span class="helper">Dedicated profile post view with a denser media-first layout.</span>
+        <strong>Media Archive</strong>
+        <span class="helper">All athlete posts in the same premium scouting presentation system.</span>
       </div>
     </aside>
 
@@ -38,61 +38,61 @@
       <header class="site-header">
         <button class="menu-btn" id="menu-btn" type="button">Menu</button>
         <div class="search-wrap">
-          <input id="global-search" type="search" placeholder="Search by athlete name or email">
+          <input id="global-search" type="search" placeholder="Search athlete name, ID, school, or email">
         </div>
         <button class="icon-btn" id="notif-btn" type="button" title="Notifications">🔔<span id="notif-count" class="badge">4</span></button>
         <div class="session-chip" id="session-chip">Checking session...</div>
         <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
       </header>
 
-      <main>
-        <section class="profile-posts-hero">
-          <div class="profile-posts-avatar" id="profile-posts-avatar">
-            <span id="profile-posts-initials">UA</span>
-          </div>
-          <div class="profile-posts-summary">
-            <div class="profile-posts-title-row">
-              <h1 id="profile-posts-name">Loading profile...</h1>
-              <div class="profile-actions">
-                <a id="back-to-profile-link" class="btn" href="profile.html">Back to profile</a>
-                <button id="profile-posts-primary" type="button" class="btn primary">Follow</button>
+      <main class="ua-main">
+        <section class="ua-shell">
+          <section class="ua-posts-hero" id="posts-hero">
+            <div class="ua-posts-hero-copy">
+              <p class="eyebrow">All Posts</p>
+              <h1 id="posts-athlete-name">Loading athlete…</h1>
+              <p class="lede" id="posts-athlete-subtitle">Building media archive.</p>
+              <div class="ua-chip-row" id="posts-athlete-meta"></div>
+              <div class="ua-inline-actions">
+                <a id="back-to-profile-link" class="btn" href="profile.html">Back to Profile</a>
+                <button id="posts-primary-action" type="button" class="btn primary">Follow</button>
               </div>
             </div>
-            <p class="lede" id="profile-posts-subtitle">Preparing posts.</p>
-            <div class="profile-posts-meta" id="profile-posts-meta">
-              <span>Loading counts...</span>
+            <div class="ua-posts-featured-card" id="posts-featured-card">
+              <div class="placeholder">Loading featured post…</div>
             </div>
-            <div class="profile-posts-note" id="profile-posts-note">Loading post archive...</div>
-          </div>
-        </section>
+          </section>
 
-        <section class="data-panel">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Highlights</p>
-              <h2>Featured story circles</h2>
+          <section class="ua-panel">
+            <div class="ua-panel-head">
+              <div>
+                <p class="eyebrow">Archive View</p>
+                <h2>Story circles and post archive</h2>
+              </div>
+              <div class="ua-pill-row" id="posts-filter-row"></div>
             </div>
-          </div>
-          <div class="story-row" id="profile-story-row">
-            <div class="placeholder">Loading highlights...</div>
-          </div>
-        </section>
+            <div class="story-row" id="profile-story-row">
+              <div class="placeholder">Loading stories…</div>
+            </div>
+          </section>
 
-        <section class="data-panel">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">All Posts</p>
-              <h2>Media grid</h2>
+          <section class="ua-panel">
+            <div class="ua-panel-head">
+              <div>
+                <p class="eyebrow">Media Grid</p>
+                <h2>All posts</h2>
+              </div>
+              <div class="ua-inline-actions" id="posts-summary-metrics"></div>
             </div>
-          </div>
-          <div class="media-grid" id="profile-media-grid">
-            <div class="placeholder">Loading media posts...</div>
-          </div>
+            <div class="ua-media-grid is-post-archive" id="profile-media-grid">
+              <div class="placeholder">Loading media posts…</div>
+            </div>
+          </section>
         </section>
       </main>
 
       <footer class="site-footer">
-        Untitle Atheletics • Profile post archive
+        Untitled Athletic • Athlete post archive
       </footer>
     </div>
   </div>

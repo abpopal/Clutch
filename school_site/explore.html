@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Untitle Atheletics • Search</title>
-  <link rel="stylesheet" href="styles.css">
-  <script type="module" src="js/app.js"></script>
-  <script type="module" src="js/explore.js"></script>
+  <title>Untitled Athletic • Search</title>
+  <link rel="stylesheet" href="styles.css?v=20260327c">
+  <script type="module" src="js/app.js?v=20260327c"></script>
+  <script type="module" src="js/explore.js?v=20260327c"></script>
 </head>
 <body data-page="search" data-requires-session="true">
   <div class="app-layout">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <div class="logo">Untitle Atheletics</div>
+        <div class="logo">Untitled Athletic</div>
         <span class="role-pill" id="role-pill">guest</span>
       </div>
       <div>
@@ -21,12 +21,12 @@
           <a class="nav-btn" data-nav="home" href="index.html">Home Feed</a>
           <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
           <a class="nav-btn" data-nav="search" href="explore.html">Search</a>
-          <a class="nav-btn" data-nav="profile" href="profile.html">Profile</a>
+          <a class="nav-btn" data-nav="profile" href="profile.html">Athlete</a>
         </nav>
       </div>
       <div class="sidebar-foot">
-        <strong>Search results</strong>
-        <span class="helper">The top bar and this page share the same search flow. Email search is supported directly.</span>
+        <strong>Athlete Search</strong>
+        <span class="helper">Search by athlete name, athlete ID, school, sport, or exact email.</span>
       </div>
     </aside>
 
@@ -36,29 +36,28 @@
       <header class="site-header">
         <button class="menu-btn" id="menu-btn" type="button">Menu</button>
         <div class="search-wrap">
-          <input id="global-search" type="search" placeholder="Search by athlete name or email">
+          <input id="global-search" type="search" placeholder="Search athlete name, ID, school, or email">
         </div>
         <button class="icon-btn" id="notif-btn" type="button">🔔<span id="notif-count" class="badge">4</span></button>
         <div class="session-chip" id="session-chip">Checking session...</div>
         <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
       </header>
 
-      <main>
-        <section class="hero hero-search">
-          <div>
-            <p class="eyebrow">Search</p>
-            <h1>Find athletes, coaches, schools, and matching posts.</h1>
-            <p class="lede">Search by email or name. Results are grouped so users can quickly see the best match and the related activity around that person.</p>
-            <div class="meta" id="search-summary">
-              <span>Waiting for query</span>
+      <main class="ua-main">
+        <section class="ua-shell">
+          <section class="ua-search-hero">
+            <div>
+              <p class="eyebrow">Search</p>
+              <h1>Find athletes across the Untitled Athletic system.</h1>
+              <p class="lede">Results search live athlete records and connected posts. Empty state shows all athletes currently in the system.</p>
+              <div class="ua-chip-row" id="search-summary">
+                <span class="ua-chip">Loading athlete directory…</span>
+              </div>
             </div>
-          </div>
-          <div class="card hero-callout">
-            <p class="card-tag">Search Input</p>
-            <div class="form-grid">
+            <div class="ua-search-controls">
               <label class="full">
-                Name or Email
-                <input id="exact-query" type="search" placeholder="e.g. jordan@westview.edu or Jordan Williams">
+                Athlete Search
+                <input id="exact-query" type="search" placeholder="UA-MJ-2026-00124, Marcus Johnson, Westlake, basketball">
               </label>
               <label>
                 Role
@@ -72,39 +71,39 @@
               </label>
               <label>
                 Sport / Position
-                <input id="filter-sport" type="text" placeholder="Basketball or Point Guard">
+                <input id="filter-sport" type="text" placeholder="Basketball, point guard, soccer">
               </label>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section class="panel">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">People Results</p>
-              <h2>Best matches</h2>
+          <section class="ua-panel">
+            <div class="ua-panel-head">
+              <div>
+                <p class="eyebrow">People Results</p>
+                <h2>Best matches</h2>
+              </div>
             </div>
-          </div>
-          <div id="search-results" class="search-results-grid">
-            <div class="placeholder">Start typing a name or email to search.</div>
-          </div>
-        </section>
+            <div id="search-results" class="ua-search-grid">
+              <div class="placeholder">Start typing to search the athlete directory.</div>
+            </div>
+          </section>
 
-        <section class="data-panel">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Related Activity</p>
-              <h2>Posts matching your search</h2>
+          <section class="ua-panel">
+            <div class="ua-panel-head">
+              <div>
+                <p class="eyebrow">Related Activity</p>
+                <h2>Posts matching your search</h2>
+              </div>
             </div>
-          </div>
-          <div id="search-post-results" class="feed-stack">
-            <div class="placeholder">Matching posts will appear here.</div>
-          </div>
+            <div id="search-post-results" class="feed-stack">
+              <div class="placeholder">Matching posts will appear here.</div>
+            </div>
+          </section>
         </section>
       </main>
 
       <footer class="site-footer">
-        Untitle Atheletics • Search by name or email with grouped results
+        Untitled Athletic • Search athletes, IDs, and related posts
       </footer>
     </div>
   </div>

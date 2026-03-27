@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Untitle Atheletics • Profile</title>
-  <link rel="stylesheet" href="styles.css">
-  <script type="module" src="js/app.js"></script>
-  <script type="module" src="js/profile.js"></script>
+  <title>Untitled Athletic • Athlete Profile</title>
+  <link rel="stylesheet" href="styles.css?v=20260327c">
+  <script type="module" src="js/app.js?v=20260327c"></script>
+  <script type="module" src="js/profile.js?v=20260327c"></script>
 </head>
 <body data-page="profile" data-requires-session="true">
   <div class="app-layout">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <div class="logo">Untitle Atheletics</div>
+        <div class="logo">Untitled Athletic</div>
         <span class="role-pill" id="role-pill">guest</span>
       </div>
 
@@ -22,13 +22,13 @@
           <a class="nav-btn" data-nav="home" href="index.html">Home Feed</a>
           <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
           <a class="nav-btn" data-nav="search" href="explore.html">Search</a>
-          <a class="nav-btn" data-nav="profile" href="profile.html">Profile</a>
+          <a class="nav-btn" data-nav="profile" href="profile.html">Athlete</a>
         </nav>
       </div>
 
       <div class="sidebar-foot">
-        <strong>Unified profile</strong>
-        <span class="helper">This profile now uses the same layout and color system as the rest of the website.</span>
+        <strong>Recruiting Intelligence</strong>
+        <span class="helper">Structured athlete profiles built for scouts, coaches, and verified evaluation context.</span>
       </div>
     </aside>
 
@@ -38,241 +38,73 @@
       <header class="site-header">
         <button class="menu-btn" id="menu-btn" type="button">Menu</button>
         <div class="search-wrap">
-          <input id="global-search" type="search" placeholder="Search by athlete name or email">
+          <input id="global-search" type="search" placeholder="Search athlete name, ID, school, or email">
         </div>
         <button class="icon-btn" id="notif-btn" type="button" title="Notifications">🔔<span id="notif-count" class="badge">4</span></button>
         <div class="session-chip" id="session-chip">Checking session...</div>
         <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
       </header>
 
-      <main>
-        <section class="hero hero-profile">
-          <div>
-            <p class="eyebrow" id="profile-eyebrow">Profile</p>
-            <h1 id="profile-name">Loading profile...</h1>
-            <p class="lede" id="profile-subtitle">Fetching profile details.</p>
-            <div class="meta" id="profile-meta">
-              <span>Preparing profile</span>
-            </div>
-          </div>
-          <div class="card hero-callout">
-            <p class="card-tag">Profile Status</p>
-            <div class="profile-actions">
-              <button id="profile-primary-action" type="button" class="btn primary">Edit Profile</button>
-              <button id="profile-secondary-action" type="button" class="btn">Share Profile</button>
-            </div>
-            <p id="profile-status" class="helper">Loading...</p>
-          </div>
-        </section>
+      <main class="ua-main">
+        <section class="ua-shell">
+          <input id="hero-bg-input" type="file" accept="image/*" hidden>
+          <input id="avatar-input" type="file" accept="image/*" hidden>
 
-        <section class="grid-4">
-          <article class="metric-card">
-            <p class="card-tag">Performance</p>
-            <div class="metric-value">22.4</div>
-            <div class="metric-label">Points Per Game</div>
-          </article>
-          <article class="metric-card">
-            <p class="card-tag">Playmaking</p>
-            <div class="metric-value">7.1</div>
-            <div class="metric-label">Assists Per Game</div>
-          </article>
-          <article class="metric-card">
-            <p class="card-tag">Ranking</p>
-            <div class="metric-value">#12</div>
-            <div class="metric-label">Regional Position Rank</div>
-          </article>
-          <article class="metric-card">
-            <p class="card-tag">Interest</p>
-            <div class="metric-value">3</div>
-            <div class="metric-label">Programs Watching</div>
-          </article>
-        </section>
+          <section class="ua-hero" id="ua-hero">
+            <button class="ua-hero-edit ua-hero-upload-trigger" id="hero-bg-trigger" type="button">✎ Edit BG</button>
+            <div class="ua-hero-brand">Untitled Athletic</div>
+            <div class="ua-hero-watermark" id="hero-watermark">24</div>
 
-        <section class="grid-2 page-panels">
-          <article class="panel">
-            <div class="section-head">
-              <div>
-                <p class="eyebrow">About</p>
-                <h2 id="profile-about-title">Generic athlete profile summary</h2>
-              </div>
-            </div>
-            <p class="lede">
-              This section stays generic for now. It gives the profile a complete presentation while the live data work remains focused on pulling names from the database.
-            </p>
-            <div class="meta">
-              <span>Recruiting ready</span>
-              <span>Highlight clips available</span>
-              <span>Academic profile in progress</span>
-            </div>
-          </article>
+            <div class="ua-hero-bottom">
+              <button class="ua-avatar ua-avatar-trigger" id="avatar-trigger" type="button">
+                <span class="ua-avatar-upload">UPLOAD</span>
+                <span id="hero-avatar-initials">UA</span>
+              </button>
 
-          <article class="panel">
-            <div class="section-head">
-              <div>
-                <p class="eyebrow">Identity</p>
-                <h2>Database-backed name</h2>
-              </div>
-            </div>
-            <div class="profile-facts" id="profile-facts">
-              <div class="placeholder">Loading profile facts...</div>
-            </div>
-          </article>
-        </section>
-
-        <section class="data-panel">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Media</p>
-              <h2>Highlights and featured clips</h2>
-            </div>
-          </div>
-          <div class="cards" id="profile-media">
-            <article class="card">
-              <p class="card-tag">Featured Clip</p>
-              <h3>Top Possessions Compilation</h3>
-              <p>Placeholder highlight module while real media is still being wired.</p>
-            </article>
-            <article class="card">
-              <p class="card-tag">Scouting Note</p>
-              <h3>Lead guard profile with pace control</h3>
-              <p>Generic evaluation block kept intentionally static until deeper player data is connected.</p>
-            </article>
-            <article class="card">
-              <p class="card-tag">Recruiting Snapshot</p>
-              <h3>Programs tracking updates</h3>
-              <p>Recruiting status remains placeholder content for now, independent of the database name lookup.</p>
-            </article>
-          </div>
-        </section>
-
-        <section class="data-panel">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Posts</p>
-              <h2>Recent profile posts</h2>
-            </div>
-          </div>
-          <div class="feed-stack" id="profile-activity">
-            <article class="post-card">
-              <div class="post-card-head">
-                <div>
-                  <strong>Profile post</strong>
-                  <div class="post-meta-line">Generic placeholder</div>
-                </div>
-                <span class="tag">Today</span>
-              </div>
-              <p class="post-caption">Recent training, game recap, and recruiting updates will live here once profile-specific activity is connected.</p>
-            </article>
-          </div>
-        </section>
-
-        <section class="data-panel">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Post Highlights</p>
-              <h2>Post highlights</h2>
-            </div>
-            <a id="profile-posts-link" class="btn" href="profile-posts.html">Check all posts</a>
-          </div>
-          <div class="post-gallery" id="profile-post-gallery">
-            <article class="gallery-card">
-              <div class="gallery-visual"></div>
-              <div class="gallery-copy">
-                <strong>Loading posts...</strong>
-                <span class="helper">Preparing gallery</span>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section class="grid-2 page-panels">
-          <article class="panel">
-            <div class="section-head">
-              <div>
-                <p class="eyebrow">Stats</p>
-                <h2>Performance snapshot</h2>
-              </div>
-            </div>
-            <div class="table-card">
-              <div class="table-head">
-                <span>Sport</span>
-                <span>Stat</span>
-                <span>Value</span>
-                <span>Source</span>
-              </div>
-              <div class="table-rows" id="profile-stats-table">
-                <div class="placeholder">Loading stats...</div>
-              </div>
-            </div>
-          </article>
-
-          <article class="panel">
-            <div class="section-head">
-              <div>
-                <p class="eyebrow">Recruiting</p>
-                <h2>Current recruiting picture</h2>
-              </div>
-            </div>
-            <div class="cards" id="profile-recruiting">
-              <article class="card">
-                <p class="card-tag">Programs Watching</p>
-                <h3>3 Active Programs</h3>
-                <p>Generic placeholder recruiting card while live recruiting workflows are being connected.</p>
-              </article>
-              <article class="card">
-                <p class="card-tag">Next Step</p>
-                <h3>Updated film packet</h3>
-                <p>Coaches and scouts will eventually see role-specific next steps here.</p>
-              </article>
-            </div>
-          </article>
-        </section>
-
-        <section class="data-panel">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Performance Lab</p>
-              <h2>Multi-sport stat view</h2>
-            </div>
-            <div class="segmented" id="profile-sport-tabs">
-              <button type="button" data-sport-tab="basketball" class="active">Basketball</button>
-              <button type="button" data-sport-tab="track">Track</button>
-              <button type="button" data-sport-tab="football">Football</button>
-            </div>
-          </div>
-          <div class="grid-2 page-panels">
-            <article class="panel">
-              <div class="section-head">
-                <div>
-                  <p class="eyebrow">Chart View</p>
-                  <h2 id="profile-chart-title">Basketball profile</h2>
+              <div class="ua-hero-copy">
+                <div class="ua-hero-badges" id="hero-verification-badges"></div>
+                <h1 id="hero-name">Loading athlete...</h1>
+                <p class="ua-hero-position" id="hero-position">Preparing position</p>
+                <div class="ua-switcher-wrap">
+                  <button class="ua-switcher-btn" id="switch-athlete-btn" type="button">Switch Athlete ▾</button>
+                  <div class="ua-switcher-menu" id="switch-athlete-menu" hidden></div>
                 </div>
               </div>
-              <div class="chart-stack" id="profile-chart-stack">
-                <div class="placeholder">Loading chart view...</div>
-              </div>
-            </article>
-            <article class="panel">
-              <div class="section-head">
-                <div>
-                  <p class="eyebrow">Breakdown</p>
-                  <h2 id="profile-breakdown-title">Key performance markers</h2>
+
+              <div class="ua-hero-side">
+                <div class="ua-live-chip">
+                  <span class="ua-live-chip-label">Profile Status</span>
+                  <strong id="profile-status">Loading live profile…</strong>
+                </div>
+                <div class="ua-hero-actions">
+                  <button id="profile-primary-action" type="button" class="btn primary">Follow</button>
+                  <button id="profile-secondary-action" type="button" class="btn">Share</button>
                 </div>
               </div>
-              <div class="cards" id="profile-sport-breakdown">
-                <article class="card">
-                  <p class="card-tag">Loading</p>
-                  <h3>Preparing breakdown</h3>
-                  <p>Stat cards are loading.</p>
-                </article>
-              </div>
-            </article>
-          </div>
+            </div>
+          </section>
+
+          <section class="ua-identity-row">
+            <div class="ua-chip-row" id="identity-chip-row"></div>
+            <p class="ua-scout-summary" id="scout-summary-line">Building scout summary…</p>
+            <div class="ua-cta-strip" id="identity-cta-strip"></div>
+          </section>
+
+          <section class="ua-tab-bar">
+            <div class="ua-top-tabs segmented" id="profile-top-tabs"></div>
+          </section>
+
+          <section class="ua-tab-stage" id="athlete-tab-content">
+            <div class="placeholder">Loading athlete view…</div>
+          </section>
         </section>
       </main>
 
+      <nav class="ua-bottom-nav" id="profile-bottom-tabs"></nav>
+      <div class="ua-toast" id="profile-toast" hidden></div>
+
       <footer class="site-footer">
-        Untitle Atheletics • Unified profile experience with live names and generic placeholder content
+        Untitled Athletic • Premium athlete profile and scouting system
       </footer>
     </div>
   </div>
