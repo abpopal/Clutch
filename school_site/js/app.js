@@ -34,6 +34,121 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let currentRole = "general";
 
+  async function ensureRoleRow(appUserId, role, metadata = {}) {
+    if (!appUserId || !role) return;
+
+    const safeInsert = async (query) => {
+      const { error } = await query;
+      if (error && error.code !== "23505") throw error;
+    };
+
+    if (role === "school") {
+      await safeInsert(
+        supabase.from("schools").insert({
+          user_id: appUserId,
+          name: metadata.name || metadata.affiliation || "School",
+          location: metadata.location || null,
+          description: metadata.bio || null,
+        })
+      );
+      return;
+    }
+
+    if (role === "coach") {
+      await safeInsert(
+        supabase.from("coaches").insert({
+          user_id: appUserId,
+          bio: metadata.bio || null,
+          years_experience: null,
+        })
+      );
+      return;
+    }
+
+    if (role === "athlete") {
+      await safeInsert(
+        supabase.from("athletes").insert({
+          user_id: appUserId,
+          position: metadata.sport || null,
+          graduation_year: metadata.grad_year || null,
+        })
+      );
+      return;
+    }
+
+    if (role === "scout") {
+      await safeInsert(
+        supabase.from("scouts").insert({
+          user_id: appUserId,
+          organization: metadata.affiliation || null,
+          title: metadata.sport || null,
+        })
+      );
+    }
+  }
+
+  async function ensureAppUserFromSession(session) {
+    if (!session?.user?.id) return null;
+
+    const metadataRole = (session.user?.user_metadata?.role || "general").toLowerCase();
+    const appRole = metadataRole === "general" ? "viewer" : metadataRole;
+    const metadata = {
+      name: session.user?.user_metadata?.name || null,
+      sport: session.user?.user_metadata?.sport || null,
+      affiliation: session.user?.user_metadata?.affiliation || null,
+      location: session.user?.user_metadata?.location || null,
+      grad_year: session.user?.user_metadata?.grad_year || null,
+      bio: session.user?.user_metadata?.bio || null,
+    };
+
+    const { data: existingUser, error: lookupError } = await supabase
+      .from("users")
+      .select("user_id,role")
+      .eq("firebase_uid", session.user.id)
+      .maybeSingle();
+
+    if (lookupError) throw lookupError;
+
+    let appUserId = existingUser?.user_id || null;
+
+    if (!appUserId) {
+      const { data: createdUser, error: insertError } = await supabase
+        .from("users")
+        .insert({ firebase_uid: session.user.id, role: appRole })
+        .select("user_id")
+        .single();
+
+      if (insertError && insertError.code !== "23505") throw insertError;
+
+      if (!createdUser?.user_id) {
+        const { data: retryUser, error: retryError } = await supabase
+          .from("users")
+          .select("user_id,role")
+          .eq("firebase_uid", session.user.id)
+          .maybeSingle();
+        if (retryError) throw retryError;
+        appUserId = retryUser?.user_id || null;
+      } else {
+        appUserId = createdUser.user_id;
+      }
+    }
+
+    if (appUserId) {
+      await ensureRoleRow(appUserId, existingUser?.role || appRole, metadata);
+      await supabase.from("user_directory").upsert(
+        {
+          user_id: appUserId,
+          display_name: metadata.name,
+          email: session.user?.email || null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+    }
+
+    return appUserId;
+  }
+
   function setActiveNav() {
     navButtons.forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.nav === currentPage);
@@ -151,31 +266,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function syncUserDirectoryFromSession(session) {
     try {
-      const { data: appUser, error: appUserError } = await supabase
-        .from("users")
-        .select("user_id")
-        .eq("firebase_uid", session.user.id)
-        .maybeSingle();
-      if (appUserError || !appUser?.user_id) return;
-
-      const metadataName = session.user?.user_metadata?.name || null;
-      const metadataEmail = session.user?.email || null;
-
-      await supabase.from("user_directory").upsert(
-        {
-          user_id: appUser.user_id,
-          display_name: metadataName,
-          email: metadataEmail,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
+      await ensureAppUserFromSession(session);
     } catch (_error) {
-      // Ignore missing user_directory deployments.
+      // Ignore bootstrap failures here so auth UI remains reachable.
     }
   }
 
-  function updateSession(session) {
+  async function updateSession(session) {
     if (!session) {
       if (sessionChip) sessionChip.textContent = "Not signed in";
       if (signOutBtn) signOutBtn.hidden = true;
@@ -198,7 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     applyRoleVisibility(role);
     buildPalette(role);
-    syncUserDirectoryFromSession(session);
+    await syncUserDirectoryFromSession(session);
 
     if (currentPage === "login") {
       window.location.href = "index.html";
@@ -214,7 +311,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (error) {
       console.error("Failed to get session", error);
     }
-    updateSession(data.session);
+    await updateSession(data.session);
   }
 
   menuBtn?.addEventListener("click", () => {
@@ -245,6 +342,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initSession();
 
   supabase.auth.onAuthStateChange((_event, session) => {
-    updateSession(session);
+    void updateSession(session);
   });
 });
