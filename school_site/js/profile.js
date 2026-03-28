@@ -443,6 +443,13 @@ function renderHero() {
 
 function renderSwitcher() {
   const current = currentAthlete();
+  if (!state.athleteDirectory.length || state.athleteDirectory.length < 2) {
+    switcherBtnEl.hidden = true;
+    switcherMenuEl.hidden = true;
+    return;
+  }
+
+  switcherBtnEl.hidden = false;
   switcherMenuEl.innerHTML = "";
   state.athleteDirectory.forEach((athlete) => {
     const item = document.createElement("button");
@@ -1502,6 +1509,7 @@ function renderAll() {
 }
 
 function openSwitcher(forceOpen) {
+  if (switcherBtnEl.hidden) return;
   const open = typeof forceOpen === "boolean" ? forceOpen : switcherMenuEl.hidden;
   switcherMenuEl.hidden = !open;
   switcherBtnEl.classList.toggle("is-open", open);
@@ -1879,14 +1887,25 @@ window.addEventListener("session-ready", async ({ detail }) => {
     bindGlobalEvents();
     state.viewerUserId = await fetchAppUserId(session.user.id);
     state.targetUserId = queryParam("user_id") || state.viewerUserId;
-    state.athleteDirectory = await fetchAthleteDirectory();
     if (!state.compareAId) state.compareAId = state.targetUserId;
-    if (!state.compareBId) {
-      state.compareBId = state.athleteDirectory.find((item) => item.userId !== state.targetUserId)?.userId || state.targetUserId;
-    }
     await loadAthlete(state.targetUserId);
+
+    try {
+      state.athleteDirectory = await fetchAthleteDirectory();
+      if (!state.compareAId) state.compareAId = state.targetUserId;
+      if (!state.compareBId) {
+        state.compareBId = state.athleteDirectory.find((item) => item.userId !== state.targetUserId)?.userId || state.targetUserId;
+      }
+      renderSwitcher();
+    } catch (directoryError) {
+      console.warn("Athlete directory unavailable", directoryError);
+      state.athleteDirectory = state.athlete ? [state.athlete] : [];
+      renderSwitcher();
+    }
   } catch (error) {
     console.error("Profile load failed", error);
+    if (nameEl) nameEl.textContent = "Profile unavailable";
+    if (positionEl) positionEl.textContent = error.message || "Unable to load athlete profile.";
     if (tabStageEl) {
       tabStageEl.innerHTML = `<div class="ua-empty">${escapeHtml(error.message || "Unable to load athlete profile.")}</div>`;
     }
