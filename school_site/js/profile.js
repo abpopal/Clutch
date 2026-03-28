@@ -40,8 +40,6 @@ const ctaStripEl = document.querySelector("#identity-cta-strip");
 const topTabsEl = document.querySelector("#profile-top-tabs");
 const bottomTabsEl = document.querySelector("#profile-bottom-tabs");
 const tabStageEl = document.querySelector("#athlete-tab-content");
-const switcherBtnEl = document.querySelector("#switch-athlete-btn");
-const switcherMenuEl = document.querySelector("#switch-athlete-menu");
 const primaryActionBtn = document.querySelector("#profile-primary-action");
 const secondaryActionBtn = document.querySelector("#profile-secondary-action");
 const toastEl = document.querySelector("#profile-toast");
@@ -482,33 +480,6 @@ function renderHero() {
 
   scoutSummaryEl.textContent = formatScoutSummary(athlete);
   setStatus(state.isSelfProfile ? "Live self profile connected." : "Live athlete profile connected.");
-}
-
-function renderSwitcher() {
-  const current = currentAthlete();
-  if (!state.athleteDirectory.length || state.athleteDirectory.length < 2) {
-    switcherBtnEl.hidden = true;
-    switcherMenuEl.hidden = true;
-    return;
-  }
-
-  switcherBtnEl.hidden = false;
-  switcherMenuEl.innerHTML = "";
-  state.athleteDirectory.forEach((athlete) => {
-    const item = document.createElement("button");
-    item.type = "button";
-    item.className = `ua-switcher-item ${current?.userId === athlete.userId ? "active" : ""}`;
-    item.dataset.switchUserId = athlete.userId;
-    item.innerHTML = `
-      <span class="ua-switcher-avatar">${escapeHtml(athlete.initials)}</span>
-      <span class="ua-switcher-copy">
-        <strong>${escapeHtml(athlete.name)}</strong>
-        <small>${escapeHtml(athlete.athleteId)}</small>
-      </span>
-      <span class="ua-switcher-check">${current?.userId === athlete.userId ? "✓" : ""}</span>
-    `;
-    switcherMenuEl.appendChild(item);
-  });
 }
 
 function renderIdentityRow() {
@@ -1545,17 +1516,9 @@ function renderAll() {
   syncSelectedSport();
   renderTabs();
   renderHero();
-  renderSwitcher();
   renderIdentityRow();
   updateHeroActions();
   renderActiveTab();
-}
-
-function openSwitcher(forceOpen) {
-  if (switcherBtnEl.hidden) return;
-  const open = typeof forceOpen === "boolean" ? forceOpen : switcherMenuEl.hidden;
-  switcherMenuEl.hidden = !open;
-  switcherBtnEl.classList.toggle("is-open", open);
 }
 
 async function loadAthlete(userId) {
@@ -1669,15 +1632,10 @@ function toggleWatchlist(athleteId) {
 function bindGlobalEvents() {
   if (eventsBound) return;
   eventsBound = true;
-  switcherBtnEl?.addEventListener("click", () => openSwitcher());
 
   document.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
-
-    if (!switcherMenuEl.contains(target) && !switcherBtnEl.contains(target)) {
-      openSwitcher(false);
-    }
 
     const tabTarget = target.closest("[data-tab-target]")?.dataset.tabTarget;
     if (tabTarget) {
@@ -1686,9 +1644,8 @@ function bindGlobalEvents() {
       return;
     }
 
-    const switchUserId = target.closest("[data-switch-user-id]")?.dataset.switchUserId || target.closest("[data-switch-profile]")?.dataset.switchProfile;
+    const switchUserId = target.closest("[data-switch-profile]")?.dataset.switchProfile;
     if (switchUserId) {
-      openSwitcher(false);
       loadAthlete(switchUserId);
       return;
     }
@@ -1947,11 +1904,9 @@ async function bootstrapProfile(session) {
         if (!state.compareBId) {
           state.compareBId = state.athleteDirectory.find((item) => item.userId !== state.targetUserId)?.userId || state.targetUserId;
         }
-        renderSwitcher();
       } catch (directoryError) {
         console.warn("Athlete directory unavailable", directoryError);
         state.athleteDirectory = state.athlete ? [state.athlete] : [];
-        renderSwitcher();
       }
 
       bootstrappedAuthUserId = session.user.id;
