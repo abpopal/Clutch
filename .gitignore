@@ -5,4 +5,5 @@ school_site/*
 !school_site/profile-posts.html
 !school_site/js/
 school_site/js/*
+!school_site/js/athleteData.js
 !school_site/js/profilePosts.js
