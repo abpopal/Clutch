@@ -95,6 +95,8 @@ const state = {
 };
 
 let eventsBound = false;
+let bootstrappedAuthUserId = "";
+let bootstrapPromise = null;
 
 function readStoredJson(key, fallback) {
   try {
@@ -219,6 +221,47 @@ async function fetchAppUserId(authUserId) {
     .maybeSingle();
   if (error) throw error;
   return data?.user_id || null;
+}
+
+async function ensureViewerUserId(session) {
+  if (!session?.user?.id) return null;
+
+  const existingUserId = await fetchAppUserId(session.user.id);
+  if (existingUserId) return existingUserId;
+
+  const metadataRole = (session.user?.user_metadata?.role || "general").toLowerCase();
+  const appRole = metadataRole === "general" ? "viewer" : metadataRole;
+
+  const { error: insertError } = await supabase
+    .from("users")
+    .insert({ firebase_uid: session.user.id, role: appRole });
+
+  if (insertError && insertError.code !== "23505") {
+    throw insertError;
+  }
+
+  const viewerUserId = await fetchAppUserId(session.user.id);
+  if (!viewerUserId) {
+    throw new Error("Signed in, but no linked athlete profile could be created.");
+  }
+
+  const { error: directoryError } = await supabase
+    .from("user_directory")
+    .upsert(
+      {
+        user_id: viewerUserId,
+        display_name: session.user?.user_metadata?.name || session.user?.email || "Untitled Athlete",
+        email: session.user?.email || null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" }
+    );
+
+  if (directoryError) {
+    console.warn("Unable to sync user directory from profile bootstrap", directoryError);
+  }
+
+  return viewerUserId;
 }
 
 async function fetchIsFollowing() {
@@ -1879,36 +1922,65 @@ function bindGlobalEvents() {
   });
 }
 
-window.addEventListener("session-ready", async ({ detail }) => {
-  const session = detail?.session;
+async function bootstrapProfile(session) {
   if (!session?.user?.id) return;
+  if (bootstrappedAuthUserId === session.user.id && state.athlete) return;
+  if (bootstrapPromise) return bootstrapPromise;
 
-  try {
-    bindGlobalEvents();
-    state.viewerUserId = await fetchAppUserId(session.user.id);
-    state.targetUserId = queryParam("user_id") || state.viewerUserId;
-    if (!state.compareAId) state.compareAId = state.targetUserId;
-    await loadAthlete(state.targetUserId);
-
+  bootstrapPromise = (async () => {
     try {
-      state.athleteDirectory = await fetchAthleteDirectory();
-      if (!state.compareAId) state.compareAId = state.targetUserId;
-      if (!state.compareBId) {
-        state.compareBId = state.athleteDirectory.find((item) => item.userId !== state.targetUserId)?.userId || state.targetUserId;
+      bindGlobalEvents();
+      setStatus("Loading athlete profile…");
+      state.viewerUserId = await ensureViewerUserId(session);
+      state.targetUserId = queryParam("user_id") || state.viewerUserId;
+
+      if (!state.targetUserId) {
+        throw new Error("No athlete profile is linked to this account yet.");
       }
-      renderSwitcher();
-    } catch (directoryError) {
-      console.warn("Athlete directory unavailable", directoryError);
-      state.athleteDirectory = state.athlete ? [state.athlete] : [];
-      renderSwitcher();
+
+      if (!state.compareAId) state.compareAId = state.targetUserId;
+      await loadAthlete(state.targetUserId);
+
+      try {
+        state.athleteDirectory = await fetchAthleteDirectory();
+        if (!state.compareAId) state.compareAId = state.targetUserId;
+        if (!state.compareBId) {
+          state.compareBId = state.athleteDirectory.find((item) => item.userId !== state.targetUserId)?.userId || state.targetUserId;
+        }
+        renderSwitcher();
+      } catch (directoryError) {
+        console.warn("Athlete directory unavailable", directoryError);
+        state.athleteDirectory = state.athlete ? [state.athlete] : [];
+        renderSwitcher();
+      }
+
+      bootstrappedAuthUserId = session.user.id;
+    } catch (error) {
+      console.error("Profile load failed", error);
+      if (nameEl) nameEl.textContent = "Profile unavailable";
+      if (positionEl) positionEl.textContent = error.message || "Unable to load athlete profile.";
+      if (tabStageEl) {
+        tabStageEl.innerHTML = `<div class="ua-empty">${escapeHtml(error.message || "Unable to load athlete profile.")}</div>`;
+      }
+      setStatus(error.message || "Unable to load athlete profile.", true);
+    } finally {
+      bootstrapPromise = null;
     }
-  } catch (error) {
-    console.error("Profile load failed", error);
-    if (nameEl) nameEl.textContent = "Profile unavailable";
-    if (positionEl) positionEl.textContent = error.message || "Unable to load athlete profile.";
-    if (tabStageEl) {
-      tabStageEl.innerHTML = `<div class="ua-empty">${escapeHtml(error.message || "Unable to load athlete profile.")}</div>`;
-    }
-    setStatus("Unable to load athlete profile.", true);
+  })();
+
+  return bootstrapPromise;
+}
+
+window.addEventListener("session-ready", async ({ detail }) => {
+  await bootstrapProfile(detail?.session);
+});
+
+void supabase.auth.getSession().then(async ({ data, error }) => {
+  if (error) {
+    console.error("Profile session check failed", error);
+    return;
+  }
+  if (data?.session) {
+    await bootstrapProfile(data.session);
   }
 });
