@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design B — Visual Cards Dashboard</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e17;--surface:#131a2b;--surface-2:#1a2236;--surface-3:#212b42;
+  --text:#e8eaf0;--muted:#7a8ba7;--line:#1f2a3e;
+  --brand:#e8392a;--brand-soft:rgba(232,57,42,.12);
+  --accent:#4fc3f7;--accent-soft:rgba(79,195,247,.10);
+  --green:#22c55e;--green-soft:rgba(34,197,94,.12);
+  --amber:#f59e0b;--amber-soft:rgba(245,158,11,.12);
+  --danger:#ef4444;
+  --purple:#a78bfa;--purple-soft:rgba(167,139,250,.12);
+  --radius:16px;--radius-sm:12px;--radius-xs:8px;
+  --font:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif;
+}
+html{font-size:15px}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── Layout ────────────────────────────────────────────────────── */
+.shell{display:grid;grid-template-columns:72px 1fr;min-height:100vh}
+
+/* ── Icon rail sidebar ─────────────────────────────────────────── */
+.rail{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:20px 0;position:sticky;top:0;height:100vh;gap:4px}
+.rail-logo{width:42px;height:42px;border-radius:14px;background:var(--brand);display:grid;place-items:center;font-weight:800;font-size:15px;color:#fff;margin-bottom:20px}
+.rail-item{width:46px;height:46px;border-radius:var(--radius-sm);display:grid;place-items:center;font-size:1.2rem;cursor:pointer;transition:.15s;position:relative;color:var(--muted)}
+.rail-item:hover{background:var(--surface-2);color:var(--text)}
+.rail-item.active{background:var(--brand-soft);color:var(--brand)}
+.rail-item .rail-badge{position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--brand);font-size:.55rem;font-weight:700;color:#fff;display:grid;place-items:center;border:2px solid var(--surface)}
+.rail-spacer{flex:1}
+.rail-avatar{width:38px;height:38px;border-radius:50%;background:var(--surface-3);display:grid;place-items:center;font-size:.75rem;font-weight:700;color:var(--accent);cursor:pointer;margin-top:8px}
+
+/* ── Main ──────────────────────────────────────────────────────── */
+.main{padding:28px 36px 48px;max-width:1300px}
+
+/* ── Hero banner ───────────────────────────────────────────────── */
+.hero{border-radius:var(--radius);overflow:hidden;margin-bottom:28px;position:relative;background:linear-gradient(135deg,#1a1530 0%,#0d2137 50%,#131a2b 100%);padding:32px 36px;display:flex;justify-content:space-between;align-items:flex-end;min-height:160px;border:1px solid var(--line)}
+.hero::before{content:"";position:absolute;top:-60px;right:-40px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(232,57,42,.08) 0%,transparent 70%)}
+.hero::after{content:"";position:absolute;bottom:-80px;left:20%;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(79,195,247,.06) 0%,transparent 70%)}
+.hero-left{position:relative;z-index:1}
+.hero-school{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.hero-crest{width:52px;height:52px;border-radius:14px;background:var(--surface-2);border:2px solid var(--line);display:grid;place-items:center;font-size:1.4rem}
+.hero-name{font-size:1.6rem;font-weight:800;letter-spacing:-.5px}
+.hero-meta{font-size:.85rem;color:var(--muted);margin-top:2px}
+.hero-stats{display:flex;gap:28px;margin-top:18px}
+.hero-stat{text-align:center}
+.hero-stat-val{font-size:1.4rem;font-weight:800}
+.hero-stat-label{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:2px}
+
+.hero-right{position:relative;z-index:1;display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:50px;border:none;font-family:var(--font);font-size:.8125rem;font-weight:600;cursor:pointer;transition:.15s}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-primary:hover{filter:brightness(1.15)}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--line);backdrop-filter:blur(8px)}
+.btn-ghost:hover{background:rgba(255,255,255,.1)}
+.btn-sm{padding:7px 14px;font-size:.75rem}
+
+/* ── Section headers ───────────────────────────────────────────── */
+.section-head{display:flex;align-items:center;justify-content:space-between;margin:28px 0 16px}
+.section-title{font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:10px}
+.section-count{font-size:.7rem;background:var(--surface-2);color:var(--muted);padding:3px 10px;border-radius:50px;font-weight:600}
+
+/* ── Team cards ────────────────────────────────────────────────── */
+.team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.team-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;cursor:pointer;transition:.2s;position:relative;overflow:hidden}
+.team-card:hover{border-color:var(--brand);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.team-card-stripe{position:absolute;top:0;left:0;right:0;height:4px}
+.team-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.team-icon{width:44px;height:44px;border-radius:var(--radius-sm);display:grid;place-items:center;font-size:1.4rem}
+.team-record{font-size:.8125rem;font-weight:700;padding:5px 14px;border-radius:50px;background:var(--surface-2)}
+.team-name{font-size:1rem;font-weight:700;margin-bottom:4px}
+.team-meta{font-size:.75rem;color:var(--muted)}
+.team-footer{display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.team-avatars{display:flex}
+.team-avatars img{width:28px;height:28px;border-radius:50%;border:2px solid var(--surface);margin-left:-8px;object-fit:cover}
+.team-avatars img:first-child{margin-left:0}
+.team-member-count{font-size:.7rem;color:var(--muted);margin-left:8px}
+
+/* ── Match timeline ────────────────────────────────────────────── */
+.timeline{position:relative;padding-left:32px}
+.timeline::before{content:"";position:absolute;left:11px;top:8px;bottom:8px;width:2px;background:var(--line)}
+.tl-item{position:relative;padding:0 0 24px;display:flex;gap:16px}
+.tl-item:last-child{padding-bottom:0}
+.tl-dot{position:absolute;left:-32px;top:4px;width:22px;height:22px;border-radius:50%;border:3px solid var(--surface);display:grid;place-items:center}
+.tl-dot.live{background:var(--green);box-shadow:0 0 12px rgba(34,197,94,.4);animation:pulse 2s infinite}
+.tl-dot.upcoming{background:var(--accent)}
+.tl-dot.done{background:var(--surface-3)}
+
+.tl-card{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:16px 20px;transition:.15s}
+.tl-card:hover{border-color:var(--accent)}
+.tl-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.tl-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;font-weight:600}
+.tl-label.live{color:var(--green)}
+.tl-label.upcoming{color:var(--accent)}
+.tl-label.done{color:var(--muted)}
+.tl-matchup{font-size:1rem;font-weight:700}
+.tl-detail{font-size:.75rem;color:var(--muted);margin-top:4px}
+.tl-score{font-size:1.25rem;font-weight:800;letter-spacing:1px}
+
+/* ── Pending requests ──────────────────────────────────────────── */
+.req-list{display:flex;flex-direction:column;gap:8px}
+.req-card{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px 18px;transition:.15s}
+.req-card:hover{border-color:var(--brand)}
+.req-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid var(--line)}
+.req-info{flex:1}
+.req-name{font-size:.875rem;font-weight:600}
+.req-meta{font-size:.7rem;color:var(--muted);margin-top:2px}
+.req-actions{display:flex;gap:6px}
+.req-btn{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);display:grid;place-items:center;cursor:pointer;font-size:1rem;transition:.15s}
+.req-btn.approve:hover{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+.req-btn.reject:hover{background:rgba(239,68,68,.1);border-color:var(--danger);color:var(--danger)}
+
+/* ── Standings mini-table ──────────────────────────────────────── */
+.standings{width:100%;border-collapse:collapse;font-size:.8rem}
+.standings th{font-size:.6rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:8px 10px;text-align:left;font-weight:600;border-bottom:1px solid var(--line)}
+.standings td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.standings tr:last-child td{border-bottom:none}
+.standings .rank{width:28px;height:28px;border-radius:8px;display:inline-grid;place-items:center;font-weight:700;font-size:.75rem}
+.standings .rank.r1{background:var(--amber-soft);color:var(--amber)}
+.standings .rank.r2{background:var(--surface-3);color:var(--text)}
+.standings .rank.r3{background:var(--surface-3);color:var(--muted)}
+.standings .team-name-cell{font-weight:600;display:flex;align-items:center;gap:8px}
+.standings .pts{font-weight:700;color:var(--accent)}
+
+/* ── Grid layouts ──────────────────────────────────────────────── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-7-3{display:grid;grid-template-columns:7fr 3fr;gap:16px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+.card-title{font-size:.9375rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-body{padding:16px 20px}
+
+/* ── Announcement preview ──────────────────────────────────────── */
+.announce-card{background:var(--surface-2);border-radius:var(--radius-sm);padding:16px;margin-bottom:10px;border-left:3px solid var(--accent)}
+.announce-card:last-child{margin-bottom:0}
+.announce-card.pinned{border-left-color:var(--amber)}
+.announce-title{font-size:.875rem;font-weight:600;display:flex;align-items:center;gap:8px}
+.announce-title .pin{font-size:.7rem;background:var(--amber-soft);color:var(--amber);padding:2px 8px;border-radius:50px;font-weight:600}
+.announce-body{font-size:.8rem;color:var(--muted);margin-top:6px;line-height:1.5}
+.announce-foot{font-size:.65rem;color:var(--muted);margin-top:8px;display:flex;gap:12px}
+
+/* ── Responsive ────────────────────────────────────────────────── */
+@media(max-width:1100px){.team-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){
+  .shell{grid-template-columns:1fr}
+  .rail{display:none}
+  .grid-2,.grid-7-3{grid-template-columns:1fr}
+  .team-grid{grid-template-columns:1fr}
+  .hero-stats{flex-wrap:wrap;gap:16px}
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── Icon rail ───────────────────────────────────────────── -->
+  <nav class="rail">
+    <div class="rail-logo">UA</div>
+    <div class="rail-item active" title="Overview">📊</div>
+    <div class="rail-item" title="Athletes">👥<span class="rail-badge">3</span></div>
+    <div class="rail-item" title="Teams">🏆</div>
+    <div class="rail-item" title="Schedule">📅</div>
+    <div class="rail-item" title="Matches">⚔️<span class="rail-badge">2</span></div>
+    <div class="rail-item" title="Leagues">🏅</div>
+    <div class="rail-item" title="Academics">📈</div>
+    <div class="rail-item" title="Media">📸</div>
+    <div class="rail-item" title="Announcements">📣</div>
+    <div class="rail-spacer"></div>
+    <div class="rail-item" title="Settings">⚙️</div>
+    <div class="rail-avatar" title="Coach Martinez">JM</div>
+  </nav>
+
+  <!-- ── Main ────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Hero Banner -->
+    <div class="hero">
+      <div class="hero-left">
+        <div class="hero-school">
+          <div class="hero-crest">🏫</div>
+          <div>
+            <div class="hero-name">Westview Athletics</div>
+            <div class="hero-meta">Westview High School · Portland, OR · Division 3A</div>
+          </div>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><div class="hero-stat-val">47</div><div class="hero-stat-label">Athletes</div></div>
+          <div class="hero-stat"><div class="hero-stat-val">6</div><div class="hero-stat-label">Teams</div></div>
+          <div class="hero-stat"><div class="hero-stat-val">18-7</div><div class="hero-stat-label">Record</div></div>
+          <div class="hero-stat"><div class="hero-stat-val">91%</div><div class="hero-stat-label">Attendance</div></div>
+          <div class="hero-stat"><div class="hero-stat-val">3.42</div><div class="hero-stat-label">Avg GPA</div></div>
+        </div>
+      </div>
+      <div class="hero-right">
+        <button class="btn btn-ghost">Edit Profile</button>
+        <button class="btn btn-primary">+ New</button>
+      </div>
+    </div>
+
+    <!-- Teams Section -->
+    <div class="section-head">
+      <div class="section-title">🏆 Active Teams <span class="section-count">6 teams</span></div>
+      <button class="btn btn-ghost btn-sm">Manage →</button>
+    </div>
+
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-card-stripe" style="background:linear-gradient(90deg,#e8392a,#ff6b4a)"></div>
+        <div class="team-top">
+          <div class="team-icon" style="background:var(--brand-soft)">🏀</div>
+          <div class="team-record">12-3</div>
+        </div>
+        <div class="team-name">Varsity Basketball</div>
+        <div class="team-meta">2026 Spring · Coach Martinez</div>
+        <div class="team-footer">
+          <div style="display:flex;align-items:center">
+            <div class="team-avatars">
+              <img src="https://i.pravatar.cc/56?u=m1" alt="">
+              <img src="https://i.pravatar.cc/56?u=m2" alt="">
+              <img src="https://i.pravatar.cc/56?u=m3" alt="">
+              <img src="https://i.pravatar.cc/56?u=m4" alt="">
+            </div>
+            <span class="team-member-count">+8 more</span>
+          </div>
+          <span style="font-size:.7rem;color:var(--green)">● Active</span>
+        </div>
+      </div>
+
+      <div class="team-card">
+        <div class="team-card-stripe" style="background:linear-gradient(90deg,#22c55e,#4ade80)"></div>
+        <div class="team-top">
+          <div class="team-icon" style="background:var(--green-soft)">⚽</div>
+          <div class="team-record">8-4-2</div>
+        </div>
+        <div class="team-name">Varsity Soccer</div>
+        <div class="team-meta">2026 Spring · Coach Hernandez</div>
+        <div class="team-footer">
+          <div style="display:flex;align-items:center">
+            <div class="team-avatars">
+              <img src="https://i.pravatar.cc/56?u=s1" alt="">
+              <img src="https://i.pravatar.cc/56?u=s2" alt="">
+              <img src="https://i.pravatar.cc/56?u=s3" alt="">
+            </div>
+            <span class="team-member-count">+15 more</span>
+          </div>
+          <span style="font-size:.7rem;color:var(--green)">● Active</span>
+        </div>
+      </div>
+
+      <div class="team-card">
+        <div class="team-card-stripe" style="background:linear-gradient(90deg,#a78bfa,#c4b5fd)"></div>
+        <div class="team-top">
+          <div class="team-icon" style="background:var(--purple-soft)">🏃</div>
+          <div class="team-record">—</div>
+        </div>
+        <div class="team-name">Track & Field</div>
+        <div class="team-meta">2026 Spring · Coach Wilson</div>
+        <div class="team-footer">
+          <div style="display:flex;align-items:center">
+            <div class="team-avatars">
+              <img src="https://i.pravatar.cc/56?u=t1" alt="">
+              <img src="https://i.pravatar.cc/56?u=t2" alt="">
+              <img src="https://i.pravatar.cc/56?u=t3" alt="">
+              <img src="https://i.pravatar.cc/56?u=t4" alt="">
+              <img src="https://i.pravatar.cc/56?u=t5" alt="">
+            </div>
+            <span class="team-member-count">+6 more</span>
+          </div>
+          <span style="font-size:.7rem;color:var(--green)">● Active</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Match timeline + Pending requests -->
+    <div class="grid-7-3" style="margin-top:28px">
+      <div>
+        <div class="section-head" style="margin-top:0">
+          <div class="section-title">⚔️ Match Timeline</div>
+          <button class="btn btn-ghost btn-sm">All Matches →</button>
+        </div>
+
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-dot live"></div>
+            <div class="tl-card">
+              <div class="tl-card-head">
+                <span class="tl-label live">● LIVE NOW</span>
+                <span class="tl-score">42 – 38</span>
+              </div>
+              <div class="tl-matchup">Varsity Basketball vs North Ridge</div>
+              <div class="tl-detail">3rd Quarter · Westview Gym · District League</div>
+            </div>
+          </div>
+
+          <div class="tl-item">
+            <div class="tl-dot upcoming"></div>
+            <div class="tl-card">
+              <div class="tl-card-head">
+                <span class="tl-label upcoming">TODAY 6:00 PM</span>
+              </div>
+              <div class="tl-matchup">JV Soccer vs Lincoln Prep</div>
+              <div class="tl-detail">Westview Field · Non-league</div>
+            </div>
+          </div>
+
+          <div class="tl-item">
+            <div class="tl-dot upcoming"></div>
+            <div class="tl-card">
+              <div class="tl-card-head">
+                <span class="tl-label upcoming">FRI MAY 2 · 3:00 PM</span>
+              </div>
+              <div class="tl-matchup">Track & Field @ Regional Meet</div>
+              <div class="tl-detail">Central Stadium · Individual events</div>
+            </div>
+          </div>
+
+          <div class="tl-item">
+            <div class="tl-dot done"></div>
+            <div class="tl-card" style="opacity:.7">
+              <div class="tl-card-head">
+                <span class="tl-label done">APR 28 — FINAL</span>
+                <span class="tl-score">3 – 1</span>
+              </div>
+              <div class="tl-matchup">JV Soccer vs Central Academy</div>
+              <div class="tl-detail">Win · Westview Field</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-head" style="margin-top:0">
+          <div class="section-title">👋 Pending <span class="section-count">3</span></div>
+        </div>
+
+        <div class="req-list">
+          <div class="req-card">
+            <img class="req-avatar" src="https://i.pravatar.cc/84?u=req1" alt="">
+            <div class="req-info">
+              <div class="req-name">Ethan Park</div>
+              <div class="req-meta">Basketball · Class 2027 · 2d ago</div>
+            </div>
+            <div class="req-actions">
+              <button class="req-btn approve" title="Approve">✓</button>
+              <button class="req-btn reject" title="Reject">✕</button>
+            </div>
+          </div>
+
+          <div class="req-card">
+            <img class="req-avatar" src="https://i.pravatar.cc/84?u=req2" alt="">
+            <div class="req-info">
+              <div class="req-name">Maya Johnson</div>
+              <div class="req-meta">Soccer · Class 2028 · 3d ago</div>
+            </div>
+            <div class="req-actions">
+              <button class="req-btn approve" title="Approve">✓</button>
+              <button class="req-btn reject" title="Reject">✕</button>
+            </div>
+          </div>
+
+          <div class="req-card">
+            <img class="req-avatar" src="https://i.pravatar.cc/84?u=req3" alt="">
+            <div class="req-info">
+              <div class="req-name">Coach Davis</div>
+              <div class="req-meta">Assistant Coach · 5d ago</div>
+            </div>
+            <div class="req-actions">
+              <button class="req-btn approve" title="Approve">✓</button>
+              <button class="req-btn reject" title="Reject">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Announcements -->
+        <div class="section-head">
+          <div class="section-title">📣 Pinned</div>
+        </div>
+        <div class="announce-card pinned">
+          <div class="announce-title">Spring Tryouts Reminder <span class="pin">📌 Pinned</span></div>
+          <div class="announce-body">All returning and new athletes must complete physicals before tryout week (May 12–16). Forms available in the front office.</div>
+          <div class="announce-foot"><span>Coach Martinez</span><span>·</span><span>2 days ago</span><span>·</span><span>All teams</span></div>
+        </div>
+        <div class="announce-card">
+          <div class="announce-title">Film Room Schedule Updated</div>
+          <div class="announce-body">Basketball film review moved to Thursdays 3:30 PM in Room 204.</div>
+          <div class="announce-foot"><span>Coach Martinez</span><span>·</span><span>4 days ago</span><span>·</span><span>Basketball</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Standings -->
+    <div class="grid-2" style="margin-top:28px">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">🏅 District A — Basketball</span>
+          <button class="btn btn-ghost btn-sm">Full Standings →</button>
+        </div>
+        <div class="card-body" style="padding:0 12px 8px">
+          <table class="standings">
+            <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>Pts</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rank r1">1</span></td><td class="team-name-cell">🏀 Westview</td><td>12</td><td>3</td><td class="pts">36</td></tr>
+              <tr><td><span class="rank r2">2</span></td><td class="team-name-cell">🏀 North Ridge</td><td>10</td><td>5</td><td class="pts">30</td></tr>
+              <tr><td><span class="rank r3">3</span></td><td class="team-name-cell">🏀 Riverside Prep</td><td>9</td><td>6</td><td class="pts">27</td></tr>
+              <tr><td><span class="rank r3">4</span></td><td class="team-name-cell">🏀 Central Academy</td><td>5</td><td>10</td><td class="pts">15</td></tr>
+              <tr><td><span class="rank r3">5</span></td><td class="team-name-cell">🏀 Lincoln Prep</td><td>4</td><td>11</td><td class="pts">12</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">🏅 Metro League — Soccer</span>
+          <button class="btn btn-ghost btn-sm">Full Standings →</button>
+        </div>
+        <div class="card-body" style="padding:0 12px 8px">
+          <table class="standings">
+            <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>Pts</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rank r1">1</span></td><td class="team-name-cell">⚽ Elite Club</td><td>10</td><td>2</td><td class="pts">32</td></tr>
+              <tr><td><span class="rank r2">2</span></td><td class="team-name-cell">⚽ Westview</td><td>8</td><td>4</td><td class="pts">26</td></tr>
+              <tr><td><span class="rank r3">3</span></td><td class="team-name-cell">⚽ Lincoln Prep</td><td>7</td><td>5</td><td class="pts">23</td></tr>
+              <tr><td><span class="rank r3">4</span></td><td class="team-name-cell">⚽ Central Academy</td><td>3</td><td>9</td><td class="pts">11</td></tr>
+              <tr><td><span class="rank r3">5</span></td><td class="team-name-cell">⚽ North Ridge</td><td>2</td><td>10</td><td class="pts">8</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+</body>
+</html>

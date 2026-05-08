@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Untitled Athletics • Sign In</title>
-  <link rel="stylesheet" href="styles.css?v=20260508d">
-  <script type="module" src="js/login.js?v=20260508d" onerror="window.__MODULE_SCRIPT_ERROR=true"></script>
+  <link rel="stylesheet" href="styles.css?v=20260508e">
+  <script type="module" src="js/login.js?v=20260508e" onerror="window.__MODULE_SCRIPT_ERROR=true"></script>
   <!-- Diagnose module load failures -->
   <script>
     window.__LOGIN_MODULE_LOADED = false;
@@ -27,11 +27,11 @@
               msg += "CDN returned " + r.status + ". ";
             }
             // CDN is reachable — problem is local JS files
-            return fetch("js/supabaseClient.js?v=20260508d", { method: "HEAD" });
+            return fetch("js/supabaseClient.js?v=20260508e", { method: "HEAD" });
           })
           .then(function(r) {
             if (!r.ok) msg += "supabaseClient.js not found (" + r.status + "). ";
-            return fetch("js/login.js?v=20260508d", { method: "HEAD" });
+            return fetch("js/login.js?v=20260508e", { method: "HEAD" });
           })
           .then(function(r) {
             if (!r.ok) msg += "login.js not found (" + r.status + "). ";

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design A — Command Center Dashboard</title>
+<style>
+/* ── Reset + Stadium tokens ────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e17;--surface:#131a2b;--surface-2:#1a2236;--surface-3:#212b42;
+  --text:#e8eaf0;--muted:#7a8ba7;--line:#1f2a3e;
+  --brand:#e8392a;--brand-soft:rgba(232,57,42,.12);
+  --accent:#4fc3f7;--accent-soft:rgba(79,195,247,.10);
+  --green:#22c55e;--green-soft:rgba(34,197,94,.12);
+  --amber:#f59e0b;--amber-soft:rgba(245,158,11,.12);
+  --danger:#ef4444;--danger-soft:rgba(239,68,68,.10);
+  --purple:#a78bfa;--purple-soft:rgba(167,139,250,.12);
+  --radius:14px;--radius-sm:10px;--radius-xs:6px;
+  --font:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif;
+  --shadow:0 2px 12px rgba(0,0,0,.35);
+}
+html{font-size:15px}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+
+/* ── App shell ─────────────────────────────────────────────────── */
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+
+/* ── Sidebar ───────────────────────────────────────────────────── */
+.sidebar{background:var(--surface);border-right:1px solid var(--line);padding:24px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:12px;padding:0 22px 28px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.brand-logo{width:40px;height:40px;border-radius:12px;background:var(--brand);display:grid;place-items:center;font-weight:800;font-size:16px;color:#fff;letter-spacing:-.5px}
+.brand-name{font-size:1.1rem;font-weight:700;color:var(--text)}
+.brand-name small{display:block;font-size:.7rem;color:var(--muted);font-weight:500;margin-top:2px}
+
+.nav-group{padding:0 12px;margin-bottom:8px}
+.nav-label{font-size:.65rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);padding:12px 12px 6px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--radius-sm);font-size:.875rem;color:var(--muted);cursor:pointer;transition:.15s}
+.nav-item:hover{background:var(--surface-2);color:var(--text)}
+.nav-item.active{background:var(--brand-soft);color:var(--brand);font-weight:600}
+.nav-icon{width:20px;text-align:center;font-size:1rem}
+.nav-badge{margin-left:auto;background:var(--brand);color:#fff;font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:50px;min-width:20px;text-align:center}
+
+.sidebar-foot{margin-top:auto;padding:16px 22px;border-top:1px solid var(--line)}
+.sidebar-foot-card{background:var(--surface-2);border-radius:var(--radius-sm);padding:14px;display:flex;align-items:center;gap:10px}
+.sidebar-foot-avatar{width:36px;height:36px;border-radius:50%;background:var(--surface-3);display:grid;place-items:center;font-size:.75rem;font-weight:700;color:var(--accent);flex-shrink:0}
+.sidebar-foot-name{font-size:.8125rem;font-weight:600;color:var(--text)}
+.sidebar-foot-role{font-size:.7rem;color:var(--muted)}
+
+/* ── Main content ──────────────────────────────────────────────── */
+.main{padding:28px 32px 48px;max-width:1200px}
+
+/* ── Page header ───────────────────────────────────────────────── */
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px}
+.page-title{font-size:1.75rem;font-weight:800;letter-spacing:-.5px}
+.page-sub{font-size:.875rem;color:var(--muted);margin-top:4px}
+.page-actions{display:flex;gap:8px}
+
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:50px;border:none;font-family:var(--font);font-size:.8125rem;font-weight:600;cursor:pointer;transition:.15s}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-primary:hover{filter:brightness(1.15)}
+.btn-ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line)}
+.btn-ghost:hover{background:var(--surface-3)}
+.btn-sm{padding:7px 14px;font-size:.75rem}
+.btn-icon{width:36px;height:36px;padding:0;display:grid;place-items:center;border-radius:10px}
+
+/* ── Action items bar ──────────────────────────────────────────── */
+.action-bar{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+.action-chip{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:50px;padding:8px 18px 8px 12px;font-size:.8125rem;cursor:pointer;transition:.15s}
+.action-chip:hover{border-color:var(--brand);background:var(--brand-soft)}
+.action-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.action-dot.red{background:var(--brand)}
+.action-dot.amber{background:var(--amber)}
+.action-dot.green{background:var(--green)}
+
+/* ── Stats row ─────────────────────────────────────────────────── */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:28px}
+.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;position:relative;overflow:hidden}
+.stat-card::before{content:"";position:absolute;top:0;left:0;width:4px;height:100%;border-radius:0 4px 4px 0}
+.stat-card.c-brand::before{background:var(--brand)}
+.stat-card.c-accent::before{background:var(--accent)}
+.stat-card.c-green::before{background:var(--green)}
+.stat-card.c-amber::before{background:var(--amber)}
+.stat-card.c-purple::before{background:var(--purple)}
+.stat-val{font-size:1.75rem;font-weight:800;letter-spacing:-.5px;line-height:1}
+.stat-label{font-size:.75rem;color:var(--muted);margin-top:6px}
+.stat-delta{font-size:.7rem;margin-top:8px;display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:50px;font-weight:600}
+.stat-delta.up{background:var(--green-soft);color:var(--green)}
+.stat-delta.down{background:var(--danger-soft);color:var(--danger)}
+
+/* ── Grid layouts ──────────────────────────────────────────────── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-3-1{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+
+/* ── Cards ─────────────────────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+.card-title{font-size:.9375rem;font-weight:700}
+.card-body{padding:16px 20px}
+
+/* ── Activity feed ─────────────────────────────────────────────── */
+.feed{display:flex;flex-direction:column}
+.feed-item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.feed-item:last-child{border-bottom:none}
+.feed-icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;font-size:.95rem}
+.feed-icon.fi-join{background:var(--green-soft)}
+.feed-icon.fi-match{background:var(--accent-soft)}
+.feed-icon.fi-alert{background:var(--amber-soft)}
+.feed-icon.fi-post{background:var(--purple-soft)}
+.feed-text{font-size:.8125rem;line-height:1.5;color:var(--text)}
+.feed-text strong{font-weight:600}
+.feed-time{font-size:.7rem;color:var(--muted);margin-top:2px}
+
+/* ── Quick-action grid ─────────────────────────────────────────── */
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qa-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;transition:.15s;border:1px solid transparent}
+.qa-item:hover{border-color:var(--line);background:var(--surface-3)}
+.qa-icon{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:1.1rem;flex-shrink:0}
+.qa-label{font-size:.8125rem;font-weight:600}
+.qa-hint{font-size:.7rem;color:var(--muted);margin-top:2px}
+
+/* ── Calendar strip ────────────────────────────────────────────── */
+.cal-strip{display:flex;gap:8px;margin-bottom:16px}
+.cal-day{flex:1;text-align:center;padding:12px 0;border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;transition:.15s;border:1px solid transparent}
+.cal-day:hover{border-color:var(--line)}
+.cal-day.today{border-color:var(--brand);background:var(--brand-soft)}
+.cal-day.has-event{position:relative}
+.cal-day.has-event::after{content:"";position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.cal-weekday{font-size:.6rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px}
+.cal-date{font-size:1.1rem;font-weight:700}
+
+/* ── Match cards ───────────────────────────────────────────────── */
+.match-list{display:flex;flex-direction:column;gap:8px}
+.match-row{display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid transparent;transition:.15s}
+.match-row:hover{border-color:var(--line)}
+.match-time{font-size:.75rem;color:var(--muted);min-width:48px;text-align:center}
+.match-teams{flex:1;font-size:.8125rem;font-weight:600}
+.match-teams span{color:var(--muted);font-weight:400}
+.match-badge{font-size:.65rem;padding:4px 10px;border-radius:50px;font-weight:600}
+.match-badge.upcoming{background:var(--accent-soft);color:var(--accent)}
+.match-badge.live{background:var(--green-soft);color:var(--green);animation:pulse 2s infinite}
+.match-badge.completed{background:var(--surface-3);color:var(--muted)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* ── Roster table ──────────────────────────────────────────────── */
+.roster{width:100%;border-collapse:collapse}
+.roster th{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-weight:600}
+.roster td{font-size:.8125rem;padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.roster tr:last-child td{border-bottom:none}
+.roster tr:hover td{background:var(--surface-2)}
+
+.avatar-sm{width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--line)}
+.avatar-name{display:flex;align-items:center;gap:10px}
+.avatar-name strong{font-weight:600;color:var(--text)}
+.avatar-name small{color:var(--muted);font-size:.7rem}
+
+.status-dot{display:inline-flex;align-items:center;gap:6px;font-size:.75rem}
+.status-dot::before{content:"";width:7px;height:7px;border-radius:50%}
+.status-dot.eligible::before{background:var(--green)}
+.status-dot.probation::before{background:var(--amber)}
+.status-dot.ineligible::before{background:var(--danger)}
+
+/* ── Sport pill ────────────────────────────────────────────────── */
+.sport-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:50px;font-size:.7rem;font-weight:600;background:var(--surface-3);color:var(--text)}
+
+/* ── Responsive ────────────────────────────────────────────────── */
+@media(max-width:1100px){.stats-row{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .grid-2,.grid-3-1{grid-template-columns:1fr}
+}
+@media(max-width:600px){.stats-row{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── Sidebar ─────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">UA</div>
+      <div class="brand-name">Westview High<small>School Admin</small></div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Dashboard</div>
+      <div class="nav-item active"><span class="nav-icon">📊</span> Overview</div>
+      <div class="nav-item"><span class="nav-icon">👥</span> Athletes <span class="nav-badge">3</span></div>
+      <div class="nav-item"><span class="nav-icon">🧑‍🏫</span> Coaches</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Teams & Seasons</div>
+      <div class="nav-item"><span class="nav-icon">🏆</span> Teams</div>
+      <div class="nav-item"><span class="nav-icon">📋</span> Rosters</div>
+      <div class="nav-item"><span class="nav-icon">📅</span> Schedule</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Competition</div>
+      <div class="nav-item"><span class="nav-icon">🏅</span> Leagues</div>
+      <div class="nav-item"><span class="nav-icon">⚔️</span> Matches <span class="nav-badge">2</span></div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">School</div>
+      <div class="nav-item"><span class="nav-icon">📈</span> Academics</div>
+      <div class="nav-item"><span class="nav-icon">📸</span> Media</div>
+      <div class="nav-item"><span class="nav-icon">📣</span> Announcements</div>
+      <div class="nav-item"><span class="nav-icon">⚙️</span> Settings</div>
+    </div>
+
+    <div class="sidebar-foot">
+      <div class="sidebar-foot-card">
+        <div class="sidebar-foot-avatar">JM</div>
+        <div>
+          <div class="sidebar-foot-name">Coach Martinez</div>
+          <div class="sidebar-foot-role">School Admin</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Page Header -->
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">Good morning, Coach 👋</h1>
+        <p class="page-sub">Here's what's happening at Westview today.</p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-ghost btn-icon" title="Search">🔍</button>
+        <button class="btn btn-ghost btn-icon" title="Notifications" style="position:relative">🔔<span style="position:absolute;top:4px;right:4px;width:8px;height:8px;background:var(--brand);border-radius:50%;border:2px solid var(--surface)"></span></button>
+        <button class="btn btn-primary">+ New</button>
+      </div>
+    </div>
+
+    <!-- Action items -->
+    <div class="action-bar">
+      <div class="action-chip"><span class="action-dot red"></span> 3 pending athlete requests</div>
+      <div class="action-chip"><span class="action-dot amber"></span> 2 matches need scores</div>
+      <div class="action-chip"><span class="action-dot green"></span> Varsity roster finalized</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card c-brand">
+        <div class="stat-val">47</div>
+        <div class="stat-label">Total Athletes</div>
+        <span class="stat-delta up">↑ 5 this month</span>
+      </div>
+      <div class="stat-card c-accent">
+        <div class="stat-val">6</div>
+        <div class="stat-label">Active Teams</div>
+        <span class="stat-delta up">↑ 1 new</span>
+      </div>
+      <div class="stat-card c-green">
+        <div class="stat-val">12</div>
+        <div class="stat-label">Upcoming Matches</div>
+        <span class="stat-delta up">next: 2 days</span>
+      </div>
+      <div class="stat-card c-amber">
+        <div class="stat-val">91%</div>
+        <div class="stat-label">Attendance Rate</div>
+        <span class="stat-delta down">↓ 3% vs last week</span>
+      </div>
+      <div class="stat-card c-purple">
+        <div class="stat-val">3.42</div>
+        <div class="stat-label">Avg Team GPA</div>
+        <span class="stat-delta up">↑ 0.08</span>
+      </div>
+    </div>
+
+    <!-- Calendar strip + Upcoming -->
+    <div class="grid-3-1">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">📅 This Week</span>
+          <button class="btn btn-ghost btn-sm">Full Calendar →</button>
+        </div>
+        <div class="card-body">
+          <div class="cal-strip">
+            <div class="cal-day"><div class="cal-weekday">Mon</div><div class="cal-date">28</div></div>
+            <div class="cal-day has-event"><div class="cal-weekday">Tue</div><div class="cal-date">29</div></div>
+            <div class="cal-day"><div class="cal-weekday">Wed</div><div class="cal-date">30</div></div>
+            <div class="cal-day today has-event"><div class="cal-weekday">Thu</div><div class="cal-date">1</div></div>
+            <div class="cal-day has-event"><div class="cal-weekday">Fri</div><div class="cal-date">2</div></div>
+            <div class="cal-day"><div class="cal-weekday">Sat</div><div class="cal-date">3</div></div>
+            <div class="cal-day has-event"><div class="cal-weekday">Sun</div><div class="cal-date">4</div></div>
+          </div>
+          <div class="match-list">
+            <div class="match-row">
+              <div class="match-time">4:30p</div>
+              <div class="match-teams">Varsity Basketball <span>vs North Ridge</span></div>
+              <span class="match-badge live">● Live</span>
+            </div>
+            <div class="match-row">
+              <div class="match-time">6:00p</div>
+              <div class="match-teams">JV Soccer <span>vs Lincoln Prep</span></div>
+              <span class="match-badge upcoming">Upcoming</span>
+            </div>
+            <div class="match-row">
+              <div class="match-time">Fri 3p</div>
+              <div class="match-teams">Track & Field <span>@ Regional Meet</span></div>
+              <span class="match-badge upcoming">Upcoming</span>
+            </div>
+            <div class="match-row">
+              <div class="match-time">Sat 10a</div>
+              <div class="match-teams">Varsity Soccer <span>vs Central Academy</span></div>
+              <span class="match-badge upcoming">Upcoming</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">⚡ Quick Actions</span>
+        </div>
+        <div class="card-body">
+          <div class="qa-grid">
+            <div class="qa-item"><div class="qa-icon" style="background:var(--brand-soft)">📅</div><div><div class="qa-label">Schedule Match</div><div class="qa-hint">Add a new game</div></div></div>
+            <div class="qa-item"><div class="qa-icon" style="background:var(--accent-soft)">🏆</div><div><div class="qa-label">Create Team</div><div class="qa-hint">New roster</div></div></div>
+            <div class="qa-item"><div class="qa-icon" style="background:var(--green-soft)">👤</div><div><div class="qa-label">Add Athlete</div><div class="qa-hint">Invite or approve</div></div></div>
+            <div class="qa-item"><div class="qa-icon" style="background:var(--purple-soft)">📣</div><div><div class="qa-label">Announce</div><div class="qa-hint">Post update</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Roster + Activity -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">👥 Athlete Roster</span>
+          <button class="btn btn-ghost btn-sm">View All →</button>
+        </div>
+        <div class="card-body" style="padding:0 12px 8px">
+          <table class="roster">
+            <thead>
+              <tr><th>Athlete</th><th>Sport</th><th>Class</th><th>GPA</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="avatar-name"><img class="avatar-sm" src="https://i.pravatar.cc/64?u=marcus" alt=""><div><strong>Marcus Rivera</strong><br><small>PG · #12</small></div></div></td>
+                <td><span class="sport-pill">🏀 Basketball</span></td>
+                <td>2026</td>
+                <td>3.8</td>
+                <td><span class="status-dot eligible">Eligible</span></td>
+              </tr>
+              <tr>
+                <td><div class="avatar-name"><img class="avatar-sm" src="https://i.pravatar.cc/64?u=ava" alt=""><div><strong>Ava Kim</strong><br><small>MF · #7</small></div></div></td>
+                <td><span class="sport-pill">⚽ Soccer</span></td>
+                <td>2027</td>
+                <td>3.6</td>
+                <td><span class="status-dot eligible">Eligible</span></td>
+              </tr>
+              <tr>
+                <td><div class="avatar-name"><img class="avatar-sm" src="https://i.pravatar.cc/64?u=jaylen" alt=""><div><strong>Jaylen Carter</strong><br><small>WR · #4</small></div></div></td>
+                <td><span class="sport-pill">🏈 Football</span></td>
+                <td>2026</td>
+                <td>2.1</td>
+                <td><span class="status-dot probation">Probation</span></td>
+              </tr>
+              <tr>
+                <td><div class="avatar-name"><img class="avatar-sm" src="https://i.pravatar.cc/64?u=sofia" alt=""><div><strong>Sofia Chen</strong><br><small>Sprints</small></div></div></td>
+                <td><span class="sport-pill">🏃 Track</span></td>
+                <td>2027</td>
+                <td>3.9</td>
+                <td><span class="status-dot eligible">Eligible</span></td>
+              </tr>
+              <tr>
+                <td><div class="avatar-name"><img class="avatar-sm" src="https://i.pravatar.cc/64?u=derek" alt=""><div><strong>Derek Okafor</strong><br><small>C · #55</small></div></div></td>
+                <td><span class="sport-pill">🏀 Basketball</span></td>
+                <td>2026</td>
+                <td>1.8</td>
+                <td><span class="status-dot ineligible">Ineligible</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">📋 Recent Activity</span>
+        </div>
+        <div class="card-body">
+          <div class="feed">
+            <div class="feed-item">
+              <div class="feed-icon fi-join">✓</div>
+              <div><div class="feed-text"><strong>Sofia Chen</strong> was approved and added to Track & Field roster</div><div class="feed-time">12 minutes ago</div></div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-icon fi-match">⚽</div>
+              <div><div class="feed-text"><strong>JV Soccer</strong> result saved: W 3–1 vs Lincoln Prep</div><div class="feed-time">2 hours ago</div></div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-icon fi-alert">⚠</div>
+              <div><div class="feed-text"><strong>Derek Okafor</strong> GPA dropped below 2.0 — marked ineligible</div><div class="feed-time">5 hours ago</div></div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-icon fi-post">📸</div>
+              <div><div class="feed-text">New school post published: <strong>"Spring season wrap-up"</strong></div><div class="feed-time">Yesterday</div></div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-icon fi-join">✓</div>
+              <div><div class="feed-text"><strong>Coach Davis</strong> joined as assistant coach for Basketball</div><div class="feed-time">Yesterday</div></div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-icon fi-match">🏀</div>
+              <div><div class="feed-text"><strong>Varsity Basketball</strong> vs Riverside scheduled for May 8</div><div class="feed-time">2 days ago</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+</body>
+</html>

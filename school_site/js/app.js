@@ -37,7 +37,7 @@ async function mountSharedHeader() {
   try { sessionStorage.setItem(HEADER_CACHE_KEY, html); } catch (_) {}
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
+async function initApp() {
   try {
     await mountSharedHeader();
   } catch (error) {
@@ -582,4 +582,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   supabase.auth.onAuthStateChange((_event, session) => {
     void updateSession(session);
   });
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}

@@ -5,7 +5,7 @@ import { createSchoolJoinRequest, loadSchoolOptions } from "./schoolApprovalStor
 // Signal to the fallback detector that the module loaded successfully
 window.__LOGIN_MODULE_LOADED = true;
 
-document.addEventListener("DOMContentLoaded", () => {
+function init() {
   const authForm = document.querySelector("#auth-form");
   const authError = document.querySelector("#auth-error");
   const modeTabs = Array.from(document.querySelectorAll(".tab"));
@@ -282,4 +282,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
   setMode("login");
-});
+}
+
+// Run init now if DOM is ready, otherwise wait for DOMContentLoaded
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
