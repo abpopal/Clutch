@@ -20,6 +20,11 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _zipController = TextEditingController();
+  final _schoolController = TextEditingController();
+  final _positionController = TextEditingController();
+  final _graduationYearController = TextEditingController();
+  final _organizationController = TextEditingController();
+  final _titleController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _isLogin = false;
@@ -27,12 +32,21 @@ class _LoginPageState extends State<LoginPage> {
   String _selectedRole = _roles.first;
   String? _errorMessage;
 
+  String get _roleValue => _selectedRole.toLowerCase();
+  bool get _isAthleteRole => _roleValue == 'athlete';
+  bool get _isScoutRole => _roleValue == 'scout';
+
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _zipController.dispose();
+    _schoolController.dispose();
+    _positionController.dispose();
+    _graduationYearController.dispose();
+    _organizationController.dispose();
+    _titleController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -58,13 +72,33 @@ class _LoginPageState extends State<LoginPage> {
           password: _passwordController.text.trim(),
         );
       } else {
-        final roleValue = _selectedRole.toLowerCase();
+        final roleValue = _roleValue;
+        final displayName = _nameController.text.trim();
+        final email = _emailController.text.trim();
+        final phone = _phoneController.text.trim();
+        final password = _passwordController.text.trim();
+        final zipCode = _zipController.text.trim();
+        final schoolName = _schoolController.text.trim();
+        final position = _positionController.text.trim();
+        final graduationYear = int.tryParse(
+          _graduationYearController.text.trim(),
+        );
+        final organization = _organizationController.text.trim();
+        final title = _titleController.text.trim();
         final response = await supabase.auth.signUp(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
+          email: email,
+          password: password,
           data: {
-            'name': _nameController.text.trim(),
+            'name': displayName,
             'role': roleValue,
+            'phone': phone,
+            if (_isAthleteRole) ...{
+              'zip_code': zipCode,
+              'school_name': schoolName,
+              'position': position,
+              if (graduationYear != null) 'graduation_year': graduationYear,
+            },
+            if (_isScoutRole) ...{'organization': organization, 'title': title},
           },
         );
 
@@ -75,36 +109,61 @@ class _LoginPageState extends State<LoginPage> {
 
         final userRow = await supabase
             .from('users')
-            .insert({
-              'firebase_uid': user.id,
-              'role': roleValue,
-            })
+            .insert({'firebase_uid': user.id, 'role': roleValue})
             .select('user_id')
             .single();
 
         final userId = userRow['user_id'] as String;
-        if (roleValue == 'school') {
-          await supabase.from('schools').insert({
+        await supabase.from('user_directory').upsert({
+          'user_id': userId,
+          'display_name': displayName,
+          'email': email,
+        });
+
+        if (_isAthleteRole) {
+          String? schoolId;
+          if (schoolName.isNotEmpty) {
+            final existingSchool = await supabase
+                .from('schools')
+                .select('school_id')
+                .eq('name', schoolName)
+                .maybeSingle();
+
+            if (existingSchool != null) {
+              schoolId = existingSchool['school_id'] as String?;
+            } else {
+              final schoolRow = await supabase
+                  .from('schools')
+                  .insert({'name': schoolName})
+                  .select('school_id')
+                  .single();
+              schoolId = schoolRow['school_id'] as String;
+            }
+          }
+
+          await supabase.from('athletes').insert({
             'user_id': userId,
-            'name': _nameController.text.trim(),
+            if (schoolId != null) 'school_id': schoolId,
+            if (position.isNotEmpty) 'position': position,
+            if (graduationYear != null) 'graduation_year': graduationYear,
           });
-        } else if (roleValue == 'coach') {
-          await supabase.from('coaches').insert({'user_id': userId});
-        } else if (roleValue == 'athlete') {
-          await supabase.from('athletes').insert({'user_id': userId});
-        } else if (roleValue == 'scout') {
-          await supabase.from('scouts').insert({'user_id': userId});
+        } else if (_isScoutRole) {
+          await supabase.from('scouts').insert({
+            'user_id': userId,
+            if (organization.isNotEmpty) 'organization': organization,
+            if (title.isNotEmpty) 'title': title,
+          });
         }
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Sign up confirmed.')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Sign up confirmed.')));
         }
 
         await supabase.auth.signInWithPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
+          email: email,
+          password: password,
         );
       }
 
@@ -115,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     } on AuthException catch (e) {
       setState(() {
-        _errorMessage = e.message ?? 'Authentication failed. Try again.';
+        _errorMessage = e.message;
       });
     } catch (_) {
       setState(() {
@@ -137,6 +196,66 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
+  List<Widget> _buildRoleSpecificFields() {
+    if (_isAthleteRole) {
+      return [
+        _ClutchedField(
+          controller: _zipController,
+          hintText: 'Zip Code',
+          icon: Icons.location_on_outlined,
+          keyboardType: TextInputType.number,
+          validator: (value) => _required(value, 'Zip Code'),
+        ),
+        const SizedBox(height: 14),
+        _ClutchedField(
+          controller: _schoolController,
+          hintText: 'School',
+          icon: Icons.school_outlined,
+          validator: (value) => _required(value, 'School'),
+        ),
+        const SizedBox(height: 14),
+        _ClutchedField(
+          controller: _positionController,
+          hintText: 'Position',
+          icon: Icons.sports_football_outlined,
+          validator: (value) => _required(value, 'Position'),
+        ),
+        const SizedBox(height: 14),
+        _ClutchedField(
+          controller: _graduationYearController,
+          hintText: 'Graduation Year',
+          icon: Icons.event_outlined,
+          keyboardType: TextInputType.number,
+          validator: _graduationYearValidator,
+        ),
+      ];
+    }
+
+    return [
+      _ClutchedField(
+        controller: _organizationController,
+        hintText: 'Organization',
+        icon: Icons.apartment_outlined,
+        validator: (value) => _required(value, 'Organization'),
+      ),
+      const SizedBox(height: 14),
+      _ClutchedField(
+        controller: _titleController,
+        hintText: 'Title',
+        icon: Icons.badge_outlined,
+        validator: (value) => _required(value, 'Title'),
+      ),
+    ];
+  }
+
+  String _roleDescription() {
+    if (_isAthleteRole) {
+      return 'Build your player profile with school, position, and graduation details.';
+    }
+
+    return 'Set up your scouting account with the organization details you actually use.';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -146,7 +265,10 @@ class _LoginPageState extends State<LoginPage> {
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 36,
+                ),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Column(
@@ -168,7 +290,9 @@ class _LoginPageState extends State<LoginPage> {
                             children: [
                               Text(
                                 _isLogin ? 'Login' : 'Sign Up',
-                                style: Theme.of(context).textTheme.headlineMedium,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineMedium,
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 8),
@@ -199,7 +323,8 @@ class _LoginPageState extends State<LoginPage> {
                                   controller: _nameController,
                                   hintText: 'Name',
                                   icon: Icons.person_outline,
-                                  validator: (value) => _required(value, 'Name'),
+                                  validator: (value) =>
+                                      _required(value, 'Name'),
                                 ),
                                 const SizedBox(height: 14),
                               ],
@@ -227,7 +352,10 @@ class _LoginPageState extends State<LoginPage> {
                                             style: TextStyle(fontSize: 14),
                                           ),
                                           SizedBox(width: 6),
-                                          Icon(Icons.keyboard_arrow_down, size: 18),
+                                          Icon(
+                                            Icons.keyboard_arrow_down,
+                                            size: 18,
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -238,18 +366,11 @@ class _LoginPageState extends State<LoginPage> {
                                         hintText: 'Phone',
                                         icon: Icons.phone_outlined,
                                         keyboardType: TextInputType.phone,
-                                        validator: (value) => _required(value, 'Phone'),
+                                        validator: (value) =>
+                                            _required(value, 'Phone'),
                                       ),
                                     ),
                                   ],
-                                ),
-                                const SizedBox(height: 14),
-                                _ClutchedField(
-                                  controller: _zipController,
-                                  hintText: 'Zip Code',
-                                  icon: Icons.location_on_outlined,
-                                  keyboardType: TextInputType.number,
-                                  validator: (value) => _required(value, 'Zip Code'),
                                 ),
                                 const SizedBox(height: 14),
                               ],
@@ -258,7 +379,8 @@ class _LoginPageState extends State<LoginPage> {
                                 hintText: 'Password',
                                 icon: Icons.lock_outline,
                                 obscureText: true,
-                                validator: (value) => _required(value, 'Password'),
+                                validator: (value) =>
+                                    _required(value, 'Password'),
                               ),
                               if (!_isLogin) ...[
                                 const SizedBox(height: 22),
@@ -281,12 +403,24 @@ class _LoginPageState extends State<LoginPage> {
                                           onTap: () {
                                             setState(() {
                                               _selectedRole = role;
+                                              _errorMessage = null;
                                             });
                                           },
                                         ),
                                       )
                                       .toList(),
                                 ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _roleDescription(),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFFB8B0B0),
+                                    height: 1.45,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                ..._buildRoleSpecificFields(),
                               ],
                               const SizedBox(height: 22),
                               GradientButton(
@@ -382,7 +516,10 @@ class _ClutchedField extends StatelessWidget {
           color: const Color(0xFFB52B2B),
           width: 1.3,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
       ),
     );
   }
@@ -429,7 +566,11 @@ class _RoleChip extends StatelessWidget {
             if (selected)
               const Icon(Icons.check_circle, size: 16, color: Color(0xFFB52B2B))
             else
-              const Icon(Icons.circle_outlined, size: 16, color: Color(0xFF7E7777)),
+              const Icon(
+                Icons.circle_outlined,
+                size: 16,
+                color: Color(0xFF7E7777),
+              ),
             const SizedBox(width: 8),
             Text(
               label,
@@ -453,7 +594,26 @@ String? _required(String? value, String label) {
   return null;
 }
 
-OutlineInputBorder _outlineBorder({Color color = const Color(0xFF2F2A2A), double width = 1}) {
+String? _graduationYearValidator(String? value) {
+  final requiredError = _required(value, 'Graduation Year');
+  if (requiredError != null) {
+    return requiredError;
+  }
+
+  final parsedYear = int.tryParse(value!.trim());
+  if (parsedYear == null) {
+    return 'Graduation Year must be a number';
+  }
+  if (parsedYear < 2000 || parsedYear > 2100) {
+    return 'Enter a valid graduation year';
+  }
+  return null;
+}
+
+OutlineInputBorder _outlineBorder({
+  Color color = const Color(0xFF2F2A2A),
+  double width = 1,
+}) {
   return OutlineInputBorder(
     borderRadius: BorderRadius.circular(12),
     borderSide: BorderSide(color: color, width: width),

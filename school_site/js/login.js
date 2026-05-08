@@ -2,6 +2,9 @@ import { supabase } from "./supabaseClient.js";
 import { normalizeRole } from "./roleUtils.js";
 import { createSchoolJoinRequest, loadSchoolOptions } from "./schoolApprovalStore.js";
 
+// Signal to the fallback detector that the module loaded successfully
+window.__LOGIN_MODULE_LOADED = true;
+
 document.addEventListener("DOMContentLoaded", () => {
   const authForm = document.querySelector("#auth-form");
   const authError = document.querySelector("#auth-error");

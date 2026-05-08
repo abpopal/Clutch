@@ -4,8 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Untitled Athletics • Sign In</title>
-  <link rel="stylesheet" href="styles.css?v=20260508b">
-  <script type="module" src="js/login.js?v=20260508b"></script>
+  <link rel="stylesheet" href="styles.css?v=20260508c">
+  <script type="module" src="js/login.js?v=20260508c"></script>
+  <!-- Fallback: detect if module failed to load -->
+  <script>
+    window.__LOGIN_MODULE_LOADED = false;
+    setTimeout(function() {
+      if (!window.__LOGIN_MODULE_LOADED) {
+        var errEl = document.getElementById("auth-error");
+        if (errEl) errEl.textContent = "Failed to load — please refresh or disable ad-blocker.";
+        console.error("[login] Module failed to load. Check console for import errors.");
+      }
+    }, 5000);
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
