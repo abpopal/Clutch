@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Untitled Athletics • School Dashboard</title>
+  <link rel="stylesheet" href="styles.css?v=20260508d">
+  <link rel="stylesheet" href="school-dashboard.css?v=20260508d">
+  <script type="module" src="js/app.js?v=20260508d"></script>
+  <script type="module" src="js/schoolDashboard.js?v=20260508d"></script>
+</head>
+<body data-page="school-dashboard" data-requires-session="true">
+<div class="app-layout">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">UA</div>
+      <span class="role-pill" id="role-pill">guest</span>
+    </div>
+    <div>
+      <p class="nav-label">Main</p>
+      <nav class="nav">
+        <a class="nav-btn" data-nav="home" href="index.html"><span class="nav-icon">🏠</span><span class="nav-text">Home</span></a>
+        <a class="nav-btn" data-nav="pulse" href="pulse.html"><span class="nav-icon">⚡</span><span class="nav-text">Pulse</span></a>
+        <a class="nav-btn" data-nav="search" href="explore.html"><span class="nav-icon">🔍</span><span class="nav-text">Explore</span></a>
+        <a class="nav-btn" data-nav="profile" href="profile.html"><span class="nav-icon">👤</span><span class="nav-text">Profile</span></a>
+        <a class="nav-btn" data-nav="messages" href="messages.html"><span class="nav-icon">💬</span><span class="nav-text">Messages</span></a>
+        <a class="nav-btn" data-nav="scout-dashboard" data-role-allow="scout" href="scout-dashboard.html"><span class="nav-icon">📋</span><span class="nav-text">Scout Hub</span></a>
+        <a class="nav-btn" data-nav="school-dashboard" data-role-allow="school_admin" href="school-dashboard.html"><span class="nav-icon">🏫</span><span class="nav-text">School</span></a>
+      </nav>
+      <p class="nav-label" style="margin-top:1.5rem">Dashboard</p>
+      <nav class="nav">
+        <a class="nav-btn scout-dashboard-nav-link" data-school-section-link="overview" href="#school-section-overview"><span class="nav-icon">📊</span><span class="nav-text">Overview</span></a>
+        <a class="nav-btn scout-dashboard-nav-link" data-school-section-link="athletes" href="#school-section-athletes"><span class="nav-icon">👥</span><span class="nav-text">Athletes</span></a>
+        <a class="nav-btn scout-dashboard-nav-link" data-school-section-link="coaches" href="#school-section-coaches"><span class="nav-icon">🧑‍🏫</span><span class="nav-text">Coaches</span></a>
+        <a class="nav-btn scout-dashboard-nav-link" data-school-section-link="teams" href="#school-section-teams"><span class="nav-icon">🏆</span><span class="nav-text">Teams</span></a>
+        <a class="nav-btn scout-dashboard-nav-link" data-school-section-link="matches" href="#school-section-matches"><span class="nav-icon">📅</span><span class="nav-text">Matches</span></a>
+        <a class="nav-btn scout-dashboard-nav-link" data-school-section-link="leagues" href="#school-section-leagues"><span class="nav-icon">🏅</span><span class="nav-text">Leagues</span></a>
+        <a class="nav-btn scout-dashboard-nav-link" data-school-section-link="media" href="#school-section-media"><span class="nav-icon">📸</span><span class="nav-text">Media</span></a>
+      </nav>
+    </div>
+    <div class="sidebar-foot">
+      <button class="btn-ghost full" id="sign-out-btn">Sign out</button>
+    </div>
+  </aside>
+
+  <div class="mobile-overlay" id="mobile-overlay"></div>
+
+  <div class="page-wrap">
+    <header class="site-header" data-shared-header></header>
+    <main class="sch-main">
+
+      <!-- ═══ OVERVIEW SECTION ═══════════════════════════════════ -->
+      <section id="school-section-overview">
+
+        <!-- Page Header -->
+        <div class="sch-page-head">
+          <div>
+            <h1 class="sch-page-title" id="school-dashboard-greeting">School Dashboard</h1>
+            <p class="sch-page-sub" id="school-dashboard-subtitle">Manage athletes, staff, teams, and schedule.</p>
+          </div>
+          <div class="sch-page-actions">
+            <span class="sch-section-count" id="school-dashboard-section-count"></span>
+          </div>
+        </div>
+
+        <!-- Global Status -->
+        <div id="school-dashboard-status" class="sch-status"></div>
+
+        <!-- Action Chips -->
+        <div class="sch-action-bar" id="school-action-bar"></div>
+
+        <!-- Stats Row -->
+        <div class="sch-stats-row">
+          <div class="sch-stat-card c-brand">
+            <div class="sch-stat-val" id="school-metric-athletes">–</div>
+            <div class="sch-stat-label">Athletes</div>
+          </div>
+          <div class="sch-stat-card c-accent">
+            <div class="sch-stat-val" id="school-metric-coaches">–</div>
+            <div class="sch-stat-label">Coaches</div>
+          </div>
+          <div class="sch-stat-card c-green sch-stat-card--clickable" id="school-stat-teams-card" role="button" tabindex="0">
+            <div class="sch-stat-val" id="school-metric-teams">–</div>
+            <div class="sch-stat-label">Teams</div>
+          </div>
+          <div class="sch-stat-card c-amber">
+            <div class="sch-stat-val" id="school-metric-matches">–</div>
+            <div class="sch-stat-label">Matches</div>
+          </div>
+          <div class="sch-stat-card c-purple">
+            <div class="sch-stat-val" id="school-metric-leagues">–</div>
+            <div class="sch-stat-label">Leagues</div>
+          </div>
+        </div>
+
+        <!-- Calendar + Quick Actions -->
+        <div class="sch-grid-3-1">
+          <!-- This Week -->
+          <div class="sch-card">
+            <div class="sch-card-head">
+              <span class="sch-card-title">📅 Upcoming Matches</span>
+            </div>
+            <div class="sch-card-body">
+              <div id="school-upcoming-matches" class="sch-match-list">
+                <div class="sch-empty">No upcoming matches.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="sch-card">
+            <div class="sch-card-head">
+              <span class="sch-card-title">⚡ Quick Actions</span>
+            </div>
+            <div class="sch-card-body">
+              <div class="sch-qa-grid">
+                <a class="sch-qa-item" href="#school-section-matches">
+                  <div class="sch-qa-icon" style="background:var(--brand-soft,rgba(232,57,42,.12))">📅</div>
+                  <div><div class="sch-qa-label">Schedule Match</div><div class="sch-qa-hint">Add a new game</div></div>
+                </a>
+                <a class="sch-qa-item" href="#school-section-teams">
+                  <div class="sch-qa-icon" style="background:var(--accent-soft,rgba(79,195,247,.10))">🏆</div>
+                  <div><div class="sch-qa-label">Create Team</div><div class="sch-qa-hint">New roster</div></div>
+                </a>
+                <a class="sch-qa-item" href="#school-section-athletes">
+                  <div class="sch-qa-icon" style="background:rgba(34,197,94,.12)">👤</div>
+                  <div><div class="sch-qa-label">Review Requests</div><div class="sch-qa-hint">Approve athletes</div></div>
+                </a>
+                <a class="sch-qa-item" href="#school-section-media">
+                  <div class="sch-qa-icon" style="background:rgba(167,139,250,.12)">📣</div>
+                  <div><div class="sch-qa-label">Post Update</div><div class="sch-qa-hint">Share news</div></div>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Roster + Activity -->
+        <div class="sch-grid-2">
+          <!-- Athlete Roster Preview -->
+          <div class="sch-card">
+            <div class="sch-card-head">
+              <span class="sch-card-title">👥 Athlete Roster</span>
+              <a class="sch-btn sch-btn--ghost sch-btn--sm" href="#school-section-athletes">View All →</a>
+            </div>
+            <div class="sch-card-body sch-card-body--table">
+              <table class="sch-roster" id="school-roster-preview">
+                <thead>
+                  <tr><th>Athlete</th><th>Sport</th><th>Class</th><th>Position</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="4" class="sch-empty">Loading roster…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="sch-card">
+            <div class="sch-card-head">
+              <span class="sch-card-title">📋 Recent Activity</span>
+            </div>
+            <div class="sch-card-body">
+              <div class="sch-feed" id="school-activity-feed">
+                <div class="sch-empty">No recent activity.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ═══ ATHLETES SECTION ═══════════════════════════════════ -->
+      <section class="sch-panel" id="school-section-athletes">
+        <div class="sch-panel-header">
+          <h2 class="sch-panel-title">👥 Pending Athlete Requests</h2>
+          <span class="sch-count-chip" id="school-athletes-count-chip"></span>
+        </div>
+        <div id="school-athletes-list" class="sch-list">
+          <div class="sch-empty">No pending athlete requests.</div>
+        </div>
+      </section>
+
+      <!-- ═══ COACHES SECTION ════════════════════════════════════ -->
+      <section class="sch-panel" id="school-section-coaches">
+        <div class="sch-panel-header">
+          <h2 class="sch-panel-title">🧑‍🏫 Pending Coach Requests</h2>
+          <span class="sch-count-chip" id="school-coaches-count-chip"></span>
+        </div>
+        <div id="school-coaches-list" class="sch-list">
+          <div class="sch-empty">No pending coach requests.</div>
+        </div>
+      </section>
+
+      <!-- ═══ TEAMS SECTION ══════════════════════════════════════ -->
+      <section class="sch-panel" id="school-section-teams">
+        <div class="sch-panel-header">
+          <h2 class="sch-panel-title">🏆 Teams</h2>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="sch-count-chip" id="school-teams-count-chip"></span>
+            <button class="sch-btn sch-btn--ghost sch-btn--sm" id="school-view-all-teams-btn">View All →</button>
+          </div>
+        </div>
+        <form id="school-team-form" class="sch-form">
+          <div class="sch-form-row">
+            <div class="sch-field">
+              <label class="sch-label" for="school-team-name">Team Name</label>
+              <input id="school-team-name" type="text" class="sch-input" placeholder="e.g. Varsity Basketball">
+            </div>
+            <div class="sch-field">
+              <label class="sch-label" for="school-team-sport">Sport</label>
+              <input id="school-team-sport" type="text" class="sch-input" placeholder="e.g. Basketball">
+            </div>
+            <div class="sch-field">
+              <label class="sch-label" for="school-team-season">Season</label>
+              <input id="school-team-season" type="text" class="sch-input" placeholder="e.g. 2026 Spring">
+            </div>
+          </div>
+          <div id="school-team-status" class="sch-form-status"></div>
+          <button class="sch-btn sch-btn--primary sch-btn--sm" type="submit">Create Team</button>
+        </form>
+        <div id="school-teams-list" class="sch-list sch-list--spaced">
+          <div class="sch-empty">No teams yet.</div>
+        </div>
+      </section>
+
+      <!-- ═══ MATCHES SECTION ════════════════════════════════════ -->
+      <section class="sch-panel" id="school-section-matches">
+        <div class="sch-panel-header">
+          <h2 class="sch-panel-title">📅 Matches</h2>
+          <span class="sch-count-chip" id="school-matches-count-chip"></span>
+        </div>
+        <form id="school-match-form" class="sch-form">
+          <div class="sch-form-row">
+            <div class="sch-field">
+              <label class="sch-label" for="school-match-home-team">Home Team</label>
+              <select id="school-match-home-team" class="sch-select"><option value="">Select team</option></select>
+            </div>
+            <div class="sch-field">
+              <label class="sch-label" for="school-match-away-team">Away Team</label>
+              <select id="school-match-away-team" class="sch-select"><option value="">Select team</option></select>
+            </div>
+            <div class="sch-field">
+              <label class="sch-label" for="school-match-league">League (optional)</label>
+              <select id="school-match-league" class="sch-select"><option value="">No league</option></select>
+            </div>
+            <div class="sch-field">
+              <label class="sch-label" for="school-match-datetime">Date &amp; Time</label>
+              <input id="school-match-datetime" type="datetime-local" class="sch-input">
+            </div>
+          </div>
+          <div id="school-match-status" class="sch-form-status"></div>
+          <button class="sch-btn sch-btn--primary sch-btn--sm" type="submit">Schedule Match</button>
+        </form>
+        <div id="school-matches-list" class="sch-list sch-list--spaced">
+          <div class="sch-empty">No matches scheduled.</div>
+        </div>
+      </section>
+
+      <!-- ═══ LEAGUES SECTION ════════════════════════════════════ -->
+      <section class="sch-panel" id="school-section-leagues">
+        <div class="sch-panel-header">
+          <h2 class="sch-panel-title">🏅 Leagues</h2>
+          <span class="sch-count-chip" id="school-leagues-count-chip"></span>
+        </div>
+        <form id="school-league-form" class="sch-form">
+          <div class="sch-form-row">
+            <div class="sch-field">
+              <label class="sch-label" for="school-league-name">League Name</label>
+              <input id="school-league-name" type="text" class="sch-input" placeholder="e.g. District A Conference">
+            </div>
+            <div class="sch-field">
+              <label class="sch-label" for="school-league-sport">Sport</label>
+              <input id="school-league-sport" type="text" class="sch-input" placeholder="e.g. Basketball">
+            </div>
+            <div class="sch-field">
+              <label class="sch-label" for="school-league-season">Season</label>
+              <input id="school-league-season" type="text" class="sch-input" placeholder="e.g. 2026 Spring">
+            </div>
+          </div>
+          <div id="school-league-status" class="sch-form-status"></div>
+          <button class="sch-btn sch-btn--primary sch-btn--sm" type="submit">Create League</button>
+        </form>
+        <div id="school-leagues-list" class="sch-list sch-list--spaced">
+          <div class="sch-empty">No leagues yet.</div>
+        </div>
+      </section>
+
+      <!-- ═══ MEDIA SECTION ══════════════════════════════════════ -->
+      <section class="sch-panel" id="school-section-media">
+        <div class="sch-panel-header">
+          <h2 class="sch-panel-title">📸 Media &amp; Posts</h2>
+          <span class="sch-count-chip" id="school-media-count-chip"></span>
+        </div>
+        <form id="school-post-form" class="sch-form">
+          <div class="sch-field">
+            <label class="sch-label" for="school-post-caption">Caption</label>
+            <textarea id="school-post-caption" class="sch-textarea" placeholder="Share a result, announcement, or team update…" rows="3"></textarea>
+          </div>
+          <div class="sch-form-row">
+            <div class="sch-field">
+              <label class="sch-label" for="school-post-media-type">Media Type</label>
+              <select id="school-post-media-type" class="sch-select">
+                <option value="">No media</option>
+                <option value="image">Image</option>
+                <option value="video">Video</option>
+              </select>
+            </div>
+            <div class="sch-field">
+              <label class="sch-label" for="school-post-media-url">Media URL (optional)</label>
+              <input id="school-post-media-url" type="url" class="sch-input" placeholder="https://…">
+            </div>
+            <div class="sch-field">
+              <label class="sch-label" for="school-post-visibility">Visibility</label>
+              <select id="school-post-visibility" class="sch-select">
+                <option value="public">🌐 Public</option>
+                <option value="followers">👥 Followers only</option>
+              </select>
+            </div>
+          </div>
+          <div id="school-post-status" class="sch-form-status"></div>
+          <button class="sch-btn sch-btn--primary sch-btn--sm" type="submit">Publish</button>
+        </form>
+        <div id="school-media-list" class="sch-list sch-list--spaced">
+          <div class="sch-empty">No posts yet.</div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══ ALL TEAMS MODAL ════════════════════════════════════════ -->
+<div class="sch-modal-overlay" id="school-teams-modal">
+  <div class="sch-modal">
+    <div class="sch-modal-head">
+      <h2 class="sch-modal-title">🏆 All Teams</h2>
+      <button class="sch-modal-close" id="school-teams-modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="sch-modal-body" id="school-teams-modal-body">
+      <div class="sch-empty">No teams yet.</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

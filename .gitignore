@@ -1,23 +1,16 @@
-school_site/
-!school_site/
-school_site/*
-!school_site/_redirects
-!school_site/compare.html
-!school_site/compare.css
-!school_site/scout-dashboard.html
-!school_site/scout-dashboard.css
-!school_site/profile-posts.html
-!school_site/profile.css
-!school_site/js/
-school_site/js/*
-!school_site/js/athleteData.js
-!school_site/js/athleteDirectoryData.js
-!school_site/js/compare.js
-!school_site/js/profileStatsCharts.js
-!school_site/js/profilePosts.js
-!school_site/js/profileExperience.js
-!school_site/js/roleUtils.js
-!school_site/js/scoutAthleteMap.js
-!school_site/js/scoutDashboard.js
-!school_site/js/scoutRegionInsights.js
-!school_site/js/scoutWorkspace.js
+# macOS
+.DS_Store
+
+# Claude Code
+.claude/
+
+# Ignore Flutter app (tracked in its own repo or not needed for Netlify)
+clutch_app/
+
+# Ignore SQL migration files (sensitive / run manually)
+school_site/sql/
+
+# Ignore local env
+.env
+.env.*
+*.log

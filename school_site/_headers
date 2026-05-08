@@ -1,0 +1,9 @@
+# Prevent aggressive caching of JS/CSS during active development
+/js/*
+  Cache-Control: no-cache, must-revalidate
+
+/*.css
+  Cache-Control: no-cache, must-revalidate
+
+/*.html
+  Cache-Control: no-cache, must-revalidate

@@ -1,0 +1,37 @@
+<div class="site-header-left">
+  <button class="menu-btn" id="menu-btn" type="button">Menu</button>
+  <a class="header-brand" href="index.html" aria-label="Untitled Athletics home">
+    <span class="header-brand-mark">UA</span>
+    <span class="header-brand-text">Untitled Athletics</span>
+  </a>
+</div>
+<div class="search-wrap header-search">
+  <input id="global-search" type="search" placeholder="Search athletes, schools, or teams">
+</div>
+<div class="header-role" id="header-role" hidden aria-live="polite"></div>
+<nav class="header-nav" aria-label="Top navigation">
+  <a class="header-link" href="explore.html">Explore</a>
+  <div class="notif-wrap" id="notif-wrap">
+    <button class="header-link header-link--messages" id="notif-btn" type="button" aria-haspopup="true" aria-expanded="false">
+      🔔
+      <span id="notif-count" class="badge" hidden>0</span>
+    </button>
+    <div class="notif-panel" id="notif-panel" hidden>
+      <div class="notif-panel-head">
+        <span class="notif-panel-title">Notifications</span>
+        <button class="notif-mark-read" id="notif-mark-read" type="button">Mark all read</button>
+      </div>
+      <div id="notif-list" class="notif-list">
+        <div class="notif-empty">Loading…</div>
+      </div>
+    </div>
+  </div>
+</nav>
+<div class="header-account" id="header-account" hidden>
+  <button class="header-avatar-btn" id="account-menu-btn" type="button" aria-haspopup="menu" aria-expanded="false">
+    <img class="header-avatar" id="header-avatar" alt="Your profile photo">
+  </button>
+  <div class="header-account-menu" id="account-menu" hidden>
+    <button class="header-account-action" id="sign-out-btn" type="button">Sign out</button>
+  </div>
+</div>
