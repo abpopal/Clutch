@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Untitled Athletics • Athlete Profile</title>
+  <title>Untitled Athletics • Compare Athletes</title>
   <link rel="stylesheet" href="styles.css?v=20260508b">
-  <link rel="stylesheet" href="profile.css?v=20260508b">
+  <link rel="stylesheet" href="compare.css?v=20260508b">
   <script type="module" src="js/app.js?v=20260508b"></script>
-  <script type="module" src="js/userProfile.js?v=20260508b"></script>
+  <script type="module" src="js/compare.js?v=20260508b"></script>
 </head>
-<body data-page="profile-view" data-requires-session="true">
+<body data-page="compare" data-requires-session="true">
 <div class="app-layout">
 
   <aside class="sidebar" id="sidebar">
@@ -38,16 +38,45 @@
 
   <div class="page-wrap">
     <header class="site-header" data-shared-header></header>
-    <main class="pp-main">
-      <section class="pp-shell">
-        <div id="profile-experience" class="pp-root">
-          <div class="pp-empty">Loading profile…</div>
+    <main class="cmp-main">
+
+      <div class="cmp-page-header">
+        <h1 class="cmp-page-title">Compare Athletes</h1>
+        <p class="cmp-page-sub">Select two athletes and a shared sport to compare stats side by side.</p>
+      </div>
+
+      <div class="cmp-selector-card">
+        <div class="cmp-selector-row">
+          <div class="cmp-selector-col">
+            <label class="cmp-label">Athlete A</label>
+            <select id="compare-athlete-a" class="cmp-select"><option value="">Select athlete…</option></select>
+          </div>
+          <div class="cmp-vs">VS</div>
+          <div class="cmp-selector-col">
+            <label class="cmp-label">Athlete B</label>
+            <select id="compare-athlete-b" class="cmp-select"><option value="">Select athlete…</option></select>
+          </div>
+          <div class="cmp-selector-col">
+            <label class="cmp-label">Sport</label>
+            <select id="compare-sport" class="cmp-select"><option value="">Select sport…</option></select>
+          </div>
         </div>
-        <div id="profile-page-status" class="pp-status"></div>
-      </section>
+        <div class="cmp-actions">
+          <button id="compare-btn" class="ua-btn ua-btn--primary">Compare</button>
+        </div>
+      </div>
+
+      <div id="compare-status" class="cmp-status"></div>
+
+      <div id="compare-stage" class="cmp-stage">
+        <div class="cmp-empty">
+          <div class="cmp-empty-icon">⚖</div>
+          <p>Choose two athletes and a sport to see their stats head-to-head.</p>
+        </div>
+      </div>
+
     </main>
   </div>
-
 </div>
 </body>
 </html>

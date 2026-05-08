@@ -1,0 +1,394 @@
+.compare-page-wrap {
+  background: linear-gradient(180deg, #edf2fb 0%, #f8fafc 42%, #eef3fb 100%);
+}
+
+.compare-main {
+  padding: 20px 22px 28px;
+}
+
+.compare-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.compare-hero,
+.compare-card,
+.compare-empty,
+.compare-person-card,
+.compare-stat-card,
+.compare-chart-card,
+.compare-insight-card {
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  box-shadow: 0 18px 40px rgba(148, 163, 184, 0.18);
+}
+
+.compare-hero,
+.compare-card {
+  padding: 22px;
+}
+
+.compare-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.compare-card-head h2,
+.compare-card-head h3 {
+  margin: 0;
+  color: #111827;
+}
+
+.compare-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.compare-controls label {
+  display: grid;
+  gap: 8px;
+  color: #475467;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.compare-controls select {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 16px;
+  border: 1px solid #d6dfec;
+  background: #f8fafc;
+  color: #111827;
+  padding: 0 14px;
+  font: inherit;
+}
+
+.compare-stage,
+.compare-stage-main,
+.compare-stat-grid,
+.compare-person-grid,
+.compare-summary-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.compare-stage-main {
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+}
+
+.compare-status {
+  color: rgba(17, 24, 39, 0.62);
+  font-size: 13px;
+}
+
+.compare-status.is-error {
+  color: #b42318;
+}
+
+.compare-empty {
+  padding: 28px;
+  color: #667085;
+}
+
+.compare-person-grid,
+.compare-summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.compare-person-card,
+.compare-chart-card,
+.compare-insight-card {
+  padding: 22px;
+}
+
+.compare-person-topline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.compare-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(37, 99, 235, 0.12);
+}
+
+.compare-person-topline h3 {
+  margin: 0 0 4px;
+  color: #111827;
+  font-size: 22px;
+}
+
+.compare-person-topline p,
+.compare-person-meta span,
+.compare-stat-card span,
+.compare-insight-list li,
+.compare-chart-empty {
+  color: #667085;
+}
+
+.compare-person-topline p,
+.compare-person-meta {
+  margin: 0;
+}
+
+.compare-person-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.compare-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.compare-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #edf2fe;
+  color: #274690;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.compare-summary-grid {
+  margin-top: 18px;
+}
+
+.compare-stat-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.compare-stat-card {
+  border-radius: 20px;
+  border: 1px solid #e6edf8;
+  background: #f8fafc;
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.compare-stat-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.compare-stat-card-head strong,
+.compare-metric-label,
+.compare-metric-value,
+.compare-metric-name,
+.compare-insight-list strong {
+  color: #111827;
+}
+
+.compare-stat-card-head strong {
+  font-size: 17px;
+}
+
+.compare-stat-card-head span {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.compare-stat-values {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.compare-metric {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.compare-metric.is-right {
+  text-align: right;
+}
+
+.compare-metric-value {
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.compare-metric-value.is-better {
+  color: #0f766e;
+}
+
+.compare-metric-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.compare-vs {
+  color: #98a2b3;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.compare-chart-card {
+  display: grid;
+  gap: 18px;
+}
+
+.compare-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.compare-metric-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.compare-metric-pill {
+  border: 1px solid #d0d9e8;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #344054;
+  padding: 10px 13px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.compare-metric-pill.is-active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.compare-chart-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.compare-chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.compare-grid-line {
+  stroke: #e6edf8;
+  stroke-width: 1;
+}
+
+.compare-axis-label {
+  fill: #667085;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.compare-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.compare-chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.compare-chart-legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.compare-chart-empty {
+  padding: 22px;
+  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px solid #e6edf8;
+}
+
+.compare-insight-card h3 {
+  margin: 0 0 14px;
+  color: #111827;
+}
+
+.compare-insight-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.compare-insight-list li {
+  line-height: 1.55;
+}
+
+@media (max-width: 1180px) {
+  .compare-stage-main {
+    grid-template-columns: 1fr;
+  }
+
+  .compare-insight-card {
+    order: -1;
+  }
+}
+
+@media (max-width: 920px) {
+  .compare-main {
+    padding: 16px;
+  }
+
+  .compare-controls,
+  .compare-person-grid,
+  .compare-summary-grid,
+  .compare-stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .compare-hero,
+  .compare-card,
+  .compare-person-card,
+  .compare-chart-card,
+  .compare-insight-card,
+  .compare-empty {
+    padding: 18px;
+  }
+
+  .compare-stat-values {
+    grid-template-columns: 1fr;
+  }
+
+  .compare-metric.is-right {
+    text-align: left;
+  }
+
+  .compare-vs {
+    display: none;
+  }
+}

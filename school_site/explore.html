@@ -3,108 +3,198 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Untitled Athletic • Search</title>
-  <link rel="stylesheet" href="styles.css?v=20260327c">
-  <script type="module" src="js/app.js?v=20260327c"></script>
-  <script type="module" src="js/explore.js?v=20260327c"></script>
+  <title>Untitled Athletics • Explore</title>
+  <link rel="stylesheet" href="styles.css?v=20260508b">
+  <script type="module" src="js/app.js?v=20260508b"></script>
+  <script type="module" src="js/explore.js?v=20260508b"></script>
+  <style>
+    .explore-layout {
+      width: 100%;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 0 4rem;
+    }
+    .explore-search-bar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .625rem;
+      align-items: center;
+    }
+    .explore-search-input-wrap {
+      flex: 1 1 260px;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .explore-search-input-wrap::before {
+      content: "🔍";
+      position: absolute;
+      left: .875rem;
+      font-size: .875rem;
+      pointer-events: none;
+    }
+    .explore-search-input-wrap input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--text);
+      font: inherit;
+      font-size: .9375rem;
+      padding: .625rem 1rem .625rem 2.5rem;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .explore-search-input-wrap input:focus { border-color: var(--accent); }
+    .explore-search-input-wrap input::placeholder { color: var(--muted); }
+    .explore-filter-select {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--text);
+      font: inherit;
+      font-size: .875rem;
+      padding: .5rem .875rem;
+      outline: none;
+      cursor: pointer;
+      transition: border-color .15s;
+    }
+    .explore-filter-select:focus { border-color: var(--accent); }
+    .explore-search-btn {
+      background: var(--brand);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font: inherit;
+      font-size: .875rem;
+      font-weight: 600;
+      padding: .5rem 1.25rem;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .explore-search-btn:hover { opacity: .85; }
+    .explore-summary-row {
+      padding: .75rem 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .explore-chip {
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: .8125rem;
+      padding: .25rem .75rem;
+    }
+    .explore-section { padding: 1.5rem 1.25rem 0; }
+    .explore-section-title {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 1rem;
+    }
+    .explore-status {
+      padding: .5rem 1.25rem;
+      font-size: .8125rem;
+      color: var(--muted);
+      min-height: 1.75rem;
+    }
+    .ua-search-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      padding: 0 1.25rem;
+    }
+  </style>
 </head>
 <body data-page="search" data-requires-session="true">
   <div class="app-layout">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <div class="logo">Untitled Athletic</div>
+        <div class="logo">UA</div>
         <span class="role-pill" id="role-pill">guest</span>
       </div>
       <div>
         <p class="nav-label">Main</p>
         <nav class="nav">
-          <a class="nav-btn" data-nav="home" href="index.html">Home Feed</a>
-          <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
-          <a class="nav-btn" data-nav="search" href="explore.html">Search</a>
-          <a class="nav-btn" data-nav="profile" href="profile.html">Athlete</a>
+          <a class="nav-btn" data-nav="home" href="index.html"><span class="nav-icon">🏠</span><span class="nav-text">Home</span></a>
+          <a class="nav-btn" data-nav="pulse" href="pulse.html"><span class="nav-icon">⚡</span><span class="nav-text">Pulse</span></a>
+          <a class="nav-btn" data-nav="search" href="explore.html"><span class="nav-icon">🔍</span><span class="nav-text">Explore</span></a>
+          <a class="nav-btn" data-nav="profile" href="profile.html"><span class="nav-icon">👤</span><span class="nav-text">Profile</span></a>
+          <a class="nav-btn" data-nav="messages" href="messages.html"><span class="nav-icon">💬</span><span class="nav-text">Messages</span></a>
+        <a class="nav-btn" data-nav="scout-dashboard" data-role-allow="scout" href="scout-dashboard.html"><span class="nav-icon">📋</span><span class="nav-text">Scout Hub</span></a>
+          <a class="nav-btn" data-nav="school-dashboard" data-role-allow="school_admin" href="school-dashboard.html"><span class="nav-icon">🏫</span><span class="nav-text">School</span></a>
         </nav>
       </div>
       <div class="sidebar-foot">
-        <strong>Athlete Search</strong>
-        <span class="helper">Search by athlete name, athlete ID, school, sport, or exact email.</span>
+        <button class="btn-ghost full" id="sign-out-btn">Sign out</button>
       </div>
     </aside>
 
     <div class="mobile-overlay" id="mobile-overlay"></div>
 
     <div class="page-wrap">
-      <header class="site-header">
-        <button class="menu-btn" id="menu-btn" type="button">Menu</button>
-        <div class="search-wrap">
-          <input id="global-search" type="search" placeholder="Search athlete name, ID, school, or email">
-        </div>
-        <button class="icon-btn" id="notif-btn" type="button">🔔<span id="notif-count" class="badge">4</span></button>
-        <div class="session-chip" id="session-chip">Checking session...</div>
-        <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
-      </header>
+      <header class="site-header" data-shared-header></header>
+      <main>
+        <div class="explore-layout">
+          <div class="explore-search-bar">
+            <div class="explore-search-input-wrap">
+              <input id="exact-query" type="search" placeholder="Name, athlete ID, school, sport…" autocomplete="off">
+            </div>
+            <select id="filter-role" class="explore-filter-select">
+              <option value="all">All roles</option>
+              <option value="athlete">Athletes</option>
+              <option value="coach">Coaches</option>
+              <option value="school_admin">Schools</option>
+              <option value="scout">Scouts</option>
+            </select>
+            <select id="filter-sport" class="explore-filter-select">
+              <option value="">All sports</option>
+              <option value="basketball">Basketball</option>
+              <option value="soccer">Soccer</option>
+              <option value="football">Football</option>
+              <option value="track">Track &amp; Field</option>
+              <option value="baseball">Baseball</option>
+              <option value="softball">Softball</option>
+              <option value="volleyball">Volleyball</option>
+              <option value="swimming">Swimming</option>
+              <option value="tennis">Tennis</option>
+              <option value="lacrosse">Lacrosse</option>
+              <option value="wrestling">Wrestling</option>
+              <option value="golf">Golf</option>
+            </select>
+            <button type="button" class="explore-search-btn">Search</button>
+          </div>
 
-      <main class="ua-main">
-        <section class="ua-shell">
-          <section class="ua-search-hero">
-            <div>
-              <p class="eyebrow">Search</p>
-              <h1>Find athletes across the Untitled Athletic system.</h1>
-              <p class="lede">Results search live athlete records and connected posts. Empty state shows all athletes currently in the system.</p>
-              <div class="ua-chip-row" id="search-summary">
-                <span class="ua-chip">Loading athlete directory…</span>
-              </div>
-            </div>
-            <div class="ua-search-controls">
-              <label class="full">
-                Athlete Search
-                <input id="exact-query" type="search" placeholder="UA-MJ-2026-00124, Marcus Johnson, Westlake, basketball">
-              </label>
-              <label>
-                Role
-                <select id="filter-role">
-                  <option value="all">All Roles</option>
-                  <option value="athlete">Athletes</option>
-                  <option value="coach">Coaches</option>
-                  <option value="school">Schools</option>
-                  <option value="scout">Scouts</option>
-                </select>
-              </label>
-              <label>
-                Sport / Position
-                <input id="filter-sport" type="text" placeholder="Basketball, point guard, soccer">
-              </label>
-            </div>
-          </section>
+          <div class="explore-summary-row" id="search-summary" aria-live="polite">
+            <span class="explore-chip">Loading directory…</span>
+          </div>
+          <div class="explore-status" id="search-status" aria-live="polite"></div>
 
-          <section class="ua-panel">
-            <div class="ua-panel-head">
-              <div>
-                <p class="eyebrow">People Results</p>
-                <h2>Best matches</h2>
-              </div>
-            </div>
+          <div class="explore-section">
+            <h2 class="explore-section-title">People</h2>
             <div id="search-results" class="ua-search-grid">
-              <div class="placeholder">Start typing to search the athlete directory.</div>
+              <div class="tweet-placeholder">Start typing to find athletes, coaches, and schools.</div>
             </div>
-          </section>
+          </div>
 
-          <section class="ua-panel">
-            <div class="ua-panel-head">
-              <div>
-                <p class="eyebrow">Related Activity</p>
-                <h2>Posts matching your search</h2>
-              </div>
+          <div class="explore-section">
+            <h2 class="explore-section-title">Posts</h2>
+            <div id="search-post-results" class="tweet-feed">
+              <div class="tweet-placeholder">Matching posts will appear here.</div>
             </div>
-            <div id="search-post-results" class="feed-stack">
-              <div class="placeholder">Matching posts will appear here.</div>
-            </div>
-          </section>
-        </section>
+          </div>
+        </div>
       </main>
-
-      <footer class="site-footer">
-        Untitled Athletic • Search athletes, IDs, and related posts
-      </footer>
     </div>
   </div>
 </body>
