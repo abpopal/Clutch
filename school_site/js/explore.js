@@ -1,5 +1,6 @@
 import { supabase } from "./supabaseClient.js";
 import { buildAthleteProfile, normalizeText } from "./athleteData.js";
+import { normalizeRole, roleLabel } from "./roleUtils.js";
 
 const resultEl = document.querySelector("#search-results");
 const postResultEl = document.querySelector("#search-post-results");
@@ -42,7 +43,7 @@ async function resolveViewerUserId(authUserId) {
   const { data, error } = await supabase
     .from("users")
     .select("user_id")
-    .eq("firebase_uid", authUserId)
+    .eq("auth_uid", authUserId)
     .maybeSingle();
   if (error) throw error;
   return data?.user_id || null;
@@ -69,7 +70,7 @@ async function loadDirectory() {
     supabase.from("user_directory").select("user_id,display_name,email").limit(5000),
     supabase.from("users").select("user_id,role").limit(2000),
     supabase.from("schools").select("school_id,user_id,name,location").limit(2000),
-    supabase.from("athletes").select("athlete_id,user_id,school_id,position,graduation_year").limit(2000),
+    supabase.from("athletes").select("athlete_id,user_id,school_id,position,graduation_year,sport,bio").limit(2000),
     supabase.from("coaches").select("coach_id,user_id,bio,years_experience").limit(2000),
     supabase.from("scouts").select("scout_id,user_id,organization,title").limit(2000),
     supabase.from("post").select("author_user_id,author_role,caption,created_at").order("created_at", { ascending: false }).limit(150),
@@ -104,7 +105,7 @@ async function loadDirectory() {
     const coach = coachByUserId.get(userId) || null;
     const scout = scoutByUserId.get(userId) || null;
 
-    const role = user.role || "viewer";
+    const role = normalizeRole(user.role || "viewer");
     const name = rowName(user, school, directoryEntry);
     const email = rowEmail(user, directoryEntry);
     const schoolName = assignedSchool?.name || school?.name || "";
@@ -126,7 +127,7 @@ async function loadDirectory() {
         ? `${athleteRow?.position || "Athlete"} • Class ${athleteRow?.graduation_year || "TBD"}`
         : role === "coach"
           ? coach?.bio || "Coach"
-          : role === "school"
+          : role === "school_admin"
             ? school?.location || "School"
             : scout?.organization || "Scout";
 
@@ -190,7 +191,7 @@ function renderSearchRows(rows) {
           <strong>${escapeHtml(row.name)}</strong>
           <p>${escapeHtml(row.subtitle || row.schoolName || "Untitled Athletic member")}</p>
         </div>
-        <span class="ua-chip">${escapeHtml(row.role)}</span>
+        <span class="ua-chip">${escapeHtml(roleLabel(row.role))}</span>
       </div>
       ${row.athleteId ? `<small class="ua-mono">${escapeHtml(row.athleteId)}</small>` : ""}
       <div class="ua-pill-row">
@@ -211,7 +212,7 @@ function renderSearchRows(rows) {
 
   Array.from(resultEl.querySelectorAll("[data-open-id]")).forEach((button) => {
     button.addEventListener("click", () => {
-      window.location.href = `profile.html?user_id=${encodeURIComponent(button.dataset.openId)}`;
+      window.location.href = `user-profile.html?user_id=${encodeURIComponent(button.dataset.openId)}`;
     });
   });
 

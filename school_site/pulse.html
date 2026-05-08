@@ -3,120 +3,116 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Untitled Athletic • Pulse</title>
-  <link rel="stylesheet" href="styles.css?v=20260327c">
-  <script type="module" src="js/app.js?v=20260327c"></script>
-  <script type="module" src="js/pulse.js?v=20260327c"></script>
+  <title>Untitled Athletics • Pulse</title>
+  <link rel="stylesheet" href="styles.css?v=20260508b">
+  <script type="module" src="js/app.js?v=20260508b"></script>
+  <script type="module" src="js/pulse.js?v=20260508b"></script>
+  <style>
+    .pulse-tab-panel        { display: none; }
+    .pulse-tab-panel.active { display: block; }
+  </style>
 </head>
 <body data-page="pulse" data-requires-session="true">
   <div class="app-layout">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <div class="logo">Untitled Athletic</div>
+        <div class="logo">UA</div>
         <span class="role-pill" id="role-pill">guest</span>
       </div>
-
       <div>
         <p class="nav-label">Main</p>
         <nav class="nav">
-          <a class="nav-btn" data-nav="home" href="index.html">Home Feed</a>
-          <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
-          <a class="nav-btn" data-nav="search" href="explore.html">Search</a>
-          <a class="nav-btn" data-nav="profile" href="profile.html">Profile</a>
+          <a class="nav-btn" data-nav="home" href="index.html"><span class="nav-icon">🏠</span><span class="nav-text">Home</span></a>
+          <a class="nav-btn" data-nav="pulse" href="pulse.html"><span class="nav-icon">⚡</span><span class="nav-text">Pulse</span></a>
+          <a class="nav-btn" data-nav="search" href="explore.html"><span class="nav-icon">🔍</span><span class="nav-text">Explore</span></a>
+          <a class="nav-btn" data-nav="profile" href="profile.html"><span class="nav-icon">👤</span><span class="nav-text">Profile</span></a>
+          <a class="nav-btn" data-nav="messages" href="messages.html"><span class="nav-icon">💬</span><span class="nav-text">Messages</span></a>
+        <a class="nav-btn" data-nav="scout-dashboard" data-role-allow="scout" href="scout-dashboard.html"><span class="nav-icon">📋</span><span class="nav-text">Scout Hub</span></a>
+          <a class="nav-btn" data-nav="school-dashboard" data-role-allow="school_admin" href="school-dashboard.html"><span class="nav-icon">🏫</span><span class="nav-text">School</span></a>
         </nav>
       </div>
-
       <div class="sidebar-foot">
-        <strong>What is moving now</strong>
-        <span class="helper">Pulse is the broader stream: trending posts from the whole platform plus standout content from people you follow.</span>
+        <button class="btn-ghost full" id="sign-out-btn">Sign out</button>
       </div>
     </aside>
 
     <div class="mobile-overlay" id="mobile-overlay"></div>
 
     <div class="page-wrap">
-      <header class="site-header">
-        <button class="menu-btn" id="menu-btn" type="button">Menu</button>
-        <div class="search-wrap">
-          <input id="global-search" type="search" placeholder="Search by athlete name or email">
+      <header class="site-header" data-shared-header></header>
+      <main class="twitter-layout">
+
+        <div class="twitter-feed-col">
+          <div class="feed-top-bar">
+            <h2 class="feed-title">Pulse</h2>
+            <div class="segmented feed-tabs" id="pulse-tabs" role="tablist">
+              <button type="button" data-tab="following" class="active" role="tab">Following</button>
+              <button type="button" data-tab="trending" role="tab">Trending</button>
+              <button type="button" data-tab="news" role="tab">Sports News</button>
+            </div>
+          </div>
+
+          <div id="pulse-status" class="feed-status-bar" aria-live="polite"></div>
+
+          <div id="pulse-following-panel" class="pulse-tab-panel active" role="tabpanel">
+            <div id="pulse-following-list" class="tweet-feed">
+              <div class="tweet-placeholder">Loading your following feed…</div>
+            </div>
+          </div>
+
+          <div id="pulse-trending-panel" class="pulse-tab-panel" role="tabpanel">
+            <div id="pulse-trending-list" class="tweet-feed">
+              <div class="tweet-placeholder">Loading trending content…</div>
+            </div>
+          </div>
+
+          <div id="pulse-news-panel" class="pulse-tab-panel" role="tabpanel">
+            <div id="pulse-news-list" class="tweet-feed">
+              <div class="tweet-placeholder">Loading sports news…</div>
+            </div>
+          </div>
         </div>
-        <button class="icon-btn" id="notif-btn" type="button" title="Notifications">🔔<span id="notif-count" class="badge">4</span></button>
-        <div class="session-chip" id="session-chip">Checking session...</div>
-        <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
-      </header>
 
-      <main>
-        <section class="hero hero-pulse">
-          <div>
-            <p class="eyebrow">Pulse</p>
-            <h1>Trending conversation across Clutch.</h1>
-            <p class="lede">See momentum from the accounts you follow and the wider platform in one place, without mixing it into the main home feed.</p>
-            <div class="meta">
-              <span>Trending now</span>
-              <span>Following highlights</span>
-              <span>Editorial sports watchlist</span>
-            </div>
-          </div>
-          <div class="card hero-callout">
-            <p class="card-tag">Pulse Snapshot</p>
-            <div class="kpis">
-              <div class="metric">
-                <div class="metric-value" id="pulse-following-count">0</div>
-                <div class="metric-label">Following Highlights</div>
+        <aside class="twitter-right-col">
+          <div class="right-widget">
+            <h3 class="widget-title">Pulse Overview</h3>
+            <div class="widget-stats">
+              <div class="widget-stat">
+                <span class="widget-stat-val" id="pulse-following-count">–</span>
+                <span class="widget-stat-label">Following</span>
               </div>
-              <div class="metric">
-                <div class="metric-value" id="pulse-trending-count">0</div>
-                <div class="metric-label">Trending Posts</div>
+              <div class="widget-stat">
+                <span class="widget-stat-val" id="pulse-trending-count">–</span>
+                <span class="widget-stat-label">Trending</span>
               </div>
-              <div class="metric">
-                <div class="metric-value" id="pulse-news-count">0</div>
-                <div class="metric-label">Watchlist Notes</div>
+              <div class="widget-stat">
+                <span class="widget-stat-val" id="pulse-news-count">–</span>
+                <span class="widget-stat-label">News</span>
               </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="grid-2 page-panels">
-          <div class="panel">
-            <div class="section-head">
-              <div>
-                <p class="eyebrow">From Your Network</p>
-                <h2>Following Highlights</h2>
-              </div>
-            </div>
-            <div id="pulse-following-list" class="feed-stack">
-              <div class="placeholder">Loading following highlights...</div>
             </div>
           </div>
 
-          <div class="panel">
-            <div class="section-head">
-              <div>
-                <p class="eyebrow">Platform Momentum</p>
-                <h2>Trending Posts</h2>
-              </div>
-            </div>
-            <div id="pulse-trending-list" class="feed-stack">
-              <div class="placeholder">Loading trending posts...</div>
+          <div class="right-widget">
+            <h3 class="widget-title">Sports Watchlist</h3>
+            <div class="sport-tags">
+              <a href="pulse.html?sport=basketball" class="sport-tag">🏀 Basketball</a>
+              <a href="pulse.html?sport=soccer"     class="sport-tag">⚽ Soccer</a>
+              <a href="pulse.html?sport=football"   class="sport-tag">🏈 Football</a>
+              <a href="pulse.html?sport=track"      class="sport-tag">🏃 Track</a>
+              <a href="pulse.html?sport=baseball"   class="sport-tag">⚾ Baseball</a>
+              <a href="pulse.html?sport=volleyball" class="sport-tag">🏐 Volleyball</a>
+              <a href="pulse.html?sport=swimming"   class="sport-tag">🏊 Swimming</a>
+              <a href="pulse.html?sport=tennis"     class="sport-tag">🎾 Tennis</a>
             </div>
           </div>
-        </section>
 
-        <section class="data-panel">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Sports Watchlist</p>
-              <h2>What people are reacting to</h2>
-            </div>
+          <div class="right-widget">
+            <h3 class="widget-title">Grow your network</h3>
+            <p class="widget-hint">Discover athletes, coaches, and schools on <a href="explore.html">Explore</a> to fill your following feed.</p>
           </div>
-          <div id="pulse-news-list" class="cards"></div>
-          <div id="pulse-status" class="helper">Checking pulse...</div>
-        </section>
+        </aside>
+
       </main>
-
-      <footer class="site-footer">
-        Untitled Athletic • Pulse separates trending momentum from the personal following feed
-      </footer>
     </div>
   </div>
 </body>

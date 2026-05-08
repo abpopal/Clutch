@@ -165,7 +165,7 @@ async function fetchFollowingPosts(authUserId) {
   const { data: userData, error: userError } = await supabase
     .from("users")
     .select("user_id")
-    .eq("firebase_uid", authUserId)
+    .eq("auth_uid", authUserId)
     .maybeSingle();
 
   if (userError) throw userError;
@@ -251,6 +251,30 @@ async function fetchNewsItems() {
     return newsSeed;
   }
 }
+
+// Tab switching
+function initTabs() {
+  const tabsEl = document.querySelector("#pulse-tabs");
+  if (!tabsEl) return;
+
+  tabsEl.addEventListener("click", (event) => {
+    const btn = event.target.closest("button[data-tab]");
+    if (!btn) return;
+    const targetTab = btn.dataset.tab;
+
+    // Activate clicked tab
+    tabsEl.querySelectorAll("button[data-tab]").forEach((b) => b.classList.toggle("active", b === btn));
+
+    // Show matching panel, hide others
+    document.querySelectorAll(".pulse-tab-panel").forEach((panel) => {
+      const panelId = panel.id; // e.g. "pulse-following-panel"
+      const matches = panelId === `pulse-${targetTab}-panel`;
+      panel.classList.toggle("active", matches);
+    });
+  });
+}
+
+initTabs();
 
 window.addEventListener("session-ready", async ({ detail }) => {
   const session = detail?.session;

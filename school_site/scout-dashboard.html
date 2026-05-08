@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Untitled Athletics • Scout Hub</title>
+  <link rel="stylesheet" href="styles.css?v=20260508b">
+  <link rel="stylesheet" href="scout-dashboard.css?v=20260508b">
+  <script type="module" src="js/app.js?v=20260508b"></script>
+  <script type="module" src="js/scoutDashboard.js?v=20260508b"></script>
+</head>
+<body data-page="scout-dashboard" data-requires-session="true">
+<div class="app-layout">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">UA</div>
+      <span class="role-pill" id="role-pill">guest</span>
+    </div>
+    <div>
+      <p class="nav-label">Main</p>
+      <nav class="nav">
+        <a class="nav-btn" data-nav="home" href="index.html"><span class="nav-icon">🏠</span><span class="nav-text">Home</span></a>
+        <a class="nav-btn" data-nav="pulse" href="pulse.html"><span class="nav-icon">⚡</span><span class="nav-text">Pulse</span></a>
+        <a class="nav-btn" data-nav="search" href="explore.html"><span class="nav-icon">🔍</span><span class="nav-text">Explore</span></a>
+        <a class="nav-btn" data-nav="profile" href="profile.html"><span class="nav-icon">👤</span><span class="nav-text">Profile</span></a>
+        <a class="nav-btn" data-nav="messages" href="messages.html"><span class="nav-icon">💬</span><span class="nav-text">Messages</span></a>
+        <a class="nav-btn" data-nav="scout-dashboard" data-role-allow="scout" href="scout-dashboard.html"><span class="nav-icon">📋</span><span class="nav-text">Scout Hub</span></a>
+        <a class="nav-btn" data-nav="school-dashboard" data-role-allow="school_admin" href="school-dashboard.html"><span class="nav-icon">🏫</span><span class="nav-text">School</span></a>
+      </nav>
+      <p class="nav-label" style="margin-top:1.5rem">Scout Nav</p>
+      <nav class="nav">
+        <a class="nav-btn scout-dashboard-nav-link" href="#sd-athletes">📋 Athletes</a>
+        <a class="nav-btn scout-dashboard-nav-link" href="#sd-saved">⭐ Saved</a>
+        <a class="nav-btn scout-dashboard-nav-link" href="#sd-insights">📈 Insights</a>
+        <a class="nav-btn scout-dashboard-nav-link" href="#sd-map">🗺 Map</a>
+        <a class="nav-btn scout-dashboard-nav-link" href="#sd-notes">📝 Notes</a>
+      </nav>
+    </div>
+    <div class="sidebar-foot">
+      <button class="btn-ghost full" id="sign-out-btn">Sign out</button>
+    </div>
+  </aside>
+
+  <div class="mobile-overlay" id="mobile-overlay"></div>
+
+  <div class="page-wrap">
+    <header class="site-header" data-shared-header></header>
+    <main class="sd-main">
+
+      <!-- Welcome Banner -->
+      <div class="sd-page-header">
+        <div>
+          <h1 class="sd-page-title" id="scout-welcome-title">Scout Hub</h1>
+          <p class="sd-page-sub">Find, filter, and track athletes across all sports.</p>
+        </div>
+        <div class="sd-page-header-actions">
+          <span class="sd-saved-badge">Saved: <strong id="scout-saved-count">0</strong></span>
+          <span class="sd-hero-badge"><strong id="scout-hero-count">0</strong> saved</span>
+          <a href="compare.html" class="ua-btn ua-btn--secondary ua-btn--sm">⚖ Compare</a>
+        </div>
+      </div>
+
+      <!-- Metrics Bar -->
+      <div class="sd-metrics-bar">
+        <div class="sd-metric"><span class="sd-metric-val" id="scout-total-athletes">–</span><span class="sd-metric-label">Total Athletes</span></div>
+        <div class="sd-metric"><span class="sd-metric-val" id="scout-visible-athletes">–</span><span class="sd-metric-label">Visible</span></div>
+        <div class="sd-metric"><span class="sd-metric-val" id="scout-saved-athletes">–</span><span class="sd-metric-label">Saved</span></div>
+        <div class="sd-metric"><span class="sd-metric-val" id="scout-sport-count">–</span><span class="sd-metric-label">Sports</span></div>
+        <div class="sd-metric"><span class="sd-metric-val" id="scout-region-count">–</span><span class="sd-metric-label">Regions</span></div>
+      </div>
+
+      <!-- Status & Summary -->
+      <div id="scout-dashboard-status" class="sd-status"></div>
+      <div id="scout-dashboard-summary" class="sd-summary-bar"></div>
+
+      <!-- Search Toolbar -->
+      <div class="sd-toolbar">
+        <div class="sd-toolbar-search">
+          <span class="sd-search-icon">🔍</span>
+          <input id="scout-filter-query" type="text" class="sd-search-input" placeholder="Name, school, sport, ID…" autocomplete="off">
+        </div>
+        <div class="sd-toolbar-actions">
+          <button id="scout-filter-toggle" class="ua-btn ua-btn--ghost ua-btn--sm">⚙ Filters</button>
+          <select id="scout-sort" class="sd-sort-select">
+            <option value="rating">Rating ↓</option>
+            <option value="readiness">Readiness ↓</option>
+            <option value="name">Name A–Z</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Advanced Filters -->
+      <div id="scout-advanced-filters" class="sd-filters" hidden>
+        <select id="scout-filter-sport"    class="sd-filter-select"><option value="all">All Sports</option></select>
+        <select id="scout-filter-position" class="sd-filter-select"><option value="all">All Positions</option></select>
+        <select id="scout-filter-location" class="sd-filter-select"><option value="all">All Locations</option></select>
+        <select id="scout-filter-rating"   class="sd-filter-select">
+          <option value="all">Any Rating</option>
+          <option value="9">9.0+ Elite</option>
+          <option value="8">8.0+ Great</option>
+          <option value="7">7.0+ Good</option>
+        </select>
+      </div>
+
+      <!-- Athlete Roster -->
+      <div class="sd-section" id="sd-athletes">
+        <div class="sd-section-header">
+          <span class="sd-section-title">Athlete Roster</span>
+        </div>
+        <div id="scout-dashboard-results" class="sd-results-grid">
+          <div class="sd-empty">Loading athletes…</div>
+        </div>
+      </div>
+
+      <!-- Saved Athletes -->
+      <div class="sd-section" id="sd-saved">
+        <div class="sd-section-header">
+          <span class="sd-section-title">⭐ Saved Athletes</span>
+        </div>
+        <div id="scout-dashboard-saved" class="sd-results-grid">
+          <div class="sd-empty">No saved athletes yet.</div>
+        </div>
+      </div>
+
+      <!-- Insights Row -->
+      <div class="sd-section" id="sd-insights">
+        <div class="sd-section-header">
+          <span class="sd-section-title">📈 Insights</span>
+        </div>
+        <div class="sd-insights-row">
+          <div class="sd-insight-card">
+            <div class="sd-insight-title">⭐ Top This Week</div>
+            <div id="scout-top-athletes-week" class="sd-insight-body">Loading…</div>
+          </div>
+          <div class="sd-insight-card">
+            <div class="sd-insight-title">📈 Rising Prospects</div>
+            <div id="scout-rising-prospects" class="sd-insight-body">Loading…</div>
+          </div>
+          <div class="sd-insight-card">
+            <div class="sd-insight-title">📍 Nearby Athletes</div>
+            <div id="scout-nearby-athletes" class="sd-insight-body">Loading…</div>
+          </div>
+          <div class="sd-insight-card">
+            <div class="sd-insight-title">📍 Top Nearby</div>
+            <div id="scout-top-nearby" class="sd-insight-body">Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map & Regions -->
+      <div class="sd-section" id="sd-map">
+        <div class="sd-section-header">
+          <span class="sd-section-title">🗺 Athlete Map</span>
+        </div>
+        <div class="sd-map-row">
+          <div class="sd-map-card">
+            <div class="sd-card-title">Geographic Distribution</div>
+            <div id="scout-map-status" class="sd-map-status"></div>
+            <div id="scout-athlete-map" class="sd-map-canvas"></div>
+          </div>
+          <div class="sd-region-card">
+            <div class="sd-card-title">Top Regions</div>
+            <div id="scout-top-regions" class="sd-region-list">Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes Summary -->
+      <div class="sd-section" id="sd-notes">
+        <div class="sd-section-header">
+          <span class="sd-section-title">📝 My Notes</span>
+        </div>
+        <div id="scout-notes-summary" class="sd-notes-summary">
+          Private notes saved from athlete profiles will be summarized here.
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

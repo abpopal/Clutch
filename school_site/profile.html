@@ -3,106 +3,51 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Untitled Athletic • Athlete Profile</title>
-  <link rel="stylesheet" href="styles.css?v=20260327c">
-  <script type="module" src="js/app.js?v=20260327c"></script>
-  <script type="module" src="js/profile.js?v=20260327c"></script>
+  <title>Untitled Athletics • My Profile</title>
+  <link rel="stylesheet" href="styles.css?v=20260508b">
+  <link rel="stylesheet" href="profile.css?v=20260508b">
+  <script type="module" src="js/app.js?v=20260508b"></script>
+  <script type="module" src="js/profile.js?v=20260508b"></script>
 </head>
 <body data-page="profile" data-requires-session="true">
-  <div class="app-layout">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <div class="logo">Untitled Athletic</div>
-        <span class="role-pill" id="role-pill">guest</span>
-      </div>
+<div class="app-layout">
 
-      <div>
-        <p class="nav-label">Main</p>
-        <nav class="nav">
-          <a class="nav-btn" data-nav="home" href="index.html">Home Feed</a>
-          <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
-          <a class="nav-btn" data-nav="search" href="explore.html">Search</a>
-          <a class="nav-btn" data-nav="profile" href="profile.html">Athlete</a>
-        </nav>
-      </div>
-
-      <div class="sidebar-foot">
-        <strong>Recruiting Intelligence</strong>
-        <span class="helper">Structured athlete profiles built for scouts, coaches, and verified evaluation context.</span>
-      </div>
-    </aside>
-
-    <div class="mobile-overlay" id="mobile-overlay"></div>
-
-    <div class="page-wrap">
-      <header class="site-header">
-        <button class="menu-btn" id="menu-btn" type="button">Menu</button>
-        <div class="search-wrap">
-          <input id="global-search" type="search" placeholder="Search athlete name, ID, school, or email">
-        </div>
-        <button class="icon-btn" id="notif-btn" type="button" title="Notifications">🔔<span id="notif-count" class="badge">4</span></button>
-        <div class="session-chip" id="session-chip">Checking session...</div>
-        <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
-      </header>
-
-      <main class="ua-main">
-        <section class="ua-shell">
-          <input id="hero-bg-input" type="file" accept="image/*" hidden>
-          <input id="avatar-input" type="file" accept="image/*" hidden>
-
-          <section class="ua-hero" id="ua-hero">
-            <button class="ua-hero-edit ua-hero-upload-trigger" id="hero-bg-trigger" type="button">✎ Edit BG</button>
-            <div class="ua-hero-brand">Untitled Athletic</div>
-            <div class="ua-hero-watermark" id="hero-watermark">24</div>
-
-            <div class="ua-hero-bottom">
-              <button class="ua-avatar ua-avatar-trigger" id="avatar-trigger" type="button">
-                <span class="ua-avatar-upload">UPLOAD</span>
-                <span id="hero-avatar-initials">UA</span>
-              </button>
-
-              <div class="ua-hero-copy">
-                <div class="ua-hero-badges" id="hero-verification-badges"></div>
-                <h1 id="hero-name">Loading athlete...</h1>
-                <p class="ua-hero-position" id="hero-position">Preparing position</p>
-              </div>
-
-              <div class="ua-hero-side">
-                <div class="ua-live-chip">
-                  <span class="ua-live-chip-label">Profile Status</span>
-                  <strong id="profile-status">Loading live profile…</strong>
-                </div>
-                <div class="ua-hero-actions">
-                  <button id="profile-primary-action" type="button" class="btn primary">Follow</button>
-                  <button id="profile-secondary-action" type="button" class="btn">Share</button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section class="ua-identity-row">
-            <div class="ua-chip-row" id="identity-chip-row"></div>
-            <p class="ua-scout-summary" id="scout-summary-line">Building scout summary…</p>
-            <div class="ua-cta-strip" id="identity-cta-strip"></div>
-          </section>
-
-          <section class="ua-tab-bar">
-            <div class="ua-top-tabs segmented" id="profile-top-tabs"></div>
-          </section>
-
-          <section class="ua-tab-stage" id="athlete-tab-content">
-            <div class="placeholder">Loading athlete view…</div>
-          </section>
-        </section>
-      </main>
-
-      <nav class="ua-bottom-nav" id="profile-bottom-tabs"></nav>
-      <div class="ua-toast" id="profile-toast" hidden></div>
-
-      <footer class="site-footer">
-        Untitled Athletic • Premium athlete profile and scouting system
-      </footer>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">UA</div>
+      <span class="role-pill" id="role-pill">guest</span>
     </div>
+    <div>
+      <p class="nav-label">Main</p>
+      <nav class="nav">
+        <a class="nav-btn" data-nav="home" href="index.html"><span class="nav-icon">🏠</span><span class="nav-text">Home</span></a>
+        <a class="nav-btn" data-nav="pulse" href="pulse.html"><span class="nav-icon">⚡</span><span class="nav-text">Pulse</span></a>
+        <a class="nav-btn" data-nav="search" href="explore.html"><span class="nav-icon">🔍</span><span class="nav-text">Explore</span></a>
+        <a class="nav-btn" data-nav="profile" href="profile.html"><span class="nav-icon">👤</span><span class="nav-text">Profile</span></a>
+        <a class="nav-btn" data-nav="messages" href="messages.html"><span class="nav-icon">💬</span><span class="nav-text">Messages</span></a>
+        <a class="nav-btn" data-nav="scout-dashboard" data-role-allow="scout" href="scout-dashboard.html"><span class="nav-icon">📋</span><span class="nav-text">Scout Hub</span></a>
+        <a class="nav-btn" data-nav="school-dashboard" data-role-allow="school_admin" href="school-dashboard.html"><span class="nav-icon">🏫</span><span class="nav-text">School</span></a>
+      </nav>
+    </div>
+    <div class="sidebar-foot">
+      <button class="btn-ghost full" id="sign-out-btn">Sign out</button>
+    </div>
+  </aside>
+
+  <div class="mobile-overlay" id="mobile-overlay"></div>
+
+  <div class="page-wrap">
+    <header class="site-header" data-shared-header></header>
+    <main class="pp-main">
+      <section class="pp-shell">
+        <div id="profile-experience" class="pp-root">
+          <div class="pp-empty">Loading profile…</div>
+        </div>
+        <div id="profile-page-status" class="pp-status"></div>
+      </section>
+    </main>
   </div>
+
+</div>
 </body>
 </html>

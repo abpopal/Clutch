@@ -3,91 +3,253 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clutch • Login</title>
-  <link rel="stylesheet" href="styles.css?v=20260327c">
-  <script type="module" src="js/app.js?v=20260327c"></script>
-  <script type="module" src="js/login.js?v=20260327c"></script>
+  <title>Untitled Athletics • Sign In</title>
+  <link rel="stylesheet" href="styles.css?v=20260508b">
+  <script type="module" src="js/login.js?v=20260508b"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100dvh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Manrope", system-ui, sans-serif;
+      display: flex;
+      align-items: stretch;
+    }
+    .login-hero {
+      flex: 1 1 45%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4rem 4rem 4rem 5rem;
+      background: var(--surface);
+      border-right: 1px solid var(--line);
+      position: relative;
+      overflow: hidden;
+    }
+    .login-hero::before {
+      content: "";
+      position: absolute;
+      top: -120px; left: -80px;
+      width: 420px; height: 420px;
+      background: radial-gradient(ellipse at center, rgba(36,95,115,.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .login-hero-logo {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--brand);
+      letter-spacing: -.03em;
+      margin-bottom: 1.75rem;
+    }
+    .login-hero-logo span { color: var(--text); }
+    .login-hero h1 {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: clamp(1.75rem, 3vw, 2.5rem);
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--text);
+      margin-bottom: .875rem;
+      letter-spacing: -.02em;
+    }
+    .login-hero p {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.65;
+      max-width: 380px;
+      margin-bottom: 2.25rem;
+    }
+    .login-role-chips { display: flex; flex-wrap: wrap; gap: .625rem; }
+    .login-role-chip {
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: .4rem 1rem;
+      font-size: .8125rem;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+    }
+    .chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); flex-shrink: 0; }
+    .login-auth {
+      flex: 0 0 420px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem;
+    }
+    .auth-card { width: 100%; max-width: 360px; }
+    .auth-card-title {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 1.375rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 1.5rem;
+      letter-spacing: -.02em;
+    }
+    .auth-tabs {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 1.75rem;
+    }
+    .auth-tabs .tab {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      color: var(--muted);
+      cursor: pointer;
+      font: inherit;
+      font-size: .9rem;
+      font-weight: 600;
+      padding: .55rem 0;
+      transition: background .15s, color .15s;
+    }
+    .auth-tabs .tab.active { background: var(--brand); color: #fff; }
+    .auth-field-group { display: flex; flex-direction: column; gap: .875rem; margin-bottom: 1rem; }
+    .auth-label {
+      display: flex;
+      flex-direction: column;
+      gap: .35rem;
+      font-size: .8125rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+    .auth-label input,
+    .auth-label select,
+    .auth-label textarea {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--text);
+      font: inherit;
+      font-size: .9375rem;
+      font-weight: 400;
+      letter-spacing: 0;
+      text-transform: none;
+      padding: .65rem .875rem;
+      outline: none;
+      transition: border-color .15s;
+      width: 100%;
+    }
+    .auth-label input:focus,
+    .auth-label select:focus,
+    .auth-label textarea:focus { border-color: var(--accent); }
+    .auth-label input::placeholder,
+    .auth-label textarea::placeholder { color: var(--muted); }
+    .auth-label textarea { resize: vertical; min-height: 72px; }
+    .auth-error-msg { min-height: 1.25rem; font-size: .8125rem; color: var(--danger); margin-bottom: .75rem; }
+    .auth-error-msg.success { color: var(--success); }
+    .auth-submit-btn {
+      width: 100%;
+      background: var(--brand);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: .8rem 0;
+      transition: opacity .15s;
+    }
+    .auth-submit-btn:hover { opacity: .88; }
+    .auth-footer-note { margin-top: 1rem; font-size: .75rem; color: var(--muted); text-align: center; line-height: 1.5; }
+    @media (max-width: 780px) {
+      body { flex-direction: column; }
+      .login-hero { flex: none; padding: 2.5rem 1.5rem 2rem; border-right: none; border-bottom: 1px solid var(--line); }
+      .login-hero p { display: none; }
+      .login-auth { flex: none; padding: 2rem 1.25rem; }
+    }
+  </style>
 </head>
-<body data-page="login" data-requires-session="false" class="auth-page">
-  <section class="auth-panel">
-    <div class="panel">
-      <p class="eyebrow">Clutch</p>
-      <h1>Platform Access</h1>
-      <p class="lede">Sign in or create an account for Athlete, School Admin, Coach, Scout, or General User. Registration captures role-specific onboarding details from the PRD.</p>
-      <div class="cards">
-        <article class="card">
-          <p class="card-tag">Roles</p>
-          <p>Athlete, School Admin, Coach, Scout, General User</p>
-        </article>
-        <article class="card">
-          <p class="card-tag">Verification</p>
-          <p>Athletes, coaches, and schools start in pending verification state.</p>
-        </article>
+<body data-page="login" data-requires-session="false">
+
+  <div class="login-hero">
+    <div class="login-hero-logo">UA<span> Athletics</span></div>
+    <h1>Your sports network starts here.</h1>
+    <p>Connect with athletes, coaches, and schools. Track what's moving in your sport — all in one place.</p>
+    <div class="login-role-chips">
+      <div class="login-role-chip"><span class="chip-dot"></span>Athletes</div>
+      <div class="login-role-chip"><span class="chip-dot"></span>Coaches</div>
+      <div class="login-role-chip"><span class="chip-dot"></span>Schools</div>
+      <div class="login-role-chip"><span class="chip-dot"></span>Scouts</div>
+    </div>
+  </div>
+
+  <div class="login-auth">
+    <div class="auth-card">
+      <h2 class="auth-card-title">Welcome back</h2>
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="tab active" data-mode="login" id="login-tab" role="tab">Login</button>
+        <button type="button" class="tab" data-mode="signup" id="signup-tab" role="tab">Sign Up</button>
+      </div>
+      <form id="auth-form" novalidate>
+        <div class="auth-field-group">
+          <label class="auth-label">
+            Email
+            <input id="auth-email" name="email" type="email" placeholder="you@school.edu" required>
+          </label>
+          <label class="auth-label">
+            Password
+            <input id="auth-password" name="password" type="password" placeholder="••••••••" required>
+          </label>
+          <label class="auth-label signup-only" hidden>
+            Full name
+            <input id="auth-name" name="name" type="text" placeholder="Jordan Lee">
+          </label>
+          <label class="auth-label signup-only" hidden>
+            Role
+            <select id="auth-role" name="role">
+              <option value="" disabled selected>Choose your role</option>
+              <option value="athlete">Athlete</option>
+              <option value="coach">Coach</option>
+              <option value="school">School Admin</option>
+              <option value="scout">Scout</option>
+              <option value="viewer">General User</option>
+            </select>
+          </label>
+          <div class="signup-school-only signup-only" hidden>
+            <label class="auth-label">
+              School
+              <select id="auth-school" name="school">
+                <option value="" disabled selected>Select your school</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div id="auth-error" class="auth-error-msg" role="alert" aria-live="polite"></div>
+        <button type="submit" class="auth-submit-btn" id="auth-submit">Login</button>
+        <p class="auth-footer-note">Athletes and coaches start in pending verification.<br>Your role shapes your profile and workspace.</p>
+        <p style="text-align:center;margin-top:.75rem;font-size:.8125rem;">
+          <a href="#" id="forgot-password-link" style="color:var(--accent);text-decoration:none;">Forgot password?</a>
+        </p>
+      </form>
+
+      <!-- Password Reset Panel -->
+      <div id="reset-section" hidden>
+        <h2 class="auth-card-title">Reset Password</h2>
+        <p style="font-size:.875rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.55;">Enter your email and we'll send you a reset link.</p>
+        <label class="auth-label">
+          Email
+          <input id="reset-email" type="email" placeholder="you@school.edu">
+        </label>
+        <div id="reset-status" class="auth-error-msg" style="margin-top:.75rem;" aria-live="polite"></div>
+        <button id="reset-submit-btn" class="auth-submit-btn" style="margin-top:.75rem;">Send reset link</button>
+        <p style="text-align:center;margin-top:.875rem;font-size:.8125rem;">
+          <a href="#" id="back-to-login-link" style="color:var(--accent);text-decoration:none;">← Back to login</a>
+        </p>
       </div>
     </div>
+  </div>
 
-    <form id="auth-form" class="auth-form panel">
-      <div class="mode-toggle segmented">
-        <button type="button" class="tab active" data-mode="login">Login</button>
-        <button type="button" class="tab" data-mode="signup">Sign Up</button>
-      </div>
-
-      <div class="auth-grid">
-        <label class="full">
-          Email
-          <input id="auth-email" name="email" type="email" placeholder="you@school.edu" required>
-        </label>
-        <label class="full">
-          Password
-          <input id="auth-password" name="password" type="password" placeholder="••••••••" required>
-        </label>
-
-        <label class="full signup-only" hidden>
-          Full Name / Organization Name
-          <input id="auth-name" name="name" type="text" placeholder="Jordan Lee">
-        </label>
-
-        <label class="signup-only" hidden>
-          Role
-          <select id="auth-role" name="role">
-            <option value="athlete">Athlete</option>
-            <option value="school">School Admin</option>
-            <option value="coach">Coach</option>
-            <option value="scout">Scout</option>
-            <option value="general">General User</option>
-          </select>
-        </label>
-
-        <label class="signup-only" hidden>
-          Primary Sport
-          <input id="auth-sport" name="sport" type="text" placeholder="Basketball">
-        </label>
-
-        <label class="signup-only" hidden>
-          School / Organization
-          <input id="auth-affiliation" name="affiliation" type="text" placeholder="North Valley High">
-        </label>
-
-        <label class="signup-only" hidden>
-          Location
-          <input id="auth-location" name="location" type="text" placeholder="Denver, CO">
-        </label>
-
-        <label class="signup-only" hidden>
-          Grad Year (Athlete)
-          <input id="auth-grad-year" name="gradYear" type="number" min="2025" max="2035" placeholder="2028">
-        </label>
-
-        <label class="full signup-only" hidden>
-          Short Bio
-          <textarea id="auth-bio" name="bio" placeholder="Tell us about your goals."></textarea>
-        </label>
-      </div>
-
-      <div id="auth-error" class="form-status error"></div>
-      <button type="submit" class="btn primary" id="auth-submit">Login</button>
-      <p class="helper">After sign up, this website stores role metadata and creates linked role records when supported by your Supabase schema.</p>
-    </form>
-  </section>
 </body>
 </html>

@@ -3,169 +3,165 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Untitled Athletic • Home Feed</title>
-  <link rel="stylesheet" href="styles.css?v=20260327c">
-  <script type="module" src="js/app.js?v=20260327c"></script>
-  <script type="module" src="js/home.js?v=20260327c"></script>
+  <title>Untitled Athletics • Home</title>
+  <link rel="stylesheet" href="styles.css?v=20260508b">
+  <script type="module" src="js/app.js?v=20260508b"></script>
+  <script type="module" src="js/home.js?v=20260508b"></script>
 </head>
 <body data-page="home" data-requires-session="true">
   <div class="app-layout">
+
+    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <div class="logo">Untitled Athletic</div>
+        <div class="logo">UA</div>
         <span class="role-pill" id="role-pill">guest</span>
       </div>
 
       <div>
         <p class="nav-label">Main</p>
         <nav class="nav">
-          <a class="nav-btn" data-nav="home" href="index.html">Home Feed</a>
-          <a class="nav-btn" data-nav="pulse" href="pulse.html">Pulse</a>
-          <a class="nav-btn" data-nav="search" href="explore.html">Search</a>
-          <a class="nav-btn" data-nav="profile" href="profile.html">Profile</a>
+          <a class="nav-btn" data-nav="home" href="index.html">
+            <span class="nav-icon">🏠</span><span class="nav-text">Home</span>
+          </a>
+          <a class="nav-btn" data-nav="pulse" href="pulse.html">
+            <span class="nav-icon">⚡</span><span class="nav-text">Pulse</span>
+          </a>
+          <a class="nav-btn" data-nav="search" href="explore.html">
+            <span class="nav-icon">🔍</span><span class="nav-text">Explore</span>
+          </a>
+          <a class="nav-btn" data-nav="profile" href="profile.html">
+            <span class="nav-icon">👤</span><span class="nav-text">Profile</span>
+          </a>
+          <a class="nav-btn" data-nav="messages" href="messages.html"><span class="nav-icon">💬</span><span class="nav-text">Messages</span></a>
+        <a class="nav-btn" data-nav="scout-dashboard" data-role-allow="scout" href="scout-dashboard.html">
+            <span class="nav-icon">📋</span><span class="nav-text">Scout Hub</span>
+          </a>
+          <a class="nav-btn" data-nav="school-dashboard" data-role-allow="school_admin" href="school-dashboard.html">
+            <span class="nav-icon">🏫</span><span class="nav-text">School</span>
+          </a>
         </nav>
       </div>
 
       <div class="sidebar-foot">
-        <strong>Your network first</strong>
-        <span class="helper">Home is for posts from accounts the user follows. Pulse is for broader momentum and trending conversation.</span>
+        <button class="btn-ghost full" id="sign-out-btn">Sign out</button>
       </div>
     </aside>
 
     <div class="mobile-overlay" id="mobile-overlay"></div>
 
+    <!-- Page wrap -->
     <div class="page-wrap">
-      <header class="site-header">
-        <button class="menu-btn" id="menu-btn" type="button">Menu</button>
-        <div class="search-wrap">
-          <input id="global-search" type="search" placeholder="Search by athlete name or email">
-        </div>
-        <button class="icon-btn" id="notif-btn" type="button" title="Notifications">🔔<span id="notif-count" class="badge">4</span></button>
-        <div class="session-chip" id="session-chip">Checking session...</div>
-        <button class="link-btn" id="sign-out-btn" hidden>Sign out</button>
-      </header>
+      <header class="site-header" data-shared-header></header>
 
-      <main>
-        <section class="hero hero-home">
-          <div>
-            <p class="eyebrow">Following Feed</p>
-            <h1>Posts from the athletes, coaches, and programs you follow.</h1>
-            <p class="lede">This page is the main social home. It stays focused on your network, recent activity, and quick publishing.</p>
-            <div class="meta">
-              <span>Following only</span>
-              <span>Latest posts first</span>
-              <span>Quick post composer</span>
-            </div>
-          </div>
-          <div class="card hero-callout">
-            <p class="card-tag">Live Snapshot</p>
-            <div class="kpis">
-              <div class="metric">
-                <div class="metric-value" id="metric-following">0</div>
-                <div class="metric-label">Following</div>
-              </div>
-              <div class="metric">
-                <div class="metric-value" id="metric-posts">0</div>
-                <div class="metric-label">Feed Posts</div>
-              </div>
-              <div class="metric">
-                <div class="metric-value" id="metric-trending">0</div>
-                <div class="metric-label">Pulse Posts</div>
-              </div>
-              <div class="metric">
-                <div class="metric-value" id="metric-unread">0</div>
-                <div class="metric-label">Unread Alerts</div>
-              </div>
-            </div>
-          </div>
-        </section>
+      <main class="twitter-layout">
 
-        <section class="panel" id="composer-panel" data-role-allow="athlete,coach,school">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Post Creation</p>
-              <h2>Share an update with your followers</h2>
-            </div>
-            <div class="segmented" id="post-type-tabs">
-              <button class="active" data-post-type="standard" type="button">Standard Post</button>
-              <button data-post-type="recap" type="button">Game Recap</button>
-            </div>
-          </div>
+        <!-- Center: feed -->
+        <div class="twitter-feed-col">
 
-          <form id="composer-form" class="form">
-            <div class="form-grid">
-              <label class="full">
-                Caption
-                <textarea id="composer-caption" placeholder="Share a training clip, result, commitment update, or team announcement..."></textarea>
-              </label>
-              <label>
-                Visibility
-                <select id="composer-visibility">
-                  <option value="public">Public</option>
-                  <option value="followers">Followers only</option>
-                </select>
-              </label>
-              <label>
-                Schedule Post
-                <input id="composer-schedule" type="datetime-local">
-              </label>
-              <label class="full">
-                Tags
-                <input id="composer-tags" type="text" placeholder="@coachmendez #regionfinal #classof2027">
-              </label>
-            </div>
-
-            <div class="surface-soft">
-              <strong>Media</strong>
-              <p class="helper">Static placeholder for image and video upload. The UI is wired for posting text today.</p>
-            </div>
-
-            <div id="recap-fields" class="form-grid full" hidden>
-              <label>
-                Final Score
-                <input id="recap-score" type="text" placeholder="Westview 68 - 61 North Ridge">
-              </label>
-              <label>
-                Standout Athletes
-                <input id="recap-standout" type="text" placeholder="Jordan Williams, Ava Kim">
-              </label>
-              <label class="full">
-                Recap Highlights
-                <textarea id="recap-highlights" placeholder="Big possessions, defensive stops, and late-game moments."></textarea>
-              </label>
-            </div>
-
-            <div id="composer-status" class="form-status"></div>
-            <button class="btn primary" type="submit">Publish</button>
-          </form>
-        </section>
-
-        <section class="data-panel">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Network Activity</p>
-              <h2>Recent posts from your follow list</h2>
-            </div>
-            <div class="segmented" id="feed-filters">
-              <button type="button" data-filter="all" class="active">All</button>
+          <div class="feed-top-bar">
+            <h2 class="feed-title">Home</h2>
+            <div class="segmented feed-tabs" id="feed-filters">
+              <button type="button" data-filter="all" class="active">For you</button>
               <button type="button" data-filter="athlete">Athletes</button>
               <button type="button" data-filter="coach">Coaches</button>
               <button type="button" data-filter="school">Schools</button>
-              <button type="button" data-filter="basketball">Basketball</button>
-              <button type="button" data-filter="soccer">Soccer</button>
             </div>
           </div>
 
-          <div id="home-feed" class="feed-stack">
-            <div class="placeholder">Waiting for feed...</div>
-          </div>
-          <div id="connection-status" class="helper">Checking session...</div>
-        </section>
-      </main>
+          <!-- Composer -->
+          <div class="tweet-composer" id="composer-panel" data-role-allow="athlete,coach,school_admin">
+            <img class="tw-avatar" id="composer-avatar" src="https://i.pravatar.cc/80?u=ua-composer" alt="You">
+            <div class="composer-inner">
+              <div class="segmented composer-type-tabs" id="post-type-tabs">
+                <button class="active" data-post-type="standard" type="button">Post</button>
+                <button data-post-type="recap" type="button">Game Recap</button>
+              </div>
+              <form id="composer-form">
+                <textarea
+                  id="composer-caption"
+                  class="composer-textarea"
+                  placeholder="What's happening?"
+                  rows="2"
+                ></textarea>
 
-      <footer class="site-footer">
-        Untitled Athletic • Home feed for followed accounts, Pulse for broader trends, Search for discovery, Profile for athlete detail
-      </footer>
+                <!-- Recap fields (hidden by default) -->
+                <div id="recap-fields" hidden>
+                  <input id="recap-score"    class="composer-input" type="text" placeholder="Final score  e.g. Westview 68 – 61 North Ridge">
+                  <input id="recap-standout" class="composer-input" type="text" placeholder="Standout athletes  e.g. Jordan Williams, Ava Kim">
+                  <textarea id="recap-highlights" class="composer-textarea sm" placeholder="Recap highlights..."></textarea>
+                </div>
+
+                <div id="composer-media-preview" class="tweet-media" hidden style="margin-bottom:.5rem;position:relative;"></div>
+
+                <div class="composer-foot">
+                  <div class="composer-tools">
+                    <label class="composer-tool-btn" title="Add photo/video">
+                      📷
+                      <input type="file" accept="image/*,video/*" hidden id="composer-media">
+                    </label>
+                    <select id="composer-visibility" class="composer-select">
+                      <option value="public">🌐 Everyone</option>
+                      <option value="followers">👥 Followers</option>
+                    </select>
+                  </div>
+                  <button class="btn primary sm" type="submit">Post</button>
+                </div>
+                <div id="composer-status" class="composer-status-msg"></div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Feed -->
+          <div id="home-feed" class="tweet-feed">
+            <div class="tweet-placeholder">Loading your feed…</div>
+          </div>
+          <div id="connection-status" class="feed-status-bar"></div>
+        </div>
+
+        <!-- Right panel -->
+        <aside class="twitter-right-col">
+          <div class="right-widget">
+            <h3 class="widget-title">Your network</h3>
+            <div class="widget-stats">
+              <div class="widget-stat">
+                <span class="widget-stat-val" id="metric-following">–</span>
+                <span class="widget-stat-label">Following</span>
+              </div>
+              <div class="widget-stat">
+                <span class="widget-stat-val" id="metric-posts">–</span>
+                <span class="widget-stat-label">Posts in feed</span>
+              </div>
+              <div class="widget-stat">
+                <span class="widget-stat-val" id="metric-trending">–</span>
+                <span class="widget-stat-label">Trending</span>
+              </div>
+              <div class="widget-stat">
+                <span class="widget-stat-val" id="metric-unread">–</span>
+                <span class="widget-stat-label">Unread</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="right-widget">
+            <h3 class="widget-title">Explore sports</h3>
+            <div class="sport-tags">
+              <a href="explore.html?sport=basketball" class="sport-tag">🏀 Basketball</a>
+              <a href="explore.html?sport=soccer"     class="sport-tag">⚽ Soccer</a>
+              <a href="explore.html?sport=football"   class="sport-tag">🏈 Football</a>
+              <a href="explore.html?sport=track"      class="sport-tag">🏃 Track</a>
+              <a href="explore.html?sport=baseball"   class="sport-tag">⚾ Baseball</a>
+              <a href="explore.html?sport=volleyball" class="sport-tag">🏐 Volleyball</a>
+            </div>
+          </div>
+
+          <div class="right-widget">
+            <h3 class="widget-title">Discover athletes</h3>
+            <p class="widget-hint">Use <a href="explore.html">Explore</a> to find athletes, coaches, and schools to follow.</p>
+          </div>
+        </aside>
+
+      </main>
     </div>
   </div>
 </body>
