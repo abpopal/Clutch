@@ -4,18 +4,58 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Untitled Athletics • Sign In</title>
-  <link rel="stylesheet" href="styles.css?v=20260508c">
-  <script type="module" src="js/login.js?v=20260508c"></script>
-  <!-- Fallback: detect if module failed to load -->
+  <link rel="stylesheet" href="styles.css?v=20260508d">
+  <script type="module" src="js/login.js?v=20260508d" onerror="window.__MODULE_SCRIPT_ERROR=true"></script>
+  <!-- Diagnose module load failures -->
   <script>
     window.__LOGIN_MODULE_LOADED = false;
+    window.__MODULE_SCRIPT_ERROR = false;
+    window.addEventListener("error", function(e) {
+      if (e.filename && e.filename.includes(".js")) {
+        console.error("[login-diag] Script error:", e.message, e.filename);
+      }
+    });
     setTimeout(function() {
       if (!window.__LOGIN_MODULE_LOADED) {
         var errEl = document.getElementById("auth-error");
-        if (errEl) errEl.textContent = "Failed to load — please refresh or disable ad-blocker.";
-        console.error("[login] Module failed to load. Check console for import errors.");
+        // Try to diagnose WHY it failed
+        var msg = "App failed to load. ";
+        // Test if we can reach the CDN
+        fetch("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm", { method: "HEAD", mode: "cors" })
+          .then(function(r) {
+            if (!r.ok) {
+              msg += "CDN returned " + r.status + ". ";
+            }
+            // CDN is reachable — problem is local JS files
+            return fetch("js/supabaseClient.js?v=20260508d", { method: "HEAD" });
+          })
+          .then(function(r) {
+            if (!r.ok) msg += "supabaseClient.js not found (" + r.status + "). ";
+            return fetch("js/login.js?v=20260508d", { method: "HEAD" });
+          })
+          .then(function(r) {
+            if (!r.ok) msg += "login.js not found (" + r.status + "). ";
+            return fetch("js/roleUtils.js", { method: "HEAD" });
+          })
+          .then(function(r) {
+            if (!r.ok) msg += "roleUtils.js not found (" + r.status + "). ";
+            return fetch("js/schoolApprovalStore.js", { method: "HEAD" });
+          })
+          .then(function(r) {
+            if (!r.ok) msg += "schoolApprovalStore.js not found (" + r.status + "). ";
+            if (msg === "App failed to load. ") {
+              msg += "All files reachable but module import failed. Check console (F12) for details.";
+            }
+            if (errEl) errEl.textContent = msg;
+            console.error("[login-diag]", msg);
+          })
+          .catch(function(err) {
+            msg += "Network error: " + err.message;
+            if (errEl) errEl.textContent = msg;
+            console.error("[login-diag]", msg);
+          });
       }
-    }, 5000);
+    }, 4000);
   </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
