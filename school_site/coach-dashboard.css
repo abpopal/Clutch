@@ -1,0 +1,337 @@
+/* ═══ Coach Dashboard — Additional Styles ═══════════════════════ */
+
+/* ── Tab Bar (in-page navigation) ──────────────────────────────── */
+.coach-tab-bar {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 5px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.coach-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: .8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all .18s;
+  white-space: nowrap;
+}
+.coach-tab:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.coach-tab.active {
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(36,95,115,.25);
+}
+.coach-tab-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* ── Team Cards Grid ───────────────────────────────────────────── */
+.coach-teams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+}
+.coach-team-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0;
+  cursor: pointer;
+  transition: all .2s;
+  overflow: hidden;
+}
+.coach-team-card:hover {
+  border-color: var(--brand);
+  box-shadow: 0 4px 20px rgba(36,95,115,.08);
+  transform: translateY(-2px);
+}
+.coach-team-card-header {
+  padding: 20px 22px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.coach-team-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  background: var(--brand-soft);
+}
+.coach-team-card-info {
+  flex: 1;
+  min-width: 0;
+}
+.coach-team-card-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+.coach-team-card-meta {
+  font-size: .75rem;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.coach-team-card-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.coach-team-card-stat {
+  text-align: center;
+  padding: 14px 8px;
+  border-right: 1px solid var(--line);
+}
+.coach-team-card-stat:last-child {
+  border-right: none;
+}
+.coach-team-card-stat-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.coach-team-card-stat-val.win { color: var(--green) }
+.coach-team-card-stat-val.loss { color: var(--amber) }
+.coach-team-card-stat-val.tie { color: var(--purple) }
+.coach-team-card-stat-label {
+  font-size: .6rem;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ── Mini Calendar ─────────────────────────────────────────────── */
+.coach-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.coach-cal-weekday {
+  text-align: center;
+  font-size: .6rem;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--muted);
+  padding: 6px 0 8px;
+  font-weight: 600;
+}
+.coach-cal-day {
+  text-align: center;
+  padding: 6px 2px;
+  border-radius: 8px;
+  font-size: .75rem;
+  color: var(--text);
+  position: relative;
+  cursor: default;
+  transition: background .15s;
+  min-height: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+.coach-cal-day.is-muted {
+  color: var(--muted);
+  opacity: .4;
+}
+.coach-cal-day.is-today {
+  background: var(--brand);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 8px;
+}
+.coach-cal-day.has-event {
+  font-weight: 600;
+}
+.coach-cal-dots {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+}
+.coach-cal-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  display: block;
+}
+.coach-cal-month {
+  font-size: .8125rem;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 130px;
+  text-align: center;
+}
+
+/* ── Upcoming Feed ─────────────────────────────────────────────── */
+.coach-upcoming-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.coach-event-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--line);
+  transition: background .12s;
+}
+.coach-event-row:last-child { border-bottom: none }
+.coach-event-row:hover { background: var(--surface-2) }
+
+.coach-event-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.coach-event-dot.match { background: var(--amber) }
+.coach-event-dot.training { background: var(--purple) }
+
+.coach-event-info {
+  flex: 1;
+  min-width: 0;
+}
+.coach-event-title {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.coach-event-detail {
+  font-size: .7rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.coach-event-date {
+  flex-shrink: 0;
+  text-align: right;
+}
+.coach-event-date-day {
+  font-size: .8125rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+.coach-event-date-month {
+  font-size: .6rem;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ── Performance Bars ──────────────────────────────────────────── */
+.coach-perf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+.coach-perf-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.coach-perf-card:hover {
+  border-color: var(--brand);
+  transform: translateY(-1px);
+}
+.coach-perf-info {
+  flex: 1;
+  min-width: 0;
+}
+.coach-perf-name {
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.coach-perf-meta {
+  font-size: .7rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.coach-perf-bar-wrap {
+  height: 6px;
+  background: var(--line);
+  border-radius: 3px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.coach-perf-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .4s ease;
+}
+.coach-perf-bar.high { background: var(--green) }
+.coach-perf-bar.mid  { background: var(--amber) }
+.coach-perf-bar.low  { background: var(--danger, #ef4444) }
+.coach-perf-record {
+  flex-shrink: 0;
+  text-align: center;
+}
+.coach-perf-record-val {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.coach-perf-record-label {
+  font-size: .6rem;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .coach-tab-bar {
+    overflow-x: auto;
+    gap: 2px;
+    padding: 4px;
+  }
+  .coach-tab {
+    padding: 10px 12px;
+    font-size: .75rem;
+  }
+  .coach-teams-grid {
+    grid-template-columns: 1fr;
+  }
+  .coach-perf-grid {
+    grid-template-columns: 1fr;
+  }
+}

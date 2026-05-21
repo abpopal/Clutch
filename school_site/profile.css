@@ -175,11 +175,142 @@
   font-size: 14px;
 }
 
+/* ── Social stats (followers/following) ────────────────────────── */
+.pp-social-stats {
+  display: flex;
+  gap: 20px;
+  margin-top: 10px;
+}
+.pp-social-stat {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+.pp-social-stat small {
+  font-weight: 400;
+  font-size: 13px;
+  color: rgba(255,255,255,.7);
+  margin-left: 3px;
+}
+.pp-social-stat--clickable {
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.pp-social-stat--clickable:hover {
+  opacity: .75;
+}
+
 .pp-action-row {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 10px;
+}
+
+/* ── Follow list modal ────────────────────────────────────────── */
+.pp-follow-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+.pp-follow-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.pp-follow-modal {
+  background: var(--surface, #fff);
+  border: 1px solid var(--line, #e0e0e0);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 440px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(20px) scale(.97);
+  transition: transform .2s;
+}
+.pp-follow-overlay.is-open .pp-follow-modal {
+  transform: translateY(0) scale(1);
+}
+.pp-follow-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--line, #e0e0e0);
+  flex-shrink: 0;
+}
+.pp-follow-modal-head h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+}
+.pp-follow-modal-close {
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--line, #e0e0e0);
+  background: var(--surface-2, #f5f5f5);
+  color: var(--text, #222);
+  font-size: 1.3rem;
+  cursor: pointer;
+  display: grid; place-items: center;
+  transition: .15s;
+}
+.pp-follow-modal-close:hover {
+  background: rgba(211,47,47,.1);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+.pp-follow-modal-body {
+  padding: 8px 10px;
+  overflow-y: auto;
+  flex: 1;
+}
+.pp-follow-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text, #222);
+  transition: background .12s;
+}
+.pp-follow-row:hover {
+  background: var(--surface-2, #f5f5f5);
+}
+.pp-follow-avatar {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: var(--surface-3, #e0deda);
+  display: grid; place-items: center;
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--muted, #888);
+  flex-shrink: 0;
+}
+.pp-follow-info {
+  flex: 1;
+  min-width: 0;
+}
+.pp-follow-name {
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--text, #222);
+}
+.pp-follow-meta {
+  font-size: .75rem;
+  color: var(--muted, #888);
+  margin-top: 1px;
 }
 
 /* ── Buttons ──────────────────────────────────────────────────── */

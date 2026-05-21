@@ -119,12 +119,31 @@ export async function loadPendingSchoolRequests({ schoolId, requesterRole = "" }
 }
 
 async function applyApprovalSideEffects(request) {
-  if (request?.requester_role !== "athlete" || !request?.user_id || !request?.school_id) return;
+  if (!request?.user_id || !request?.school_id) return;
+
+  // Map requester_role to school_members role
+  const roleMap = {
+    athlete: "athlete",
+    coach: "coach",
+    staff: "staff",
+    volunteer: "volunteer",
+  };
+  const memberRole = roleMap[request.requester_role] || "athlete";
+
+  // Insert into school_members (the source of truth for "who belongs to this school")
   const { error } = await supabase
-    .from("athletes")
-    .update({ school_id: request.school_id })
-    .eq("user_id", request.user_id);
-  if (error && !isSchemaMissing(error)) throw error;
+    .from("school_members")
+    .insert({
+      school_id: request.school_id,
+      user_id: request.user_id,
+      role: memberRole,
+      status: "active",
+    });
+
+  // Ignore duplicate (already a member) or missing table
+  if (error && error.code !== "23505" && !isSchemaMissing(error)) {
+    throw error;
+  }
 }
 
 export async function reviewSchoolJoinRequest({

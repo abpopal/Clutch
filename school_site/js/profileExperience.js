@@ -405,6 +405,100 @@ async function fetchIsFollowing() {
   return Boolean(data);
 }
 
+// ── Fetch real matches + trainings for an athlete from database ──
+async function fetchAthleteMatchSchedule(userId) {
+  if (!userId) return [];
+  try {
+    // 1) Find all teams this athlete is on via roster_entries
+    const { data: rosterRows, error: rosterErr } = await supabase
+      .from("roster_entries")
+      .select("team_id")
+      .eq("athlete_id", userId);
+    if (rosterErr || !rosterRows?.length) return [];
+
+    const teamIds = [...new Set(rosterRows.map((r) => r.team_id))];
+
+    // 2) Load matches AND trainings for those teams in parallel
+    const [matchResult, trainingResult] = await Promise.all([
+      supabase
+        .from("matches")
+        .select("*, team:teams!matches_team_id_fkey(name, sports(name, gender))")
+        .in("team_id", teamIds)
+        .order("match_date", { ascending: true }),
+      supabase
+        .from("trainings")
+        .select("*, teams(name, sports(name))")
+        .in("team_id", teamIds)
+        .order("training_date", { ascending: true }),
+    ]);
+
+    const matches = matchResult.data || [];
+    const trainings = trainingResult.error ? [] : (trainingResult.data || []);
+
+    // 3) Transform DB matches → calendar schedule item format
+    const matchItems = matches.map((m) => {
+      const sportName = m.team?.sports?.name || "Sport";
+      const teamName = m.team?.name || "Team";
+      const matchDate = m.match_date || "";
+      const matchTime = m.match_time || "00:00:00";
+      const dateStr = matchTime
+        ? `${matchDate}T${matchTime}`
+        : `${matchDate}T00:00:00`;
+      const isInternal = m.match_type === "internal";
+
+      return {
+        id: m.match_id,
+        date: dateStr,
+        sport: sportName.toLowerCase(),
+        opponent: m.opponent_name || "TBD",
+        location: m.location || "Location TBD",
+        venueName: m.location || "Venue TBD",
+        venueAddress: "",
+        type: isInternal ? "scrimmage" : "game",
+        category: isInternal ? "rec-league" : "school",
+        notes: `${teamName} ${m.is_home_game ? "(Home)" : "(Away)"} — ${m.status || "scheduled"}`,
+        durationMinutes: 90,
+        arrivalOffsetMinutes: 60,
+        warmupOffsetMinutes: 30,
+        result: m.status === "completed"
+          ? `${m.home_score ?? ""}-${m.away_score ?? ""}`.replace(/^-$/, "")
+          : "",
+      };
+    });
+
+    // 4) Transform trainings → calendar schedule item format
+    const trainingItems = trainings.map((t) => {
+      const teamName = t.teams?.name || "Team";
+      const sportName = t.teams?.sports?.name || "sport";
+      const dateStr = t.start_time
+        ? `${t.training_date}T${t.start_time}`
+        : `${t.training_date}T00:00:00`;
+
+      return {
+        id: t.training_id,
+        date: dateStr,
+        sport: sportName.toLowerCase(),
+        opponent: t.title || "Practice",
+        location: t.location || "Location TBD",
+        venueName: t.location || "Venue TBD",
+        venueAddress: "",
+        type: t.type || "practice",
+        category: "rec-league",
+        notes: `${teamName} — ${t.description || t.type || "practice"}`,
+        durationMinutes: 90,
+        arrivalOffsetMinutes: 30,
+        warmupOffsetMinutes: 15,
+        result: "",
+      };
+    });
+
+    return [...matchItems, ...trainingItems];
+  } catch (err) {
+    console.warn("Could not load athlete match schedule:", err);
+    return [];
+  }
+}
+
 async function loadProfileBundle(userId) {
   // Run directory + all role records in parallel
   const [directory, records] = await Promise.all([
@@ -425,14 +519,15 @@ async function loadProfileBundle(userId) {
     throw new Error("Profile not found.");
   }
 
-  // Run school name, counts, posts, and stats all in parallel
-  const [schoolName, counts, posts, stats] = await Promise.all([
+  // Run school name, counts, posts, stats, and real match schedule all in parallel
+  const [schoolName, counts, posts, stats, realSchedule] = await Promise.all([
     records.athleteRow?.school_id
       ? fetchSchoolName(records.athleteRow.school_id)
       : Promise.resolve(records.schoolRow?.name || ""),
     fetchCounts(userId),
     fetchVisiblePosts(userId, state.isSelf, state.isFollowing),
     fetchAthleteStats(records.athleteRow?.athlete_id),
+    fetchAthleteMatchSchedule(userId),
   ]);
 
   const resolvedRole = inferredRole || normalizedUserRole || "user";
@@ -453,6 +548,11 @@ async function loadProfileBundle(userId) {
     counts,
     fallbackRole: resolvedRole || "athlete",
   });
+
+  // Override schedule with real match data if the athlete has any
+  if (realSchedule.length) {
+    profile.schedule = realSchedule;
+  }
 
   return {
     directory,
@@ -1564,6 +1664,11 @@ function renderProfile() {
               <p class="pp-role-line">${escapeHtml(profile.position)} • ${escapeHtml(sport.label)}</p>
               <p class="pp-meta-line">${escapeHtml(profile.school)} • ${escapeHtml(profile.hometown)} • Class of ${escapeHtml(profile.gradYear)}</p>
               <p class="pp-summary-line">${escapeHtml(formatScoutSummary(profile))}</p>
+              <div class="pp-social-stats">
+                <span class="pp-social-stat">${state.counts.posts ?? 0} <small>Posts</small></span>
+                <span class="pp-social-stat pp-social-stat--clickable" data-show-follow="followers">${state.counts.followers ?? 0} <small>Followers</small></span>
+                <span class="pp-social-stat pp-social-stat--clickable" data-show-follow="following">${state.counts.following ?? 0} <small>Following</small></span>
+              </div>
               <div class="pp-action-row">
                 ${actionButtonsMarkup()}
               </div>
@@ -1612,6 +1717,187 @@ function renderProfile() {
   }
 }
 
+// ── Follow list popup (Instagram-style) ─────────────────────
+function ensureFollowOverlay() {
+  let overlay = document.getElementById("pp-follow-overlay");
+  if (overlay) return overlay;
+
+  overlay = document.createElement("div");
+  overlay.id = "pp-follow-overlay";
+  // Inline critical styles so it works even with cached CSS
+  Object.assign(overlay.style, {
+    position: "fixed",
+    inset: "0",
+    zIndex: "9999",
+    background: "rgba(0,0,0,.55)",
+    backdropFilter: "blur(6px)",
+    WebkitBackdropFilter: "blur(6px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    opacity: "0",
+    pointerEvents: "none",
+    transition: "opacity .25s ease"
+  });
+
+  overlay.innerHTML = `
+    <div id="pp-follow-modal" style="
+      background:#fff; border-radius:16px; width:92%; max-width:420px;
+      max-height:70vh; display:flex; flex-direction:column;
+      box-shadow:0 24px 80px rgba(0,0,0,.3); transform:translateY(16px) scale(.97);
+      transition:transform .25s ease; overflow:hidden;
+    ">
+      <div style="
+        display:flex; align-items:center; justify-content:space-between;
+        padding:18px 20px; border-bottom:1px solid #eee; flex-shrink:0;
+      ">
+        <h3 id="pp-follow-modal-title" style="margin:0; font-size:1rem; font-weight:700; color:#111;">Followers</h3>
+        <button id="pp-follow-modal-close" style="
+          width:32px; height:32px; border-radius:50%; border:none;
+          background:#f3f3f3; color:#666; font-size:1.2rem; cursor:pointer;
+          display:grid; place-items:center; transition:.15s;
+        ">&times;</button>
+      </div>
+      <div id="pp-follow-modal-body" style="
+        padding:6px 0; overflow-y:auto; flex:1;
+      ">
+        <div style="text-align:center; padding:40px 20px; color:#999; font-size:.875rem;">Loading...</div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  // Close on backdrop click
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeFollowModal();
+  });
+  // Close button
+  overlay.querySelector("#pp-follow-modal-close").addEventListener("click", closeFollowModal);
+  // Hover effect on close btn
+  const closeBtn = overlay.querySelector("#pp-follow-modal-close");
+  closeBtn.addEventListener("mouseenter", () => { closeBtn.style.background = "#e8e8e8"; });
+  closeBtn.addEventListener("mouseleave", () => { closeBtn.style.background = "#f3f3f3"; });
+
+  return overlay;
+}
+
+function showFollowOverlay(overlay) {
+  // Force reflow, then animate in
+  void overlay.offsetWidth;
+  overlay.style.opacity = "1";
+  overlay.style.pointerEvents = "auto";
+  const modal = overlay.querySelector("#pp-follow-modal");
+  if (modal) {
+    modal.style.transform = "translateY(0) scale(1)";
+  }
+}
+
+async function openFollowModal(mode) {
+  const overlay = ensureFollowOverlay();
+  const title  = document.getElementById("pp-follow-modal-title");
+  const body   = document.getElementById("pp-follow-modal-body");
+  if (!overlay || !body) return;
+
+  if (title) title.textContent = mode === "followers" ? "Followers" : "Following";
+  body.innerHTML = `<div style="text-align:center; padding:40px 20px; color:#999; font-size:.875rem;">Loading...</div>`;
+  showFollowOverlay(overlay);
+
+  try {
+    let userIds = [];
+    if (mode === "followers") {
+      const { data, error } = await supabase
+        .from("follow")
+        .select("follower_user_id")
+        .eq("followed_user_id", state.targetUserId);
+      if (error) throw error;
+      userIds = (data || []).map((r) => r.follower_user_id);
+    } else {
+      const { data, error } = await supabase
+        .from("follow")
+        .select("followed_user_id")
+        .eq("follower_user_id", state.targetUserId);
+      if (error) throw error;
+      userIds = (data || []).map((r) => r.followed_user_id);
+    }
+
+    if (!userIds.length) {
+      body.innerHTML = `<div style="text-align:center; padding:40px 20px; color:#999; font-size:.875rem;">No ${mode} yet.</div>`;
+      return;
+    }
+
+    // Fetch display info — try user_directory first, fallback to school_join_requests
+    let infoMap = new Map();
+    try {
+      const { data: dirRows } = await supabase
+        .from("user_directory")
+        .select("user_id, display_name, email")
+        .in("user_id", userIds);
+      for (const r of (dirRows || [])) {
+        if (r.user_id) infoMap.set(r.user_id, { display_name: r.display_name, email: r.email });
+      }
+    } catch (_) { /* view may not exist */ }
+
+    // Fill gaps from school_join_requests
+    const missing = userIds.filter((id) => !infoMap.has(id));
+    if (missing.length) {
+      const { data: sjrRows } = await supabase
+        .from("school_join_requests")
+        .select("user_id, display_name, email")
+        .in("user_id", missing);
+      for (const r of (sjrRows || [])) {
+        if (r.user_id && !infoMap.has(r.user_id)) {
+          infoMap.set(r.user_id, { display_name: r.display_name, email: r.email });
+        }
+      }
+    }
+
+    body.innerHTML = userIds.map((uid) => {
+      const info = infoMap.get(uid) || {};
+      const name = info.display_name || info.email || "User";
+      const initials = name.split(/\s+/).slice(0, 2).map((w) => (w[0] || "").toUpperCase()).join("") || "U";
+      const avatarUrl = `https://i.pravatar.cc/80?u=${encodeURIComponent(uid)}`;
+      const isViewer = uid === state.viewerUserId;
+      const profileUrl = isViewer ? "profile.html" : `user-profile.html?user_id=${uid}`;
+      return `
+        <a href="${profileUrl}" style="
+          display:flex; align-items:center; gap:14px; padding:12px 20px;
+          text-decoration:none; color:inherit; transition:background .12s;
+        " onmouseenter="this.style.background='#f7f7f7'" onmouseleave="this.style.background='transparent'">
+          <img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(initials)}"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"
+               style="width:48px; height:48px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+          <div style="
+            width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,#245f73,#3a8f9f);
+            display:none; place-items:center; flex-shrink:0; color:#fff; font-weight:700; font-size:.9rem;
+          ">${escapeHtml(initials)}</div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:.9rem; font-weight:600; color:#111; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${escapeHtml(name)}
+            </div>
+            ${info.email && info.display_name ? `<div style="font-size:.75rem; color:#999; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(info.email)}</div>` : ""}
+          </div>
+        </a>`;
+    }).join("");
+  } catch (err) {
+    console.error("Failed to load follow list:", err);
+    body.innerHTML = `<div style="text-align:center; padding:40px 20px; color:#999; font-size:.875rem;">Failed to load list.</div>`;
+  }
+}
+
+function closeFollowModal() {
+  const overlay = document.getElementById("pp-follow-overlay");
+  if (!overlay) return;
+  overlay.style.opacity = "0";
+  overlay.style.pointerEvents = "none";
+  const modal = overlay.querySelector("#pp-follow-modal");
+  if (modal) modal.style.transform = "translateY(16px) scale(.97)";
+}
+
+// Close on Escape key
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeFollowModal();
+});
+
 async function toggleFollow() {
   if (!state.viewerUserId || !state.targetUserId || state.isSelf) return;
 
@@ -1624,6 +1910,7 @@ async function toggleFollow() {
         .eq("followed_user_id", state.targetUserId);
       if (error) throw error;
       state.isFollowing = false;
+      state.counts.followers = Math.max(0, (state.counts.followers || 0) - 1);
       showToast("Unfollowed profile.");
     } else {
       const { error } = await supabase
@@ -1631,6 +1918,7 @@ async function toggleFollow() {
         .insert({ follower_user_id: state.viewerUserId, followed_user_id: state.targetUserId });
       if (error) throw error;
       state.isFollowing = true;
+      state.counts.followers = (state.counts.followers || 0) + 1;
       showToast("Now following profile.");
     }
 
@@ -1682,6 +1970,18 @@ function bindEvents() {
       void toggleFollow();
       return;
     }
+
+    // Follow list modal
+    const showFollow = target.closest("[data-show-follow]")?.dataset.showFollow;
+    if (showFollow) {
+      void openFollowModal(showFollow);
+      return;
+    }
+    if (target.closest("[data-close-follow]")) {
+      closeFollowModal();
+      return;
+    }
+
     if (action === "toggle-save-athlete") {
       const next = toggleSavedAthlete({
         viewerUserId: state.viewerUserId,

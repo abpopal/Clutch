@@ -1097,7 +1097,7 @@ export function buildAthleteProfile({
     performanceBreakdown: performanceSummary.breakdown,
     clutchMoments: preset?.clutchMoments || [],
     highlights: liveHighlights.length ? liveHighlights : (preset?.highlights || []),
-    schedule: preset?.schedule || buildDefaultSchedule(liveSports, schoolName || preset?.school || "Untitled Athletic Academy"),
+    schedule: [],
     liveCounts: counts,
     userId,
     email: directory?.email || "",

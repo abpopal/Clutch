@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Untitled Athletics - Coach Dashboard</title>
+  <link rel="stylesheet" href="styles.css?v=20260520b">
+  <link rel="stylesheet" href="school-dashboard.css?v=20260520b">
+  <link rel="stylesheet" href="coach-dashboard.css?v=20260520b">
+  <script type="module" src="js/app.js?v=20260520b"></script>
+  <script type="module" src="js/coachDashboard.js?v=20260520b"></script>
+</head>
+<body data-page="coach-dashboard" data-requires-session="true">
+<div class="app-layout">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">UA</div>
+      <span class="role-pill" id="role-pill">coach</span>
+    </div>
+    <div>
+      <p class="nav-label">Main</p>
+      <nav class="nav">
+        <a class="nav-btn" data-nav="home" href="index.html"><span class="nav-icon">🏠</span><span class="nav-text">Home</span></a>
+        <a class="nav-btn" data-nav="pulse" href="pulse.html"><span class="nav-icon">⚡</span><span class="nav-text">Pulse</span></a>
+        <a class="nav-btn" data-nav="search" href="explore.html"><span class="nav-icon">🔍</span><span class="nav-text">Explore</span></a>
+        <a class="nav-btn" data-nav="profile" href="profile.html"><span class="nav-icon">👤</span><span class="nav-text">Profile</span></a>
+        <a class="nav-btn" data-nav="messages" href="messages.html"><span class="nav-icon">💬</span><span class="nav-text">Messages</span></a>
+        <a class="nav-btn" data-nav="scout-dashboard" data-role-allow="scout" href="scout-dashboard.html"><span class="nav-icon">📋</span><span class="nav-text">Scout Hub</span></a>
+        <a class="nav-btn" data-nav="school-dashboard" data-role-allow="school_admin" href="school-dashboard.html"><span class="nav-icon">🏫</span><span class="nav-text">School</span></a>
+        <a class="nav-btn active" data-nav="coach-dashboard" data-role-allow="coach" href="coach-dashboard.html"><span class="nav-icon">🏋️</span><span class="nav-text">Coach Hub</span></a>
+      </nav>
+    </div>
+    <div class="sidebar-foot">
+      <button class="btn-ghost full" id="sign-out-btn">Sign out</button>
+    </div>
+  </aside>
+
+  <div class="mobile-overlay" id="mobile-overlay"></div>
+
+  <div class="page-wrap">
+    <header class="site-header" data-shared-header></header>
+    <main class="sch-main">
+
+      <!-- ═══ TAB BAR (always visible) ═════════════════════════════ -->
+      <div class="coach-tab-bar" id="coach-tab-bar">
+        <button class="coach-tab active" data-section="overview">
+          <span class="coach-tab-icon">📊</span> Overview
+        </button>
+        <button class="coach-tab" data-section="my-teams">
+          <span class="coach-tab-icon">🏆</span> My Teams
+        </button>
+        <button class="coach-tab" data-section="training">
+          <span class="coach-tab-icon">📋</span> Training
+        </button>
+        <button class="coach-tab" data-section="schedule">
+          <span class="coach-tab-icon">📅</span> Schedule
+        </button>
+      </div>
+
+      <div id="coach-status" class="sch-status"></div>
+
+      <!-- ═══ OVERVIEW ══════════════════════════════════════════ -->
+      <section class="sch-section sch-section--active" id="coach-section-overview">
+        <div class="sch-page-head">
+          <div>
+            <h1 class="sch-page-title" id="coach-greeting">Coach Dashboard</h1>
+            <p class="sch-page-sub" id="coach-subtitle">Welcome back, Coach.</p>
+          </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="sch-stats-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="sch-stat-card c-brand sch-stat-card--clickable" data-goto="my-teams">
+            <div class="sch-stat-val" id="coach-metric-teams">-</div>
+            <div class="sch-stat-label">My Teams</div>
+          </div>
+          <div class="sch-stat-card c-green sch-stat-card--clickable" data-goto="my-teams">
+            <div class="sch-stat-val" id="coach-metric-athletes">-</div>
+            <div class="sch-stat-label">Total Athletes</div>
+          </div>
+          <div class="sch-stat-card c-amber sch-stat-card--clickable" data-goto="schedule">
+            <div class="sch-stat-val" id="coach-metric-matches">-</div>
+            <div class="sch-stat-label">Upcoming Matches</div>
+          </div>
+          <div class="sch-stat-card c-purple sch-stat-card--clickable" data-goto="training">
+            <div class="sch-stat-val" id="coach-metric-trainings">-</div>
+            <div class="sch-stat-label">Upcoming Trainings</div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="sch-card">
+          <div class="sch-card-head">
+            <span class="sch-card-title">Quick Actions</span>
+          </div>
+          <div class="sch-card-body">
+            <div class="sch-qa-grid">
+              <button class="sch-qa-item" data-goto="my-teams">
+                <div class="sch-qa-icon" style="background:var(--brand-soft)">🏆</div>
+                <div><div class="sch-qa-label">View My Teams</div><div class="sch-qa-hint">Manage roster &amp; details</div></div>
+              </button>
+              <button class="sch-qa-item" data-goto="training">
+                <div class="sch-qa-icon" style="background:var(--purple-soft)">📋</div>
+                <div><div class="sch-qa-label">Schedule Training</div><div class="sch-qa-hint">Practice, film, conditioning</div></div>
+              </button>
+              <button class="sch-qa-item" data-goto="schedule">
+                <div class="sch-qa-icon" style="background:var(--amber-soft)">📅</div>
+                <div><div class="sch-qa-label">Match Schedule</div><div class="sch-qa-hint">View upcoming games</div></div>
+              </button>
+              <button class="sch-qa-item" id="coach-qa-calendar" data-goto="overview">
+                <div class="sch-qa-icon" style="background:var(--green-soft)">🗓️</div>
+                <div><div class="sch-qa-label">This Week</div><div class="sch-qa-hint" id="coach-week-summary">Loading...</div></div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar + Upcoming side-by-side -->
+        <div class="sch-grid-2">
+          <!-- Mini Calendar -->
+          <div class="sch-card">
+            <div class="sch-card-head">
+              <span class="sch-card-title">Calendar</span>
+              <div class="pp-inline-actions">
+                <button type="button" class="pp-link-btn" data-cal-step="-1">&larr; Prev</button>
+                <span class="coach-cal-month" id="coach-cal-month"></span>
+                <button type="button" class="pp-link-btn" data-cal-step="1">Next &rarr;</button>
+              </div>
+            </div>
+            <div class="sch-card-body" style="padding:12px 16px">
+              <div class="coach-calendar" id="coach-calendar"></div>
+            </div>
+          </div>
+
+          <!-- Today's / Upcoming -->
+          <div class="sch-card">
+            <div class="sch-card-head">
+              <span class="sch-card-title">Coming Up</span>
+            </div>
+            <div class="sch-card-body" style="padding:8px 12px">
+              <div id="coach-upcoming-feed" class="coach-upcoming-feed">
+                <div class="sch-empty">No events this week.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Team Performance -->
+        <div class="sch-card">
+          <div class="sch-card-head">
+            <span class="sch-card-title">Team Performance</span>
+          </div>
+          <div class="sch-card-body" id="coach-performance-overview">
+            <div class="sch-empty">No teams assigned yet.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ MY TEAMS ══════════════════════════════════════════ -->
+      <section class="sch-section" id="coach-section-my-teams">
+        <div class="sch-page-head">
+          <div>
+            <h1 class="sch-page-title">My Teams</h1>
+            <p class="sch-page-sub">Teams you coach. Click a team to manage roster, schedule trainings, and view performance.</p>
+          </div>
+          <div class="sch-page-actions">
+            <span class="sch-count-chip" id="coach-teams-count"></span>
+          </div>
+        </div>
+
+        <div id="coach-teams-list">
+          <div class="sch-empty">You have not been assigned to any teams yet. Ask your school admin to assign you as head coach.</div>
+        </div>
+      </section>
+
+      <!-- ═══ TEAM DETAIL ═══════════════════════════════════════ -->
+      <section class="sch-section" id="coach-section-team-detail">
+        <div class="sch-page-head">
+          <div>
+            <button class="sch-btn sch-btn--ghost sch-btn--sm" id="coach-team-detail-back">&larr; Back to My Teams</button>
+            <h1 class="sch-page-title" id="coach-td-name" style="margin-top:8px">Team</h1>
+            <p class="sch-page-sub" id="coach-td-meta"></p>
+          </div>
+        </div>
+
+        <!-- Performance stats -->
+        <div class="sch-stats-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="sch-stat-card c-green">
+            <div class="sch-stat-val" id="coach-td-wins">0</div>
+            <div class="sch-stat-label">Wins</div>
+          </div>
+          <div class="sch-stat-card c-amber">
+            <div class="sch-stat-val" id="coach-td-losses">0</div>
+            <div class="sch-stat-label">Losses</div>
+          </div>
+          <div class="sch-stat-card c-purple">
+            <div class="sch-stat-val" id="coach-td-ties">0</div>
+            <div class="sch-stat-label">Ties</div>
+          </div>
+          <div class="sch-stat-card c-brand">
+            <div class="sch-stat-val" id="coach-td-total">0</div>
+            <div class="sch-stat-label">Played</div>
+          </div>
+        </div>
+
+        <div class="sch-grid-2">
+          <!-- Roster card -->
+          <div class="sch-card">
+            <div class="sch-card-head">
+              <span class="sch-card-title">Roster</span>
+              <span class="sch-count-chip" id="coach-td-roster-count"></span>
+            </div>
+            <div class="sch-card-body">
+              <div id="coach-td-roster-add" class="sch-roster-add"></div>
+              <div id="coach-td-roster-status" class="sch-form-status"></div>
+              <div id="coach-td-roster-list"></div>
+            </div>
+          </div>
+
+          <!-- Quick training card -->
+          <div class="sch-card">
+            <div class="sch-card-head">
+              <span class="sch-card-title">Schedule Training</span>
+            </div>
+            <div class="sch-card-body">
+              <form id="coach-td-training-form" class="sch-form" style="gap:10px;border:0;padding-bottom:0;margin-bottom:0">
+                <div class="sch-form-row">
+                  <div class="sch-field">
+                    <label class="sch-label" for="coach-td-train-title">Title</label>
+                    <input id="coach-td-train-title" type="text" class="sch-input" placeholder="e.g. Practice" value="Practice">
+                  </div>
+                  <div class="sch-field">
+                    <label class="sch-label" for="coach-td-train-type">Type</label>
+                    <select id="coach-td-train-type" class="sch-select">
+                      <option value="practice">Practice</option>
+                      <option value="conditioning">Conditioning</option>
+                      <option value="film">Film Session</option>
+                      <option value="scrimmage">Scrimmage</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="sch-form-row">
+                  <div class="sch-field">
+                    <label class="sch-label" for="coach-td-train-date">Date</label>
+                    <input id="coach-td-train-date" type="date" class="sch-input" required>
+                  </div>
+                  <div class="sch-field">
+                    <label class="sch-label" for="coach-td-train-start">Start</label>
+                    <input id="coach-td-train-start" type="time" class="sch-input">
+                  </div>
+                  <div class="sch-field">
+                    <label class="sch-label" for="coach-td-train-end">End</label>
+                    <input id="coach-td-train-end" type="time" class="sch-input">
+                  </div>
+                </div>
+                <div class="sch-field">
+                  <label class="sch-label" for="coach-td-train-location">Location</label>
+                  <input id="coach-td-train-location" type="text" class="sch-input" placeholder="e.g. Main Gym">
+                </div>
+                <div id="coach-td-training-status" class="sch-form-status"></div>
+                <button class="sch-btn sch-btn--primary sch-btn--sm" type="submit">Add Training</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming matches -->
+        <div class="sch-card">
+          <div class="sch-card-head">
+            <span class="sch-card-title">Upcoming Matches</span>
+            <span class="sch-count-chip" id="coach-td-upcoming-count"></span>
+          </div>
+          <div class="sch-card-body" id="coach-td-upcoming-list">
+            <div class="sch-empty">No upcoming matches.</div>
+          </div>
+        </div>
+
+        <!-- Trainings list -->
+        <div class="sch-card">
+          <div class="sch-card-head">
+            <span class="sch-card-title">Trainings</span>
+            <span class="sch-count-chip" id="coach-td-training-count"></span>
+          </div>
+          <div class="sch-card-body" id="coach-td-training-list">
+            <div class="sch-empty">No trainings scheduled.</div>
+          </div>
+        </div>
+
+        <!-- Past matches -->
+        <div class="sch-card">
+          <div class="sch-card-head">
+            <span class="sch-card-title">Past Results</span>
+            <span class="sch-count-chip" id="coach-td-past-count"></span>
+          </div>
+          <div class="sch-card-body" id="coach-td-past-list">
+            <div class="sch-empty">No past matches.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ TRAINING ══════════════════════════════════════════ -->
+      <section class="sch-section" id="coach-section-training">
+        <div class="sch-page-head">
+          <div>
+            <h1 class="sch-page-title">Training Schedule</h1>
+            <p class="sch-page-sub">Schedule practices, conditioning, and film sessions for your teams.</p>
+          </div>
+          <div class="sch-page-actions">
+            <span class="sch-count-chip" id="coach-training-count"></span>
+          </div>
+        </div>
+
+        <div class="sch-card" style="margin-bottom:20px">
+          <div class="sch-card-head">
+            <span class="sch-card-title">New Training Session</span>
+          </div>
+          <div class="sch-card-body">
+            <form id="coach-training-form" class="sch-form" style="border:0;padding-bottom:0;margin-bottom:0">
+              <div class="sch-form-row">
+                <div class="sch-field">
+                  <label class="sch-label" for="training-team">Team</label>
+                  <select id="training-team" class="sch-select" required>
+                    <option value="" disabled selected>Select team</option>
+                  </select>
+                </div>
+                <div class="sch-field">
+                  <label class="sch-label" for="training-title">Title</label>
+                  <input id="training-title" type="text" class="sch-input" placeholder="e.g. Practice" value="Practice">
+                </div>
+                <div class="sch-field">
+                  <label class="sch-label" for="training-type">Type</label>
+                  <select id="training-type" class="sch-select">
+                    <option value="practice">Practice</option>
+                    <option value="conditioning">Conditioning</option>
+                    <option value="film">Film Session</option>
+                    <option value="scrimmage">Scrimmage</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+              <div class="sch-form-row">
+                <div class="sch-field">
+                  <label class="sch-label" for="training-date">Date</label>
+                  <input id="training-date" type="date" class="sch-input" required>
+                </div>
+                <div class="sch-field">
+                  <label class="sch-label" for="training-start">Start Time</label>
+                  <input id="training-start" type="time" class="sch-input">
+                </div>
+                <div class="sch-field">
+                  <label class="sch-label" for="training-end">End Time</label>
+                  <input id="training-end" type="time" class="sch-input">
+                </div>
+                <div class="sch-field">
+                  <label class="sch-label" for="training-location">Location</label>
+                  <input id="training-location" type="text" class="sch-input" placeholder="e.g. Main Gym">
+                </div>
+              </div>
+              <div class="sch-field">
+                <label class="sch-label" for="training-desc">Notes (optional)</label>
+                <input id="training-desc" type="text" class="sch-input" placeholder="e.g. Bring water bottles, focus on defense drills">
+              </div>
+              <div id="coach-training-form-status" class="sch-form-status"></div>
+              <button class="sch-btn sch-btn--primary sch-btn--sm" type="submit">Schedule Training</button>
+            </form>
+          </div>
+        </div>
+
+        <div id="coach-all-trainings-list" class="sch-list sch-list--spaced">
+          <div class="sch-empty">No trainings scheduled yet.</div>
+        </div>
+      </section>
+
+      <!-- ═══ SCHEDULE (all matches) ════════════════════════════ -->
+      <section class="sch-section" id="coach-section-schedule">
+        <div class="sch-page-head">
+          <div>
+            <h1 class="sch-page-title">Match Schedule</h1>
+            <p class="sch-page-sub">All matches across your teams.</p>
+          </div>
+          <div class="sch-page-actions">
+            <span class="sch-count-chip" id="coach-schedule-count"></span>
+          </div>
+        </div>
+
+        <div id="coach-all-matches-list" class="sch-list sch-list--spaced">
+          <div class="sch-empty">No matches scheduled.</div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

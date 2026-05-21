@@ -1,75 +1,39 @@
 import { supabase } from "./supabaseClient.js";
 import { getGlobalAppState, isSchoolAdmin, normalizeRole } from "./roleUtils.js";
-import { loadPendingSchoolRequests, reviewSchoolJoinRequest } from "./schoolApprovalStore.js?v=20260418a";
-import { assignSchoolTeamMember, createSchoolTeam, loadSchoolTeamWorkspace } from "./schoolTeamStore.js?v=20260418a";
-import { createSchoolMatch, loadMatchNotificationCount, loadSchoolMatches, saveSchoolMatchResult } from "./schoolMatchStore.js?v=20260418b";
-import { assignTeamToLeague, buildLeagueStandings, createSchoolLeague, loadSchoolLeagueWorkspace } from "./schoolLeagueStore.js?v=20260418b";
-import { createSchoolPost, loadSchoolPosts } from "./schoolPostStore.js?v=20260418a";
+import { loadPendingSchoolRequests, reviewSchoolJoinRequest, loadSchoolOptions } from "./schoolApprovalStore.js?v=20260418a";
+import {
+  loadSports, createSport, updateSport, deleteSport,
+  loadSeasons, createSeason, updateSeason, deleteSeason, setActiveSeason,
+  loadTeams, createTeam, deleteTeam,
+  loadRoster, addToRoster, removeFromRoster,
+  loadMatches, loadAllSchoolMatches, createMatch, updateMatch, deleteMatch,
+  loadSchoolMembers, removeSchoolMember,
+} from "./schoolSportsStore.js";
 
-const NAV_ITEMS = [
-  { id: "overview", title: "Overview", target: "#school-section-overview" },
-  { id: "athletes", title: "Athletes", target: "#school-section-athletes" },
-  { id: "coaches", title: "Coaches", target: "#school-section-coaches" },
-  { id: "teams", title: "Teams", target: "#school-section-teams" },
-  { id: "matches", title: "Matches", target: "#school-section-matches" },
-  { id: "leagues", title: "Leagues", target: "#school-section-leagues" },
-  { id: "media", title: "Media", target: "#school-section-media" },
-];
-
+// ── State ─────────────────────────────────────────────────────
 const state = {
+  initializing: false,
   initialized: false,
   schoolId: "",
   schoolName: "Untitled Athletics School",
-  pendingAthletes: [],
-  pendingCoaches: [],
+  appUserId: "",
+  sports: [],
+  seasons: [],
   teams: [],
-  athletePool: [],
-  coachPool: [],
+  roster: [],         // roster for the currently selected team
   matches: [],
-  leagues: [],
-  schoolPosts: [],
-  schoolUserId: "",
+  members: [],         // school_members (athletes + coaches linked to this school)
+  allSchools: [],      // all schools on the platform (for opponent dropdown)
+  pendingRequests: [],  // join requests
+  selectedRosterTeamId: "",
+  viewingTeamId: "",     // team detail view
+  teamRoster: [],        // roster for the team being viewed
+  submitting: {},        // guards against double-submit per form
 };
 
-const statusEl = document.querySelector("#school-dashboard-status");
-const subtitleEl = document.querySelector("#school-dashboard-subtitle");
-const teamStatusEl = document.querySelector("#school-team-status");
-const matchStatusEl = document.querySelector("#school-match-status");
-const leagueStatusEl = document.querySelector("#school-league-status");
-const postStatusEl = document.querySelector("#school-post-status");
-
-function setStatus(message, isError = false) {
-  if (!statusEl) return;
-  statusEl.textContent = message;
-  statusEl.classList.toggle("is-error", isError);
-}
-
-function setTeamStatus(message, isError = false) {
-  if (!teamStatusEl) return;
-  teamStatusEl.textContent = message;
-  teamStatusEl.classList.toggle("is-error", isError);
-}
-
-function setMatchStatus(message, isError = false) {
-  if (!matchStatusEl) return;
-  matchStatusEl.textContent = message;
-  matchStatusEl.classList.toggle("is-error", isError);
-}
-
-function setLeagueStatus(message, isError = false) {
-  if (!leagueStatusEl) return;
-  leagueStatusEl.textContent = message;
-  leagueStatusEl.classList.toggle("is-error", isError);
-}
-
-function setPostStatus(message, isError = false) {
-  if (!postStatusEl) return;
-  postStatusEl.textContent = message;
-  postStatusEl.classList.toggle("is-error", isError);
-}
-
-function escapeHtml(value) {
-  return String(value ?? "")
+// ── Helpers ───────────────────────────────────────────────────
+function esc(val) {
+  return String(val ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -77,429 +41,106 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-function renderList(targetId, rows, emptyLabel) {
-  const container = document.querySelector(targetId);
-  if (!container) return;
-  if (!rows.length) {
-    container.innerHTML = `<div class="pp-empty">${escapeHtml(emptyLabel)}</div>`;
-    return;
-  }
-  container.innerHTML = rows.map((row) => `
-    <div class="pp-list-row">
-      <strong>${escapeHtml(row.title)}</strong>
-      ${row.meta ? `<span>${escapeHtml(row.meta)}</span>` : ""}
-      ${row.detail ? `<small>${escapeHtml(row.detail)}</small>` : ""}
-    </div>
-  `).join("");
+function $(sel) { return document.querySelector(sel); }
+function $$(sel) { return document.querySelectorAll(sel); }
+
+function setFormStatus(id, msg, isError = false) {
+  const el = $(`#${id}`);
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.toggle("is-error", isError);
 }
 
-function renderRequestList(targetId, requests, emptyLabel) {
-  const container = document.querySelector(targetId);
-  if (!container) return;
-  if (!requests.length) {
-    container.innerHTML = `<div class="pp-empty">${escapeHtml(emptyLabel)}</div>`;
-    return;
-  }
-  container.innerHTML = requests.map((request) => `
-    <div class="pp-list-row school-request-row">
-      <strong>${escapeHtml(request.display_name || "Pending member")}</strong>
-      <span>${escapeHtml(request.email || "Email unavailable")}</span>
-      <small>${escapeHtml(`Requested ${new Date(request.requested_at || Date.now()).toLocaleString()}`)}</small>
-      <div class="school-request-actions">
-        <button type="button" class="pp-btn pp-btn--primary" data-school-request-action="approve" data-school-request-id="${escapeHtml(request.request_id || "")}">Approve</button>
-        <button type="button" class="pp-link-btn" data-school-request-action="reject" data-school-request-id="${escapeHtml(request.request_id || "")}">Reject</button>
-      </div>
-    </div>
-  `).join("");
+function formatDate(d) {
+  if (!d) return "–";
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function memberOptions(pool, selectedIds) {
-  return pool
-    .filter((item) => !selectedIds.has(item.userId))
-    .map((item) => `<option value="${escapeHtml(item.userId)}">${escapeHtml(`${item.name}${item.meta ? ` • ${item.meta}` : ""}`)}</option>`)
-    .join("");
+function formatTime(t) {
+  if (!t) return "";
+  const [h, m] = t.split(":");
+  const hr = parseInt(h, 10);
+  const ampm = hr >= 12 ? "PM" : "AM";
+  return `${hr % 12 || 12}:${m} ${ampm}`;
 }
 
-function memberMarkup(member, fallback = "") {
-  return `
-    <div class="school-team-member">
-      <strong>${escapeHtml(member?.name || fallback || "Team member")}</strong>
-      ${member?.meta ? `<span>${escapeHtml(member.meta)}</span>` : ""}
-      ${member?.email ? `<small>${escapeHtml(member.email)}</small>` : ""}
-    </div>
-  `;
+// ── Section Navigation ────────────────────────────────────────
+function switchSection(sectionId) {
+  $$(".sch-section").forEach((s) => s.classList.remove("sch-section--active"));
+  $$(".sch-sub-link").forEach((l) => l.classList.remove("active"));
+
+  const target = $(`#school-section-${sectionId}`);
+  if (target) target.classList.add("sch-section--active");
+
+  const link = $(`.sch-sub-link[data-section="${sectionId}"]`);
+  if (link) link.classList.add("active");
 }
 
-function renderTeams() {
-  const container = document.querySelector("#school-teams-list");
-  if (!container) return;
-  if (!state.teams.length) {
-    container.innerHTML = `<div class="pp-empty">No teams have been created yet.</div>`;
-    return;
-  }
-
-  container.innerHTML = state.teams.map((team) => {
-    const selectedAthleteIds = new Set((team.athletes || []).map((member) => member.userId));
-    const selectedCoachIds = new Set((team.coaches || []).map((member) => member.userId));
-    return `
-      <div class="pp-list-row school-team-card">
-        <div>
-          <strong>${escapeHtml(team.name)}</strong>
-          <span>${escapeHtml(`${team.sport}${team.season ? ` • ${team.season}` : ""}`)}</span>
-          <small>${escapeHtml(`${team.athletes?.length || 0} athletes • ${team.coaches?.length || 0} coaches`)}</small>
-        </div>
-
-        <div class="school-team-assignments">
-          <div class="school-team-assignment">
-            <div class="school-team-assignment-head">
-              <strong>Athletes</strong>
-              <span class="pp-chip">${escapeHtml(String(team.athletes?.length || 0))}</span>
-            </div>
-            <div class="school-team-assignment-controls">
-              <select data-school-team-select="${escapeHtml(team.team_id)}" data-member-role="athlete">
-                <option value="">Assign athlete</option>
-                ${memberOptions(state.athletePool, selectedAthleteIds)}
-              </select>
-              <button type="button" class="pp-btn pp-btn--primary" data-school-team-assign="${escapeHtml(team.team_id)}" data-member-role="athlete">Assign</button>
-            </div>
-            <div class="school-team-member-list">
-              ${(team.athletes || []).length
-                ? team.athletes.map((member) => memberMarkup(member, "Assigned athlete")).join("")
-                : `<div class="pp-empty">No athletes assigned yet.</div>`}
-            </div>
-          </div>
-
-          <div class="school-team-assignment">
-            <div class="school-team-assignment-head">
-              <strong>Coaches</strong>
-              <span class="pp-chip">${escapeHtml(String(team.coaches?.length || 0))}</span>
-            </div>
-            <div class="school-team-assignment-controls">
-              <select data-school-team-select="${escapeHtml(team.team_id)}" data-member-role="coach">
-                <option value="">Assign coach</option>
-                ${memberOptions(state.coachPool, selectedCoachIds)}
-              </select>
-              <button type="button" class="pp-btn pp-btn--primary" data-school-team-assign="${escapeHtml(team.team_id)}" data-member-role="coach">Assign</button>
-            </div>
-            <div class="school-team-member-list">
-              ${(team.coaches || []).length
-                ? team.coaches.map((member) => memberMarkup(member, "Assigned coach")).join("")
-                : `<div class="pp-empty">No coaches assigned yet.</div>`}
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-function renderMatchFormOptions() {
-  const leagueSelect = document.querySelector("#school-match-league");
-  const homeSelect = document.querySelector("#school-match-home-team");
-  const awaySelect = document.querySelector("#school-match-away-team");
-  if (
-    !(leagueSelect instanceof HTMLSelectElement)
-    || !(homeSelect instanceof HTMLSelectElement)
-    || !(awaySelect instanceof HTMLSelectElement)
-  ) return;
-  leagueSelect.innerHTML = [
-    `<option value="">Independent match</option>`,
-    ...state.leagues.map((league) => `<option value="${escapeHtml(league.league_id)}">${escapeHtml(`${league.name} • ${league.sport}${league.season ? ` • ${league.season}` : ""}`)}</option>`),
-  ].join("");
-  const options = [
-    `<option value="">Select team</option>`,
-    ...state.teams.map((team) => `<option value="${escapeHtml(team.team_id)}">${escapeHtml(`${team.name} • ${team.sport}`)}</option>`),
-  ].join("");
-  homeSelect.innerHTML = options;
-  awaySelect.innerHTML = options;
-}
-
-function teamLabel(teamId) {
-  const team = state.teams.find((item) => item.team_id === teamId);
-  if (!team) return "Unknown Team";
-  return `${team.name}${team.sport ? ` • ${team.sport}` : ""}`;
-}
-
-function renderLeagues() {
-  const container = document.querySelector("#school-leagues-list");
-  if (!container) return;
-  if (!state.leagues.length) {
-    container.innerHTML = `<div class="pp-empty">No leagues have been created yet.</div>`;
-    return;
-  }
-
-  const standingsByLeagueId = new Map(
-    buildLeagueStandings({
-      leagues: state.leagues,
-      teams: state.teams,
-      matches: state.matches,
-    }).map((league) => [league.leagueId, league.standings])
-  );
-
-  container.innerHTML = state.leagues.map((league) => {
-    const selectedTeamIds = new Set(league.team_ids || []);
-    const assignableTeams = state.teams.filter((team) => (
-      team.sport === league.sport && !selectedTeamIds.has(team.team_id)
-    ));
-    const standings = standingsByLeagueId.get(league.league_id) || [];
-    const assignedTeams = (league.team_ids || []).map((teamId) => state.teams.find((team) => team.team_id === teamId)).filter(Boolean);
-
-    return `
-      <div class="pp-list-row school-league-card">
-        <div>
-          <strong>${escapeHtml(league.name)}</strong>
-          <span>${escapeHtml(`${league.sport}${league.season ? ` • ${league.season}` : ""}`)}</span>
-          <small>${escapeHtml(`${assignedTeams.length} teams • ${standings.filter((row) => row.played > 0).length} active in standings`)}</small>
-        </div>
-
-        <div class="school-league-panel">
-          <div class="school-team-assignment">
-            <div class="school-team-assignment-head">
-              <strong>Teams</strong>
-              <span class="pp-chip">${escapeHtml(String(assignedTeams.length))}</span>
-            </div>
-            <div class="school-team-assignment-controls">
-              <select data-school-league-select="${escapeHtml(league.league_id)}">
-                <option value="">Assign team</option>
-                ${assignableTeams.map((team) => `<option value="${escapeHtml(team.team_id)}">${escapeHtml(`${team.name}${team.season ? ` • ${team.season}` : ""}`)}</option>`).join("")}
-              </select>
-              <button type="button" class="pp-btn pp-btn--primary" data-school-league-assign="${escapeHtml(league.league_id)}">Assign</button>
-            </div>
-            <div class="school-team-member-list">
-              ${assignedTeams.length
-                ? assignedTeams.map((team) => memberMarkup({ name: team.name, meta: `${team.sport}${team.season ? ` • ${team.season}` : ""}` }, "Assigned team")).join("")
-                : `<div class="pp-empty">No teams assigned yet.</div>`}
-            </div>
-          </div>
-
-          <div class="school-league-standings">
-            <div class="school-team-assignment-head">
-              <strong>Standings</strong>
-              <span class="pp-chip">${escapeHtml(String(standings.length))}</span>
-            </div>
-            ${standings.length ? `
-              <div class="school-league-table-wrap">
-                <table class="school-league-table">
-                  <thead>
-                    <tr>
-                      <th>Team</th>
-                      <th>P</th>
-                      <th>W</th>
-                      <th>D</th>
-                      <th>L</th>
-                      <th>Pts</th>
-                      <th>Diff</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${standings.map((row) => `
-                      <tr>
-                        <td>${escapeHtml(row.teamName)}</td>
-                        <td>${escapeHtml(String(row.played))}</td>
-                        <td>${escapeHtml(String(row.wins))}</td>
-                        <td>${escapeHtml(String(row.draws))}</td>
-                        <td>${escapeHtml(String(row.losses))}</td>
-                        <td>${escapeHtml(String(row.points))}</td>
-                        <td>${escapeHtml(String(row.scoreDiff))}</td>
-                      </tr>
-                    `).join("")}
-                  </tbody>
-                </table>
-              </div>
-            ` : `<div class="pp-empty">Standings will populate when league matches are completed.</div>`}
-          </div>
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-function renderSchoolPosts() {
-  const container = document.querySelector("#school-media-list");
-  if (!container) return;
-  if (!state.schoolPosts.length) {
-    container.innerHTML = `<div class="pp-empty">No school posts have been published yet.</div>`;
-    return;
-  }
-
-  container.innerHTML = state.schoolPosts.map((post) => {
-    const media = Array.isArray(post.post_media) ? post.post_media[0] : null;
-    const mediaMarkup = !media ? "" : media.media_type === "video"
-      ? `
-        <div class="school-post-preview">
-          <video controls preload="metadata" src="${escapeHtml(media.media_url)}"></video>
-        </div>
-      `
-      : `
-        <div class="school-post-preview">
-          <img src="${escapeHtml(media.media_url)}" alt="${escapeHtml(post.caption || "School post")}">
-        </div>
-      `;
-
-    return `
-      <div class="pp-list-row school-post-card">
-        <div>
-          <strong>${escapeHtml(post.caption || "Untitled school post")}</strong>
-          <span>${escapeHtml(`${post.post_type || "media"} • ${post.visibility || "public"} • ${new Date(post.created_at || Date.now()).toLocaleString()}`)}</span>
-        </div>
-        ${mediaMarkup}
-      </div>
-    `;
-  }).join("");
-}
-
-async function renderMatches() {
-  const container = document.querySelector("#school-matches-list");
-  if (!container) return;
-  if (!state.matches.length) {
-    container.innerHTML = `<div class="pp-empty">No matches are scheduled yet.</div>`;
-    return;
-  }
-
-  const notificationCounts = await Promise.all(
-    state.matches.map((match) => loadMatchNotificationCount({ matchId: match.match_id }))
-  );
-
-  container.innerHTML = state.matches.map((match, index) => {
-    const scheduledAt = match.scheduled_at ? new Date(match.scheduled_at) : null;
-    const resultSaved = Number.isFinite(Number(match.home_score)) && Number.isFinite(Number(match.away_score));
-    const league = state.leagues.find((item) => item.league_id === match.league_id);
-    return `
-      <div class="pp-list-row school-match-card">
-        <div>
-          <strong>${escapeHtml(`${teamLabel(match.home_team_id)} vs ${teamLabel(match.away_team_id)}`)}</strong>
-          <div class="school-match-meta">
-            <span>${escapeHtml(scheduledAt ? scheduledAt.toLocaleString() : "Date pending")}</span>
-            <span>${escapeHtml(match.status || "scheduled")}</span>
-            <span>${escapeHtml(league ? `${league.name} league` : "Independent")}</span>
-            <span>${escapeHtml(`${notificationCounts[index] || 0} notifications`)}</span>
-          </div>
-          ${resultSaved ? `<small class="school-match-notes">Result saved: ${escapeHtml(String(match.home_score))} - ${escapeHtml(String(match.away_score))}</small>` : `<small class="school-match-notes">No result saved yet.</small>`}
-        </div>
-        <div class="school-match-result">
-          <input type="number" min="0" placeholder="Home" data-school-match-score-home="${escapeHtml(match.match_id)}" value="${resultSaved ? escapeHtml(String(match.home_score)) : ""}">
-          <input type="number" min="0" placeholder="Away" data-school-match-score-away="${escapeHtml(match.match_id)}" value="${resultSaved ? escapeHtml(String(match.away_score)) : ""}">
-          <button type="button" class="pp-btn pp-btn--primary" data-school-match-save="${escapeHtml(match.match_id)}">Save Result</button>
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-function renderMetrics(metrics) {
-  const pairs = [
-    ["#school-metric-athletes", metrics.athletes],
-    ["#school-metric-coaches", metrics.coaches],
-    ["#school-metric-teams", metrics.teams],
-    ["#school-metric-matches", metrics.matches],
-    ["#school-metric-leagues", metrics.leagues],
-    ["#school-metric-media", metrics.media],
-  ];
-
-  pairs.forEach(([selector, value]) => {
-    const el = document.querySelector(selector);
-    if (el) el.textContent = String(value);
+function initSectionNav() {
+  // Sub-nav links
+  $$(".sch-sub-link").forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      switchSection(link.dataset.section);
+    });
   });
 
-  const sectionCountEl = document.querySelector("#school-dashboard-section-count");
-  if (sectionCountEl) sectionCountEl.textContent = String(NAV_ITEMS.length);
-
-  const athletesChip = document.querySelector("#school-athletes-count-chip");
-  if (athletesChip) athletesChip.textContent = `${metrics.athletes} pending`;
-
-  const coachesChip = document.querySelector("#school-coaches-count-chip");
-  if (coachesChip) coachesChip.textContent = `${metrics.coaches} pending`;
-
-  const teamsChip = document.querySelector("#school-teams-count-chip");
-  if (teamsChip) teamsChip.textContent = `${metrics.teams} teams`;
-
-  const matchesChip = document.querySelector("#school-matches-count-chip");
-  if (matchesChip) matchesChip.textContent = `${metrics.matches} matches`;
-
-  const leaguesChip = document.querySelector("#school-leagues-count-chip");
-  if (leaguesChip) leaguesChip.textContent = `${metrics.leagues} leagues`;
-
-  const mediaChip = document.querySelector("#school-media-count-chip");
-  if (mediaChip) mediaChip.textContent = `${metrics.media} posts`;
+  // data-goto on stat cards & quick actions
+  document.addEventListener("click", (e) => {
+    const goto = e.target.closest("[data-goto]");
+    if (goto) {
+      e.preventDefault();
+      switchSection(goto.dataset.goto);
+    }
+  });
 }
 
+// ── School Context ────────────────────────────────────────────
 async function fetchSingle(query) {
   const { data, error } = await query.limit(1);
   if (error) throw error;
   return Array.isArray(data) ? (data[0] || null) : (data || null);
 }
 
-function isMissingAuthColumn(error) {
+function isMissingColumn(error) {
   const code = String(error?.code || "");
-  const message = String(error?.message || "").toLowerCase();
+  const msg = String(error?.message || "").toLowerCase();
   return ["PGRST204", "PGRST205", "42703"].includes(code)
-    || message.includes("column")
-    || message.includes("does not exist");
+    || msg.includes("column") || msg.includes("does not exist");
 }
 
 async function findUserByAuthId(authUserId) {
-  for (const column of ["auth_uid", "firebase_uid"]) {
+  for (const col of ["auth_uid", "firebase_uid"]) {
     try {
       const row = await fetchSingle(
-        supabase.from("users").select("user_id").eq(column, authUserId)
+        supabase.from("users").select("user_id").eq(col, authUserId)
       );
       if (row?.user_id) return row;
-    } catch (error) {
-      if (isMissingAuthColumn(error)) continue;
-      throw error;
+    } catch (err) {
+      if (isMissingColumn(err)) continue;
+      throw err;
     }
   }
-  return null;
-}
-
-async function ensureUserByAuthId(authUserId, role) {
-  const existing = await findUserByAuthId(authUserId);
-  if (existing?.user_id) return existing;
-
-  for (const column of ["auth_uid", "firebase_uid"]) {
-    try {
-      const { data, error } = await supabase
-        .from("users")
-        .insert({ [column]: authUserId, role })
-        .select("user_id")
-        .single();
-      if (!error && data?.user_id) return data;
-      if (error?.code === "23505") {
-        const retry = await findUserByAuthId(authUserId);
-        if (retry?.user_id) return retry;
-      }
-      if (error) throw error;
-    } catch (error) {
-      if (isMissingAuthColumn(error)) continue;
-      throw error;
-    }
-  }
-
   return null;
 }
 
 async function resolveSchoolContext() {
-  // Get session directly from Supabase — don't depend on global app state
   const { data: sessionData } = await supabase.auth.getSession();
   const session = sessionData?.session;
   if (!session?.user?.id) {
     return { schoolId: "", schoolName: state.schoolName, appUserId: "" };
   }
 
-  // Only look up the user — app.js handles user creation
-  let userRow = await findUserByAuthId(session.user.id);
-
+  const userRow = await findUserByAuthId(session.user.id);
   const appUserId = userRow?.user_id || null;
   if (!appUserId) {
     return { schoolId: "", schoolName: state.schoolName, appUserId: "" };
   }
 
-  // Find school for this user
   let schoolRow = await fetchSingle(
     supabase.from("schools").select("school_id,name").eq("user_id", appUserId)
   );
 
-  // Auto-create school row if missing
   if (!schoolRow) {
     const fallbackName = session.user?.user_metadata?.name || state.schoolName;
     const { data: inserted, error } = await supabase
@@ -523,151 +164,44 @@ async function resolveSchoolContext() {
   };
 }
 
-function bindSectionNav() {
-  const links = Array.from(document.querySelectorAll("[data-school-section-link]"));
-  if (!links.length) return;
+// ══════════════════════════════════════════════════════════════
+// RENDER FUNCTIONS
+// ══════════════════════════════════════════════════════════════
 
-  function activate(id) {
-    links.forEach((link) => {
-      link.classList.toggle("is-active", link.dataset.schoolSectionLink === id);
-    });
-  }
-
-  links.forEach((link) => {
-    link.addEventListener("click", () => activate(link.dataset.schoolSectionLink || ""));
-  });
-
-  const observer = new IntersectionObserver((entries) => {
-    const visible = entries
-      .filter((entry) => entry.isIntersecting)
-      .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
-    if (!visible?.target?.id) return;
-    activate(visible.target.id.replace("school-section-", ""));
-  }, {
-    rootMargin: "-20% 0px -60% 0px",
-    threshold: [0.2, 0.4, 0.6],
-  });
-
-  NAV_ITEMS.forEach((item) => {
-    const section = document.querySelector(item.target);
-    if (section) observer.observe(section);
-  });
-}
-
-function buildStaticRows(schoolName) {
-  return {
-    media: [
-      { title: "Spring Media Queue", meta: "12 pending assets", detail: "Highlight edits and team-day coverage" },
-      { title: "Recruiting Spotlights", meta: "8 published this month", detail: "Athlete profile packages" },
-      { title: "Game-Day Archive", meta: "46 clips indexed", detail: "Recent uploads and publishing requests" },
-    ],
+// ── Overview Metrics ──────────────────────────────────────────
+function renderOverviewMetrics() {
+  const athleteCount = state.members.filter((m) => m.role === "athlete").length;
+  const coachCount = state.members.filter((m) => m.role === "coach").length;
+  const pairs = {
+    "#school-metric-sports": state.sports.length,
+    "#school-metric-teams": state.teams.length,
+    "#school-metric-athletes": athleteCount,
+    "#school-metric-coaches": coachCount,
+    "#school-metric-matches": state.matches.length,
   };
-}
 
-async function loadPendingRequests() {
-  if (!state.schoolId) {
-    state.pendingAthletes = [];
-    state.pendingCoaches = [];
-    return;
-  }
-  const [athletes, coaches] = await Promise.all([
-    loadPendingSchoolRequests({ schoolId: state.schoolId, requesterRole: "athlete" }),
-    loadPendingSchoolRequests({ schoolId: state.schoolId, requesterRole: "coach" }),
-  ]);
-  state.pendingAthletes = athletes;
-  state.pendingCoaches = coaches;
-}
-
-async function loadTeamWorkspace() {
-  if (!state.schoolId) {
-    state.teams = [];
-    state.athletePool = [];
-    state.coachPool = [];
-    return;
-  }
-  const workspace = await loadSchoolTeamWorkspace({ schoolId: state.schoolId });
-  state.teams = workspace.teams;
-  state.athletePool = workspace.athletes;
-  state.coachPool = workspace.coaches;
-}
-
-async function loadMatchWorkspace() {
-  if (!state.schoolId) {
-    state.matches = [];
-    return;
-  }
-  state.matches = await loadSchoolMatches({ schoolId: state.schoolId });
-}
-
-async function loadLeagueWorkspace() {
-  if (!state.schoolId) {
-    state.leagues = [];
-    return;
-  }
-  state.leagues = await loadSchoolLeagueWorkspace({ schoolId: state.schoolId });
-}
-
-async function loadSchoolPostWorkspace() {
-  if (!state.schoolUserId) {
-    state.schoolPosts = [];
-    return;
-  }
-  state.schoolPosts = await loadSchoolPosts({ authorUserId: state.schoolUserId });
+  Object.entries(pairs).forEach(([sel, val]) => {
+    const el = $(sel);
+    if (el) el.textContent = String(val);
+  });
 }
 
 function renderGreeting() {
-  const greetingEl = document.querySelector("#school-dashboard-greeting");
-  if (!greetingEl) return;
+  const el = $("#school-dashboard-greeting");
+  if (!el) return;
   const hour = new Date().getHours();
-  const timeLabel = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-  greetingEl.textContent = `${timeLabel}, ${state.schoolName}`;
-}
-
-function renderActionChips() {
-  const bar = document.querySelector("#school-action-bar");
-  if (!bar) return;
-  const chips = [];
-
-  const pendingTotal = state.pendingAthletes.length + state.pendingCoaches.length;
-  if (pendingTotal > 0) {
-    chips.push(`
-      <a class="sch-action-chip" href="#school-section-athletes">
-        <span class="sch-action-dot red"></span>
-        ${escapeHtml(pendingTotal)} pending request${pendingTotal > 1 ? "s" : ""}
-      </a>
-    `);
-  }
-
-  const scheduledMatches = state.matches.filter((m) => m.status === "scheduled");
-  if (scheduledMatches.length > 0) {
-    chips.push(`
-      <a class="sch-action-chip" href="#school-section-matches">
-        <span class="sch-action-dot amber"></span>
-        ${escapeHtml(String(scheduledMatches.length))} upcoming match${scheduledMatches.length > 1 ? "es" : ""}
-      </a>
-    `);
-  }
-
-  if (state.teams.length > 0) {
-    chips.push(`
-      <a class="sch-action-chip" href="#school-section-teams">
-        <span class="sch-action-dot green"></span>
-        ${escapeHtml(String(state.teams.length))} active team${state.teams.length > 1 ? "s" : ""}
-      </a>
-    `);
-  }
-
-  bar.innerHTML = chips.length ? chips.join("") : "";
+  const time = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  el.textContent = `${time}, ${state.schoolName}`;
 }
 
 function renderUpcomingMatches() {
-  const container = document.querySelector("#school-upcoming-matches");
+  const container = $("#school-upcoming-matches");
   if (!container) return;
 
-  const now = Date.now();
+  const now = new Date();
   const upcoming = state.matches
-    .filter((m) => m.status === "scheduled" || m.status === "live")
-    .sort((a, b) => new Date(a.scheduled_at || 0) - new Date(b.scheduled_at || 0))
+    .filter((m) => m.status === "scheduled" && new Date(m.match_date) >= now)
+    .sort((a, b) => new Date(a.match_date) - new Date(b.match_date))
     .slice(0, 4);
 
   if (!upcoming.length) {
@@ -675,608 +209,1211 @@ function renderUpcomingMatches() {
     return;
   }
 
-  container.innerHTML = upcoming.map((match) => {
-    const scheduledAt = match.scheduled_at ? new Date(match.scheduled_at) : null;
-    const dateStr = scheduledAt
-      ? scheduledAt.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
-      : "TBD";
-    const timeStr = scheduledAt
-      ? scheduledAt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
-      : "";
-    const badge = match.status === "live"
-      ? `<span class="sch-match-badge live">LIVE</span>`
-      : `<span class="sch-match-badge upcoming">Upcoming</span>`;
+  container.innerHTML = upcoming.map((m) => {
+    const team = state.teams.find((t) => t.team_id === m.team_id);
+    const teamName = team ? `${team.name}` : "Your Team";
+    const sportName = team?.sports?.name || "";
+    const dateStr = formatDate(m.match_date);
+    const timeStr = m.match_time ? formatTime(m.match_time) : "";
+    const homeAway = m.is_home_game ? "Home" : "Away";
     return `
       <div class="sch-match-row">
-        <div class="sch-match-time">${escapeHtml(dateStr)}<br>${escapeHtml(timeStr)}</div>
+        <div class="sch-match-time">${esc(dateStr)}<br>${esc(timeStr)}</div>
         <div class="sch-match-teams">
-          ${escapeHtml(teamLabel(match.home_team_id))}
+          ${esc(teamName)}${sportName ? ` <small style="opacity:.5">${esc(sportName)}</small>` : ""}
           <span>vs</span>
-          ${escapeHtml(teamLabel(match.away_team_id))}
+          ${esc(m.opponent_name)}
         </div>
-        ${badge}
+        <span class="sch-match-badge upcoming">${esc(homeAway)}</span>
       </div>
     `;
   }).join("");
 }
 
-function renderRosterPreview() {
-  const table = document.querySelector("#school-roster-preview");
-  if (!table) return;
-  const tbody = table.querySelector("tbody");
-  if (!tbody) return;
+// ── Sports ────────────────────────────────────────────────────
+function renderSportsList() {
+  const container = $("#sports-list");
+  if (!container) return;
 
-  // Gather athletes from all teams (deduplicated)
-  const seen = new Set();
-  const athletes = [];
-  for (const team of state.teams) {
-    for (const member of (team.athletes || [])) {
-      if (seen.has(member.userId)) continue;
-      seen.add(member.userId);
-      athletes.push({ ...member, sport: team.sport, teamName: team.name });
-    }
-  }
+  const chip = $("#school-sports-count");
+  if (chip) chip.textContent = `${state.sports.length} sport${state.sports.length !== 1 ? "s" : ""}`;
 
-  if (!athletes.length) {
-    // Also show pending athletes as a fallback
-    if (state.pendingAthletes.length) {
-      tbody.innerHTML = state.pendingAthletes.slice(0, 5).map((req) => `
-        <tr>
-          <td>
-            <div class="sch-avatar-name">
-              <div class="sch-avatar-sm" style="background:var(--surface-3,#212b42);display:grid;place-items:center;font-size:.75rem">👤</div>
-              <div>
-                <strong>${escapeHtml(req.display_name || "Pending")}</strong>
-                <small>${escapeHtml(req.email || "")}</small>
-              </div>
-            </div>
-          </td>
-          <td><span class="sch-sport-pill">Pending</span></td>
-          <td>–</td>
-          <td>–</td>
-        </tr>
-      `).join("");
-    } else {
-      tbody.innerHTML = `<tr><td colspan="4" class="sch-empty">No athletes on roster yet.</td></tr>`;
-    }
+  if (!state.sports.length) {
+    container.innerHTML = `<div class="sch-empty">No sports added yet.</div>`;
     return;
   }
 
-  tbody.innerHTML = athletes.slice(0, 5).map((a) => `
-    <tr>
-      <td>
-        <div class="sch-avatar-name">
-          <div class="sch-avatar-sm" style="background:var(--surface-3,#212b42);display:grid;place-items:center;font-size:.75rem">👤</div>
-          <div>
-            <strong>${escapeHtml(a.name || "Athlete")}</strong>
-            <small>${escapeHtml(a.email || a.teamName || "")}</small>
-          </div>
-        </div>
-      </td>
-      <td><span class="sch-sport-pill">${escapeHtml(a.sport || "–")}</span></td>
-      <td>${escapeHtml(a.meta || "–")}</td>
-      <td>–</td>
-    </tr>
+  container.innerHTML = state.sports.map((s) => `
+    <div class="sch-list-item">
+      <div class="sch-list-item-body">
+        <strong>${esc(s.name)}</strong>
+        <span class="sch-list-meta">${esc(s.gender || "coed")} &middot; ${esc(s.season_type || "fall")} &middot; Max ${esc(s.max_roster_size || 30)}</span>
+      </div>
+      <div class="sch-list-item-actions">
+        <button class="sch-btn sch-btn--danger sch-btn--xs" data-delete-sport="${esc(s.sport_id)}">Delete</button>
+      </div>
+    </div>
   `).join("");
 }
 
-function renderActivityFeed() {
-  const feed = document.querySelector("#school-activity-feed");
-  if (!feed) return;
-  const items = [];
+function populateSportDropdowns() {
+  const selects = [$("#team-sport")];
+  selects.forEach((sel) => {
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = `<option value="" disabled selected>Select sport</option>`
+      + state.sports.map((s) => `<option value="${esc(s.sport_id)}">${esc(s.name)} (${esc(s.gender)})</option>`).join("");
+    if (current) sel.value = current;
+  });
+}
 
-  // Recent join requests
-  for (const req of state.pendingAthletes.slice(0, 2)) {
-    items.push({
-      icon: "fi-join",
-      emoji: "👤",
-      text: `<strong>${escapeHtml(req.display_name || "Someone")}</strong> requested to join as an athlete`,
-      time: req.requested_at,
-    });
-  }
-  for (const req of state.pendingCoaches.slice(0, 1)) {
-    items.push({
-      icon: "fi-join",
-      emoji: "🧑‍🏫",
-      text: `<strong>${escapeHtml(req.display_name || "Someone")}</strong> requested to join as a coach`,
-      time: req.requested_at,
-    });
-  }
+// ── Seasons ───────────────────────────────────────────────────
+function renderSeasonsList() {
+  const container = $("#seasons-list");
+  if (!container) return;
 
-  // Recent matches
-  for (const match of state.matches.slice(0, 2)) {
-    const resultSaved = Number.isFinite(Number(match.home_score)) && Number.isFinite(Number(match.away_score));
-    if (resultSaved) {
-      items.push({
-        icon: "fi-match",
-        emoji: "📅",
-        text: `Match completed: <strong>${escapeHtml(teamLabel(match.home_team_id))}</strong> ${escapeHtml(String(match.home_score))} – ${escapeHtml(String(match.away_score))} <strong>${escapeHtml(teamLabel(match.away_team_id))}</strong>`,
-        time: match.completed_at || match.scheduled_at,
-      });
-    } else {
-      items.push({
-        icon: "fi-match",
-        emoji: "📅",
-        text: `Match scheduled: <strong>${escapeHtml(teamLabel(match.home_team_id))}</strong> vs <strong>${escapeHtml(teamLabel(match.away_team_id))}</strong>`,
-        time: match.scheduled_at || match.created_at,
-      });
-    }
-  }
+  const chip = $("#school-seasons-count");
+  if (chip) chip.textContent = `${state.seasons.length} season${state.seasons.length !== 1 ? "s" : ""}`;
 
-  // Recent posts
-  for (const post of state.schoolPosts.slice(0, 2)) {
-    items.push({
-      icon: "fi-post",
-      emoji: "📣",
-      text: `New post: <strong>${escapeHtml(post.caption || "Untitled")}</strong>`,
-      time: post.created_at,
-    });
-  }
-
-  // Sort by most recent
-  items.sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0));
-
-  if (!items.length) {
-    feed.innerHTML = `<div class="sch-empty">No recent activity.</div>`;
+  if (!state.seasons.length) {
+    container.innerHTML = `<div class="sch-empty">No seasons created yet.</div>`;
     return;
   }
 
-  feed.innerHTML = items.slice(0, 6).map((item) => {
-    const timeAgo = item.time ? formatTimeAgo(new Date(item.time)) : "";
+  container.innerHTML = state.seasons.map((s) => {
+    const active = s.is_active;
     return `
-      <div class="sch-feed-item">
-        <div class="sch-feed-icon ${escapeHtml(item.icon)}">${item.emoji}</div>
-        <div>
-          <div class="sch-feed-text">${item.text}</div>
-          <div class="sch-feed-time">${escapeHtml(timeAgo)}</div>
+      <div class="sch-list-item${active ? " sch-list-item--active" : ""}">
+        <div class="sch-list-item-body">
+          <strong>${esc(s.name)}${active ? ' <span class="sch-badge-active">Active</span>' : ""}</strong>
+          <span class="sch-list-meta">${formatDate(s.start_date)} – ${formatDate(s.end_date)}</span>
+        </div>
+        <div class="sch-list-item-actions">
+          ${!active ? `<button class="sch-btn sch-btn--sm" data-activate-season="${esc(s.season_id)}">Set Active</button>` : ""}
+          <button class="sch-btn sch-btn--danger sch-btn--xs" data-delete-season="${esc(s.season_id)}">Delete</button>
         </div>
       </div>
     `;
   }).join("");
 }
 
-function formatTimeAgo(date) {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+function populateCoachDropdown() {
+  const sel = $("#team-coach");
+  if (!sel) return;
+  const coaches = state.members.filter((m) => m.role === "coach");
+  const current = sel.value;
+  sel.innerHTML = `<option value="">No coach</option>`
+    + coaches.map((c) => {
+      const name = c.users?.display_name || c.users?.email || "Coach";
+      return `<option value="${esc(c.user_id)}">${esc(name)}</option>`;
+    }).join("");
+  if (current) sel.value = current;
 }
 
-async function renderDashboard() {
-  const staticRows = buildStaticRows(state.schoolName);
-  renderGreeting();
-  renderActionChips();
-  renderMetrics({
-    athletes: state.pendingAthletes.length,
-    coaches: state.pendingCoaches.length,
-    teams: state.teams.length,
-    matches: state.matches.length,
-    leagues: state.leagues.length,
-    media: state.schoolPosts.length,
-  });
-  renderRequestList("#school-athletes-list", state.pendingAthletes, "No pending athlete requests.");
-  renderRequestList("#school-coaches-list", state.pendingCoaches, "No pending coach requests.");
-  renderTeams();
-  renderMatchFormOptions();
-  await renderMatches();
-  renderLeagues();
-  renderSchoolPosts();
-  renderUpcomingMatches();
-  renderRosterPreview();
-  renderActivityFeed();
+function populateAthleteMultiSelect() {
+  const sel = $("#team-athletes");
+  if (!sel) return;
+  const athletes = state.members.filter((m) => m.role === "athlete");
+  sel.innerHTML = athletes.map((a) => {
+    const name = a.users?.display_name || a.users?.email || "Athlete";
+    return `<option value="${esc(a.user_id)}">${esc(name)}</option>`;
+  }).join("");
 }
 
-async function refreshSchoolData() {
-  await Promise.all([
-    loadPendingRequests(),
-    loadTeamWorkspace(),
-    loadMatchWorkspace(),
-    loadLeagueWorkspace(),
-    loadSchoolPostWorkspace(),
-  ]);
-  await renderDashboard();
-}
+// ── Teams ─────────────────────────────────────────────────────
+function renderTeamsList() {
+  const container = $("#teams-list");
+  if (!container) return;
 
-function bindRequestEvents(auth) {
-  document.addEventListener("click", async (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
-
-    const requestButton = target.closest("[data-school-request-action]");
-    if (requestButton) {
-      const requestId = requestButton.getAttribute("data-school-request-id") || "";
-      const action = requestButton.getAttribute("data-school-request-action") || "";
-      if (!requestId || !["approve", "reject"].includes(action)) return;
-
-      requestButton.setAttribute("disabled", "true");
-      try {
-        await reviewSchoolJoinRequest({
-          requestId,
-          decision: action,
-          reviewedByUserId: auth?.appUserId || "",
-        });
-        await refreshSchoolData();
-        setStatus(`${action === "approve" ? "Approved" : "Rejected"} request successfully.`);
-      } catch (error) {
-        console.error("School request review failed", error);
-        setStatus(error.message || "Unable to review request.", true);
-      } finally {
-        requestButton.removeAttribute("disabled");
-      }
-      return;
-    }
-
-    const assignButton = target.closest("[data-school-team-assign]");
-    if (assignButton) {
-      const teamId = assignButton.getAttribute("data-school-team-assign") || "";
-      const memberRole = assignButton.getAttribute("data-member-role") || "";
-      const select = document.querySelector(`[data-school-team-select="${CSS.escape(teamId)}"][data-member-role="${CSS.escape(memberRole)}"]`);
-      const userId = select instanceof HTMLSelectElement ? select.value : "";
-      if (!teamId || !memberRole || !userId) {
-        setTeamStatus("Choose a member before assigning.", true);
-        return;
-      }
-
-      assignButton.setAttribute("disabled", "true");
-      try {
-        await assignSchoolTeamMember({ teamId, userId, memberRole });
-        await loadTeamWorkspace();
-        await renderDashboard();
-        setTeamStatus(`${memberRole === "athlete" ? "Athlete" : "Coach"} assigned successfully.`);
-      } catch (error) {
-        console.error("Team assignment failed", error);
-        setTeamStatus(error.message || "Unable to assign team member.", true);
-      } finally {
-        assignButton.removeAttribute("disabled");
-      }
-      return;
-    }
-
-    const assignLeagueButton = target.closest("[data-school-league-assign]");
-    if (assignLeagueButton) {
-      const leagueId = assignLeagueButton.getAttribute("data-school-league-assign") || "";
-      const select = document.querySelector(`[data-school-league-select="${CSS.escape(leagueId)}"]`);
-      const teamId = select instanceof HTMLSelectElement ? select.value : "";
-      if (!leagueId || !teamId) {
-        setLeagueStatus("Choose a team before assigning it to a league.", true);
-        return;
-      }
-
-      assignLeagueButton.setAttribute("disabled", "true");
-      try {
-        await assignTeamToLeague({ leagueId, teamId });
-        await loadLeagueWorkspace();
-        await renderDashboard();
-        setLeagueStatus("Team assigned to league.");
-      } catch (error) {
-        console.error("League assignment failed", error);
-        setLeagueStatus(error.message || "Unable to assign team to league.", true);
-      } finally {
-        assignLeagueButton.removeAttribute("disabled");
-      }
-      return;
-    }
-
-    const saveMatchButton = target.closest("[data-school-match-save]");
-    if (!saveMatchButton) return;
-
-    const matchId = saveMatchButton.getAttribute("data-school-match-save") || "";
-    const homeInput = document.querySelector(`[data-school-match-score-home="${CSS.escape(matchId)}"]`);
-    const awayInput = document.querySelector(`[data-school-match-score-away="${CSS.escape(matchId)}"]`);
-    const homeScore = homeInput instanceof HTMLInputElement ? homeInput.value : "";
-    const awayScore = awayInput instanceof HTMLInputElement ? awayInput.value : "";
-    if (!matchId || homeScore === "" || awayScore === "") {
-      setMatchStatus("Enter both scores before saving a result.", true);
-      return;
-    }
-
-    saveMatchButton.setAttribute("disabled", "true");
-    try {
-      await saveSchoolMatchResult({ matchId, homeScore, awayScore });
-      await loadMatchWorkspace();
-      await renderDashboard();
-      setMatchStatus("Match result saved.");
-    } catch (error) {
-      console.error("Match result save failed", error);
-      setMatchStatus(error.message || "Unable to save match result.", true);
-    } finally {
-      saveMatchButton.removeAttribute("disabled");
-    }
-  });
-}
-
-function bindTeamForm() {
-  const form = document.querySelector("#school-team-form");
-  if (!(form instanceof HTMLFormElement)) return;
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const nameInput = document.querySelector("#school-team-name");
-    const sportInput = document.querySelector("#school-team-sport");
-    const seasonInput = document.querySelector("#school-team-season");
-    const name = nameInput instanceof HTMLInputElement ? nameInput.value.trim() : "";
-    const sport = (sportInput instanceof HTMLInputElement || sportInput instanceof HTMLSelectElement) ? sportInput.value.trim() : "";
-    const season = seasonInput instanceof HTMLInputElement ? seasonInput.value.trim() : "";
-
-    if (!state.schoolId) {
-      setTeamStatus("No school is linked to this dashboard.", true);
-      return;
-    }
-    if (!name || !sport) {
-      setTeamStatus("Team name and sport are required.", true);
-      return;
-    }
-
-    try {
-      setTeamStatus("Creating team…");
-      await createSchoolTeam({
-        schoolId: state.schoolId,
-        name,
-        sport,
-        season,
-      });
-      await loadTeamWorkspace();
-      await renderDashboard();
-      form.reset();
-      setTeamStatus(`Created ${name}.`);
-    } catch (error) {
-      console.error("Team creation failed", error);
-      setTeamStatus(error.message || "Unable to create team.", true);
-    }
-  });
-}
-
-function bindMatchForm() {
-  const form = document.querySelector("#school-match-form");
-  if (!(form instanceof HTMLFormElement)) return;
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const leagueSelect = document.querySelector("#school-match-league");
-    const homeSelect = document.querySelector("#school-match-home-team");
-    const awaySelect = document.querySelector("#school-match-away-team");
-    const dateInput = document.querySelector("#school-match-datetime");
-    const leagueId = leagueSelect instanceof HTMLSelectElement ? leagueSelect.value.trim() : "";
-    const homeTeamId = homeSelect instanceof HTMLSelectElement ? homeSelect.value.trim() : "";
-    const awayTeamId = awaySelect instanceof HTMLSelectElement ? awaySelect.value.trim() : "";
-    const scheduledAt = dateInput instanceof HTMLInputElement ? dateInput.value.trim() : "";
-
-    if (!state.schoolId) {
-      setMatchStatus("No school is linked to this dashboard.", true);
-      return;
-    }
-    if (!homeTeamId || !awayTeamId || !scheduledAt) {
-      setMatchStatus("Two teams and a date/time are required.", true);
-      return;
-    }
-    if (homeTeamId === awayTeamId) {
-      setMatchStatus("Choose two different teams for the match.", true);
-      return;
-    }
-    if (leagueId) {
-      const league = state.leagues.find((item) => item.league_id === leagueId);
-      const allowedTeams = new Set(league?.team_ids || []);
-      if (!league) {
-        setMatchStatus("Selected league could not be found.", true);
-        return;
-      }
-      if (!allowedTeams.has(homeTeamId) || !allowedTeams.has(awayTeamId)) {
-        setMatchStatus("League matches must use teams already assigned to that league.", true);
-        return;
-      }
-    }
-
-    try {
-      setMatchStatus("Creating match…");
-      const { notificationCount } = await createSchoolMatch({
-        schoolId: state.schoolId,
-        homeTeamId,
-        awayTeamId,
-        leagueId,
-        scheduledAt: new Date(scheduledAt).toISOString(),
-      });
-      await loadMatchWorkspace();
-      await renderDashboard();
-      form.reset();
-      setMatchStatus(`Match created and ${notificationCount} notifications queued.`);
-    } catch (error) {
-      console.error("Match creation failed", error);
-      setMatchStatus(error.message || "Unable to create match.", true);
-    }
-  });
-}
-
-function bindLeagueForm() {
-  const form = document.querySelector("#school-league-form");
-  if (!(form instanceof HTMLFormElement)) return;
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const nameInput = document.querySelector("#school-league-name");
-    const sportInput = document.querySelector("#school-league-sport");
-    const seasonInput = document.querySelector("#school-league-season");
-    const name = nameInput instanceof HTMLInputElement ? nameInput.value.trim() : "";
-    const sport = (sportInput instanceof HTMLInputElement || sportInput instanceof HTMLSelectElement) ? sportInput.value.trim() : "";
-    const season = seasonInput instanceof HTMLInputElement ? seasonInput.value.trim() : "";
-
-    if (!state.schoolId) {
-      setLeagueStatus("No school is linked to this dashboard.", true);
-      return;
-    }
-    if (!name || !sport) {
-      setLeagueStatus("League name and sport are required.", true);
-      return;
-    }
-
-    try {
-      setLeagueStatus("Creating league…");
-      await createSchoolLeague({
-        schoolId: state.schoolId,
-        name,
-        sport,
-        season,
-      });
-      await loadLeagueWorkspace();
-      await renderDashboard();
-      form.reset();
-      setLeagueStatus(`Created ${name}.`);
-    } catch (error) {
-      console.error("League creation failed", error);
-      setLeagueStatus(error.message || "Unable to create league.", true);
-    }
-  });
-}
-
-function bindPostForm() {
-  const form = document.querySelector("#school-post-form");
-  if (!(form instanceof HTMLFormElement)) return;
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const captionInput = document.querySelector("#school-post-caption");
-    const mediaTypeInput = document.querySelector("#school-post-media-type");
-    const mediaUrlInput = document.querySelector("#school-post-media-url");
-    const visibilityInput = document.querySelector("#school-post-visibility");
-    const caption = captionInput instanceof HTMLTextAreaElement ? captionInput.value.trim() : "";
-    const mediaType = mediaTypeInput instanceof HTMLSelectElement ? mediaTypeInput.value.trim() : "";
-    const mediaUrl = mediaUrlInput instanceof HTMLInputElement ? mediaUrlInput.value.trim() : "";
-    const visibility = visibilityInput instanceof HTMLSelectElement ? visibilityInput.value.trim() : "public";
-
-    if (!state.schoolUserId) {
-      setPostStatus("No school user is linked to this dashboard.", true);
-      return;
-    }
-    if (!caption || !mediaType || !mediaUrl) {
-      setPostStatus("Caption, media type, and media URL are required.", true);
-      return;
-    }
-
-    try {
-      setPostStatus("Publishing school post…");
-      await createSchoolPost({
-        authorUserId: state.schoolUserId,
-        caption,
-        mediaType,
-        mediaUrl,
-        visibility,
-      });
-      await loadSchoolPostWorkspace();
-      await renderDashboard();
-      form.reset();
-      setPostStatus("School post published.");
-    } catch (error) {
-      console.error("School post publish failed", error);
-      setPostStatus(error.message || "Unable to publish school post.", true);
-    }
-  });
-}
-
-/* ── Teams Modal ───────────────────────────────────────────────── */
-function openTeamsModal() {
-  const modal = document.querySelector("#school-teams-modal");
-  const body = document.querySelector("#school-teams-modal-body");
-  if (!modal || !body) return;
+  const chip = $("#school-teams-count");
+  if (chip) chip.textContent = `${state.teams.length} team${state.teams.length !== 1 ? "s" : ""}`;
 
   if (!state.teams.length) {
-    body.innerHTML = `<div class="sch-empty">No teams have been created yet.<br><a class="sch-btn sch-btn--primary sch-btn--sm" href="#school-section-teams" style="margin-top:12px;display:inline-flex" onclick="document.querySelector('#school-teams-modal').classList.remove('is-open')">Create a Team</a></div>`;
-  } else {
-    body.innerHTML = state.teams.map((team) => {
-      const athleteCount = team.athletes?.length || 0;
-      const coachCount = team.coaches?.length || 0;
-      return `
-        <div class="sch-modal-team">
-          <div class="sch-modal-team-icon">🏆</div>
-          <div class="sch-modal-team-info">
-            <div class="sch-modal-team-name">${escapeHtml(team.name)}</div>
-            <div class="sch-modal-team-meta">${escapeHtml(team.sport)}${team.season ? ` · ${escapeHtml(team.season)}` : ""}</div>
-          </div>
-          <div class="sch-modal-team-stats">
-            <div class="sch-modal-team-stat">
-              <div class="sch-modal-team-stat-val">${escapeHtml(String(athleteCount))}</div>
-              <div class="sch-modal-team-stat-label">Athletes</div>
-            </div>
-            <div class="sch-modal-team-stat">
-              <div class="sch-modal-team-stat-val">${escapeHtml(String(coachCount))}</div>
-              <div class="sch-modal-team-stat-label">Coaches</div>
-            </div>
+    container.innerHTML = `<div class="sch-empty">No teams yet. Add a sport first.</div>`;
+    return;
+  }
+
+  container.innerHTML = state.teams.map((t) => {
+    const sportName = t.sports?.name || "–";
+    const sportGender = t.sports?.gender || "";
+    const seasonName = t.seasons?.name || "No season";
+    const coach = t.head_coach_id
+      ? state.members.find((m) => m.user_id === t.head_coach_id)
+      : null;
+    const coachName = coach ? (coach.users?.display_name || coach.users?.email || "Coach") : "No coach";
+    return `
+      <div class="sch-list-item sch-list-item--clickable" data-view-team="${esc(t.team_id)}">
+        <div class="sch-list-item-body">
+          <strong>${esc(t.name)}</strong>
+          <span class="sch-list-meta">
+            ${esc(sportName)}${sportGender ? ` (${esc(sportGender)})` : ""}
+            &middot; ${esc(t.level)}
+            &middot; ${esc(seasonName)}
+            &middot; ${esc(coachName)}
+          </span>
+        </div>
+        <div class="sch-list-item-actions">
+          <button class="sch-btn sch-btn--sm sch-btn--ghost" data-view-team="${esc(t.team_id)}">View</button>
+          <button class="sch-btn sch-btn--danger sch-btn--xs" data-delete-team="${esc(t.team_id)}">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function populateOpponentDropdown() {
+  const sel = $("#match-opponent");
+  if (!sel) return;
+  const others = state.allSchools.filter((s) => s.school_id !== state.schoolId);
+  const current = sel.value;
+  sel.innerHTML = `<option value="" disabled selected>Select opponent</option>`
+    + others.map((s) => `<option value="${esc(s.name)}">${esc(s.name)}${s.location ? ` — ${esc(s.location)}` : ""}</option>`).join("");
+  if (current) sel.value = current;
+}
+
+function teamOptionHtml(t) {
+  const sportName = t.sports?.name || "";
+  return `<option value="${esc(t.team_id)}">${esc(t.name)}${sportName ? ` – ${esc(sportName)}` : ""}</option>`;
+}
+
+function populateTeamDropdowns() {
+  const selects = [$("#match-team"), $("#match-opponent-team"), $("#roster-team-filter")];
+  selects.forEach((sel) => {
+    if (!sel) return;
+    const current = sel.value;
+    const placeholder = sel.id === "roster-team-filter" ? "Choose a team" : "Select team";
+    sel.innerHTML = `<option value="" disabled selected>${placeholder}</option>`
+      + state.teams.map(teamOptionHtml).join("");
+    if (current) sel.value = current;
+  });
+}
+
+// ── Roster ────────────────────────────────────────────────────
+function renderRosterList() {
+  const container = $("#roster-list");
+  if (!container) return;
+
+  if (!state.selectedRosterTeamId) {
+    container.innerHTML = `<div class="sch-empty">Select a team to view its roster.</div>`;
+    return;
+  }
+
+  // Build "Add Athlete" dropdown — only show athletes not already on this team
+  const rosterAthleteIds = new Set(state.roster.map((r) => r.athlete_id));
+  const availableAthletes = state.members
+    .filter((m) => m.role === "athlete" && !rosterAthleteIds.has(m.user_id));
+
+  const addForm = `
+    <div class="sch-roster-add">
+      <select id="roster-add-athlete" class="sch-select" style="flex:1">
+        <option value="" disabled selected>Select athlete to add</option>
+        ${availableAthletes.map((m) => {
+          const name = m.users?.display_name || m.users?.email || "Athlete";
+          return `<option value="${esc(m.user_id)}">${esc(name)}</option>`;
+        }).join("")}
+      </select>
+      <input id="roster-add-jersey" type="text" class="sch-input" placeholder="Jersey #" style="width:80px">
+      <input id="roster-add-position" type="text" class="sch-input" placeholder="Position" style="width:110px">
+      <button class="sch-btn sch-btn--primary sch-btn--xs" id="roster-add-btn" type="button">Add</button>
+    </div>
+    <div id="roster-form-status" class="sch-form-status"></div>
+  `;
+
+  if (!state.roster.length && !availableAthletes.length) {
+    container.innerHTML = addForm + `<div class="sch-empty">No athletes on this team's roster. Approve join requests first to get athletes in your school.</div>`;
+    return;
+  }
+
+  if (!state.roster.length) {
+    container.innerHTML = addForm + `<div class="sch-empty">No athletes on this team yet. Use the dropdown above to add athletes.</div>`;
+    return;
+  }
+
+  container.innerHTML = addForm + state.roster.map((r) => {
+    const name = r.user_directory?.display_name || r.user_directory?.email || "Athlete";
+    const email = r.user_directory?.email || "";
+    return `
+      <div class="sch-list-item">
+        <div class="sch-list-item-body">
+          <strong>${esc(name)}</strong>
+          <span class="sch-list-meta">
+            ${r.jersey_number ? `#${esc(r.jersey_number)}` : ""}
+            ${r.position ? ` &middot; ${esc(r.position)}` : ""}
+            ${r.status ? ` &middot; ${esc(r.status)}` : ""}
+            ${email ? ` &middot; ${esc(email)}` : ""}
+          </span>
+        </div>
+        <div class="sch-list-item-actions">
+          <button class="sch-btn sch-btn--danger sch-btn--xs" data-remove-roster="${esc(r.roster_id)}">Remove</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ── Schedule (Matches) ────────────────────────────────────────
+function renderMatchesList() {
+  const container = $("#matches-list");
+  if (!container) return;
+
+  const chip = $("#school-matches-count");
+  if (chip) chip.textContent = `${state.matches.length} match${state.matches.length !== 1 ? "es" : ""}`;
+
+  if (!state.matches.length) {
+    container.innerHTML = `<div class="sch-empty">No matches scheduled.</div>`;
+    return;
+  }
+
+  container.innerHTML = state.matches.map((m) => {
+    const team = state.teams.find((t) => t.team_id === m.team_id);
+    const teamName = team?.name || "Team";
+    const sportName = team?.sports?.name || "";
+    const isInternal = m.match_type === "internal";
+
+    // For internal matches, show opponent team name
+    let opponentLabel = m.opponent_name;
+    if (isInternal && m.opponent_team_id) {
+      const oppTeam = state.teams.find((t) => t.team_id === m.opponent_team_id);
+      if (oppTeam) opponentLabel = oppTeam.name;
+    }
+
+    const scoreText = (m.home_score != null && m.away_score != null)
+      ? `${m.home_score} – ${m.away_score}`
+      : "";
+    const statusBadge = m.status === "completed"
+      ? `<span class="sch-badge-completed">${esc(m.result || "completed")}</span>`
+      : m.status === "cancelled"
+        ? `<span class="sch-badge-cancelled">Cancelled</span>`
+        : `<span class="sch-badge-scheduled">${esc(m.status)}</span>`;
+
+    const typeBadge = isInternal
+      ? `<span class="sch-badge-internal">Internal</span>`
+      : `<span class="sch-badge-external">External</span>`;
+
+    return `
+      <div class="sch-list-item">
+        <div class="sch-list-item-body">
+          <strong>${esc(teamName)} vs ${esc(opponentLabel)}</strong>
+          <span class="sch-list-meta">
+            ${formatDate(m.match_date)}${m.match_time ? ` at ${formatTime(m.match_time)}` : ""}
+            ${!isInternal ? ` &middot; ${m.is_home_game ? "Home" : "Away"}` : ""}
+            ${m.location ? ` &middot; ${esc(m.location)}` : ""}
+            ${sportName ? ` &middot; ${esc(sportName)}` : ""}
+            ${scoreText ? ` &middot; ${esc(scoreText)}` : ""}
+          </span>
+        </div>
+        <div class="sch-list-item-actions">
+          ${typeBadge}
+          ${statusBadge}
+          <button class="sch-btn sch-btn--danger sch-btn--xs" data-delete-match="${esc(m.match_id)}">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ── Coaches ───────────────────────────────────────────────────
+function renderCoachesList() {
+  const container = $("#coaches-list");
+  if (!container) return;
+
+  const coaches = state.members.filter((m) => m.role === "coach");
+
+  if (!coaches.length) {
+    container.innerHTML = `<div class="sch-empty">No coaches yet. Coaches appear here after their join request is approved.</div>`;
+    return;
+  }
+
+  container.innerHTML = coaches.map((c) => {
+    const name = c.users?.display_name || c.users?.email || "Coach";
+    const email = c.users?.email || "";
+    return `
+      <div class="sch-list-item">
+        <div class="sch-list-item-body">
+          <strong>${esc(name)}</strong>
+          <span class="sch-list-meta">${esc(c.role)} &middot; ${esc(c.status)}${email ? ` &middot; ${esc(email)}` : ""} &middot; Joined ${formatDate(c.joined_at)}</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ── Requests ──────────────────────────────────────────────────
+function renderRequestsList() {
+  const container = $("#requests-list");
+  if (!container) return;
+
+  const chip = $("#school-requests-count");
+  if (chip) chip.textContent = state.pendingRequests.length
+    ? `${state.pendingRequests.length} pending`
+    : "";
+
+  if (!state.pendingRequests.length) {
+    container.innerHTML = `<div class="sch-empty">No pending requests.</div>`;
+    return;
+  }
+
+  container.innerHTML = state.pendingRequests.map((r) => `
+    <div class="sch-list-item">
+      <div class="sch-list-item-body">
+        <strong>${esc(r.display_name || "Pending member")}</strong>
+        <span class="sch-list-meta">${esc(r.email || "")} &middot; ${esc(r.requester_role || "athlete")} &middot; ${formatDate(r.requested_at)}</span>
+      </div>
+      <div class="sch-list-item-actions">
+        <button class="sch-btn sch-btn--primary sch-btn--xs" data-approve-request="${esc(r.request_id)}">Approve</button>
+        <button class="sch-btn sch-btn--danger sch-btn--xs" data-reject-request="${esc(r.request_id)}">Reject</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+// ── Team Detail View ──────────────────────────────────────────
+async function openTeamDetail(teamId) {
+  state.viewingTeamId = teamId;
+  state.teamRoster = [];
+
+  // Load roster for this team
+  try {
+    state.teamRoster = await loadRoster(teamId);
+  } catch { /* empty */ }
+
+  renderTeamDetail();
+  switchSection("team-detail");
+}
+
+function renderTeamDetail() {
+  const team = state.teams.find((t) => t.team_id === state.viewingTeamId);
+  if (!team) return;
+
+  const sportName = team.sports?.name || "–";
+  const sportGender = team.sports?.gender || "";
+  const seasonName = team.seasons?.name || "–";
+
+  // Header
+  const nameEl = $("#team-detail-name");
+  if (nameEl) nameEl.textContent = team.name;
+  const metaEl = $("#team-detail-meta");
+  if (metaEl) metaEl.textContent = `${sportName}${sportGender ? ` (${sportGender})` : ""} · ${team.level} · ${seasonName}`;
+
+  // Performance — compute from matches
+  const teamMatches = state.matches.filter(
+    (m) => m.team_id === team.team_id || m.opponent_team_id === team.team_id
+  );
+  const completed = teamMatches.filter((m) => m.status === "completed");
+  let wins = 0, losses = 0, ties = 0;
+  for (const m of completed) {
+    if (m.result === "win" && m.team_id === team.team_id) wins++;
+    else if (m.result === "loss" && m.team_id === team.team_id) losses++;
+    else if (m.result === "tie") ties++;
+    else if (m.result === "win" && m.opponent_team_id === team.team_id) losses++;
+    else if (m.result === "loss" && m.opponent_team_id === team.team_id) wins++;
+  }
+  // Also use stored wins/losses/ties from the team record
+  wins = wins || team.wins || 0;
+  losses = losses || team.losses || 0;
+  ties = ties || team.ties || 0;
+
+  const wEl = $("#td-wins"); if (wEl) wEl.textContent = wins;
+  const lEl = $("#td-losses"); if (lEl) lEl.textContent = losses;
+  const tEl = $("#td-ties"); if (tEl) tEl.textContent = ties;
+  const totEl = $("#td-total"); if (totEl) totEl.textContent = wins + losses + ties;
+
+  // Coach info
+  const coachContainer = $("#td-coach-info");
+  if (coachContainer) {
+    const coach = team.head_coach_id
+      ? state.members.find((m) => m.user_id === team.head_coach_id)
+      : null;
+    if (coach) {
+      const cName = coach.users?.display_name || coach.users?.email || "Coach";
+      const cEmail = coach.users?.email || "";
+      coachContainer.innerHTML = `
+        <div class="sch-modal-member">
+          <div class="sch-modal-member-avatar">&#129333;</div>
+          <div class="sch-modal-member-info">
+            <div class="sch-modal-member-name">${esc(cName)}</div>
+            <div class="sch-modal-member-meta">Head Coach${cEmail ? ` · ${esc(cEmail)}` : ""}</div>
           </div>
         </div>
       `;
-    }).join("");
+    } else {
+      coachContainer.innerHTML = `<div class="sch-empty">No coach assigned.</div>`;
+    }
   }
 
-  modal.classList.add("is-open");
+  // Roster
+  renderTeamDetailRoster();
+
+  // Upcoming matches
+  const now = new Date();
+  const upcoming = teamMatches
+    .filter((m) => m.status === "scheduled" && new Date(m.match_date) >= now)
+    .sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
+  const past = teamMatches
+    .filter((m) => m.status === "completed" || new Date(m.match_date) < now)
+    .sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
+
+  const upChip = $("#td-upcoming-count");
+  if (upChip) upChip.textContent = upcoming.length ? `${upcoming.length}` : "";
+  const pastChip = $("#td-past-count");
+  if (pastChip) pastChip.textContent = past.length ? `${past.length}` : "";
+
+  const upList = $("#td-upcoming-list");
+  if (upList) {
+    upList.innerHTML = upcoming.length
+      ? upcoming.map((m) => matchRowHtml(m, team)).join("")
+      : `<div class="sch-empty">No upcoming matches.</div>`;
+  }
+
+  const pastList = $("#td-past-list");
+  if (pastList) {
+    pastList.innerHTML = past.length
+      ? past.map((m) => matchRowHtml(m, team)).join("")
+      : `<div class="sch-empty">No past matches yet.</div>`;
+  }
 }
 
-function closeTeamsModal() {
-  const modal = document.querySelector("#school-teams-modal");
+function matchRowHtml(m, team) {
+  const isInternal = m.match_type === "internal";
+  let opponentLabel = m.opponent_name;
+  if (isInternal && m.opponent_team_id) {
+    const opp = state.teams.find((t) => t.team_id === m.opponent_team_id);
+    if (opp) opponentLabel = opp.name;
+  }
+  const scoreText = (m.home_score != null && m.away_score != null)
+    ? `${m.home_score} – ${m.away_score}` : "";
+  const resultBadge = m.result
+    ? `<span class="sch-badge-${m.result === "win" ? "completed" : m.result === "loss" ? "cancelled" : "scheduled"}">${esc(m.result)}</span>`
+    : "";
+  return `
+    <div class="sch-match-row">
+      <div class="sch-match-time">${formatDate(m.match_date)}<br>${m.match_time ? formatTime(m.match_time) : ""}</div>
+      <div class="sch-match-teams">
+        vs ${esc(opponentLabel)}
+        ${m.location ? `<span style="margin-left:8px">${esc(m.location)}</span>` : ""}
+      </div>
+      ${scoreText ? `<span class="sch-count-chip">${esc(scoreText)}</span>` : ""}
+      ${resultBadge}
+    </div>
+  `;
+}
+
+function renderTeamDetailRoster() {
+  const addContainer = $("#td-roster-add");
+  const listContainer = $("#td-roster-list");
+  const countChip = $("#td-roster-count");
+  if (!addContainer || !listContainer) return;
+
+  if (countChip) countChip.textContent = state.teamRoster.length
+    ? `${state.teamRoster.length}` : "0";
+
+  // Add athlete dropdown — athletes in the school but not already on this team
+  const rosterIds = new Set(state.teamRoster.map((r) => r.athlete_id));
+  const available = state.members.filter((m) => m.role === "athlete" && !rosterIds.has(m.user_id));
+
+  addContainer.innerHTML = `
+    <select id="td-roster-athlete" class="sch-select" style="flex:1">
+      <option value="" disabled selected>Add athlete</option>
+      ${available.map((a) => {
+        const n = a.users?.display_name || a.users?.email || "Athlete";
+        return `<option value="${esc(a.user_id)}">${esc(n)}</option>`;
+      }).join("")}
+    </select>
+    <input id="td-roster-jersey" type="text" class="sch-input" placeholder="#" style="width:60px">
+    <input id="td-roster-position" type="text" class="sch-input" placeholder="Position" style="width:100px">
+    <button class="sch-btn sch-btn--primary sch-btn--xs" id="td-roster-add-btn" type="button">Add</button>
+  `;
+
+  if (!state.teamRoster.length) {
+    listContainer.innerHTML = `<div class="sch-empty">No athletes on this team yet.</div>`;
+    return;
+  }
+
+  listContainer.innerHTML = state.teamRoster.map((r) => {
+    const name = r.user_directory?.display_name || r.user_directory?.email || "Athlete";
+    const email = r.user_directory?.email || "";
+    return `
+      <div class="sch-list-item" style="margin-top:6px">
+        <div class="sch-list-item-body">
+          <strong>${esc(name)}</strong>
+          <span class="sch-list-meta">
+            ${r.jersey_number ? `#${esc(r.jersey_number)}` : ""}
+            ${r.position ? ` · ${esc(r.position)}` : ""}
+            ${r.status ? ` · ${esc(r.status)}` : ""}
+            ${email ? ` · ${esc(email)}` : ""}
+          </span>
+        </div>
+        <div class="sch-list-item-actions">
+          <button class="sch-btn sch-btn--danger sch-btn--xs" data-td-remove-roster="${esc(r.roster_id)}">Remove</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ── Modals ────────────────────────────────────────────────────
+function openModal(id) {
+  const modal = $(`#${id}`);
+  if (modal) modal.classList.add("is-open");
+}
+
+function closeModal(id) {
+  const modal = $(`#${id}`);
   if (modal) modal.classList.remove("is-open");
 }
 
-function bindTeamsModal() {
-  // Close button
-  const closeBtn = document.querySelector("#school-teams-modal-close");
-  if (closeBtn) closeBtn.addEventListener("click", closeTeamsModal);
+function renderAthletesModal() {
+  const body = $("#athletes-modal-body");
+  if (!body) return;
 
-  // Click overlay to close
-  const overlay = document.querySelector("#school-teams-modal");
-  if (overlay) overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) closeTeamsModal();
-  });
+  const athletes = state.members.filter((m) => m.role === "athlete");
+  if (!athletes.length) {
+    body.innerHTML = `<div class="sch-empty">No athletes yet. Athletes appear here after their join request is approved.</div>`;
+    return;
+  }
 
-  // Escape key
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeTeamsModal();
-  });
-
-  // Open from stat card
-  const statCard = document.querySelector("#school-stat-teams-card");
-  if (statCard) statCard.addEventListener("click", openTeamsModal);
-
-  // Open from "View All" button
-  const viewAllBtn = document.querySelector("#school-view-all-teams-btn");
-  if (viewAllBtn) viewAllBtn.addEventListener("click", openTeamsModal);
+  body.innerHTML = athletes.map((m) => {
+    const name = m.users?.display_name || m.users?.email || "Athlete";
+    const email = m.users?.email || "";
+    return `
+      <div class="sch-modal-member">
+        <div class="sch-modal-member-avatar">&#9917;</div>
+        <div class="sch-modal-member-info">
+          <div class="sch-modal-member-name">${esc(name)}</div>
+          <div class="sch-modal-member-meta">${esc(email)}${m.joined_at ? ` &middot; Joined ${formatDate(m.joined_at)}` : ""}</div>
+        </div>
+        <div class="sch-modal-member-status">
+          <span class="sch-badge-active">${esc(m.status)}</span>
+        </div>
+      </div>
+    `;
+  }).join("");
 }
+
+function renderCoachesModal() {
+  const body = $("#coaches-modal-body");
+  if (!body) return;
+
+  const coaches = state.members.filter((m) => m.role === "coach");
+  if (!coaches.length) {
+    body.innerHTML = `<div class="sch-empty">No coaches yet. Coaches appear here after their join request is approved.</div>`;
+    return;
+  }
+
+  body.innerHTML = coaches.map((m) => {
+    const name = m.users?.display_name || m.users?.email || "Coach";
+    const email = m.users?.email || "";
+    return `
+      <div class="sch-modal-member">
+        <div class="sch-modal-member-avatar">&#129333;</div>
+        <div class="sch-modal-member-info">
+          <div class="sch-modal-member-name">${esc(name)}</div>
+          <div class="sch-modal-member-meta">${esc(email)}${m.joined_at ? ` &middot; Joined ${formatDate(m.joined_at)}` : ""}</div>
+        </div>
+        <div class="sch-modal-member-status">
+          <span class="sch-badge-active">${esc(m.status)}</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function bindModals() {
+  // Open athletes modal from stat card
+  const athleteCard = $("#stat-card-athletes");
+  if (athleteCard) {
+    athleteCard.addEventListener("click", () => {
+      renderAthletesModal();
+      openModal("athletes-modal");
+    });
+  }
+
+  // Open coaches modal from stat card
+  const coachCard = $("#stat-card-coaches");
+  if (coachCard) {
+    coachCard.addEventListener("click", () => {
+      renderCoachesModal();
+      openModal("coaches-modal");
+    });
+  }
+
+  // Close buttons
+  document.addEventListener("click", (e) => {
+    const closeBtn = e.target.closest("[data-close-modal]");
+    if (closeBtn) {
+      closeModal(closeBtn.dataset.closeModal);
+      return;
+    }
+    // Click overlay to close
+    const overlay = e.target.closest(".sch-modal-overlay");
+    if (overlay && e.target === overlay) {
+      overlay.classList.remove("is-open");
+    }
+  });
+
+  // Escape key closes any open modal
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      $$(".sch-modal-overlay.is-open").forEach((m) => m.classList.remove("is-open"));
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// MASTER RENDER
+// ══════════════════════════════════════════════════════════════
+function renderAll() {
+  renderGreeting();
+  renderOverviewMetrics();
+  renderUpcomingMatches();
+  renderSportsList();
+  renderSeasonsList();
+  renderTeamsList();
+  renderMatchesList();
+  renderCoachesList();
+  renderRequestsList();
+  renderRosterList();
+
+  // Populate dropdowns
+  populateSportDropdowns();
+  populateCoachDropdown();
+  populateAthleteMultiSelect();
+  populateTeamDropdowns();
+  populateOpponentDropdown();
+}
+
+// ══════════════════════════════════════════════════════════════
+// DATA LOADING
+// ══════════════════════════════════════════════════════════════
+async function loadAllData() {
+  if (!state.schoolId) return;
+
+  const [sports, seasons, teams, matches, members, requests, allSchools] = await Promise.all([
+    loadSports(state.schoolId),
+    loadSeasons(state.schoolId),
+    loadTeams(state.schoolId),
+    loadAllSchoolMatches(state.schoolId),
+    loadSchoolMembers(state.schoolId).catch(() => []),
+    loadPendingSchoolRequests({ schoolId: state.schoolId }).catch(() => []),
+    loadSchoolOptions().catch(() => []),
+  ]);
+
+  state.sports = sports;
+  state.seasons = seasons;
+  state.teams = teams;
+  state.matches = matches;
+  state.members = members;
+  state.pendingRequests = requests;
+  state.allSchools = allSchools;
+}
+
+async function refreshRoster(teamId) {
+  if (!teamId) {
+    state.roster = [];
+    return;
+  }
+  try {
+    state.roster = await loadRoster(teamId);
+  } catch {
+    state.roster = [];
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// EVENT HANDLERS
+// ══════════════════════════════════════════════════════════════
+
+function guardedSubmit(formId, statusId, handler) {
+  return async (e) => {
+    e.preventDefault();
+    if (state.submitting[formId]) return;  // block double-submit
+    state.submitting[formId] = true;
+    try {
+      await handler();
+    } finally {
+      state.submitting[formId] = false;
+    }
+  };
+}
+
+function bindForms() {
+  // ── Sport form ──
+  const sportForm = $("#sport-form");
+  if (sportForm) {
+    sportForm.addEventListener("submit", guardedSubmit("sport", "sport-form-status", async () => {
+      const name = $("#sport-name")?.value?.trim();
+      const seasonType = $("#sport-season-type")?.value;
+      const gender = $("#sport-gender")?.value;
+      const maxRoster = parseInt($("#sport-max-roster")?.value, 10) || 30;
+
+      if (!name) {
+        setFormStatus("sport-form-status", "Sport name is required.", true);
+        return;
+      }
+
+      try {
+        setFormStatus("sport-form-status", "Adding sport...");
+        await createSport({ schoolId: state.schoolId, name, seasonType, gender, maxRosterSize: maxRoster });
+        state.sports = await loadSports(state.schoolId);
+        renderAll();
+        sportForm.reset();
+        setFormStatus("sport-form-status", `Added ${name}.`);
+      } catch (err) {
+        console.error("Create sport failed", err);
+        setFormStatus("sport-form-status", err.message || "Failed to add sport.", true);
+      }
+    }));
+  }
+
+  // ── Season form ──
+  const seasonForm = $("#season-form");
+  if (seasonForm) {
+    seasonForm.addEventListener("submit", guardedSubmit("season", "season-form-status", async () => {
+      const name = $("#season-name")?.value?.trim();
+      const startDate = $("#season-start")?.value || null;
+      const endDate = $("#season-end")?.value || null;
+
+      if (!name) {
+        setFormStatus("season-form-status", "Season name is required.", true);
+        return;
+      }
+
+      try {
+        setFormStatus("season-form-status", "Creating season...");
+        await createSeason({ schoolId: state.schoolId, name, startDate, endDate });
+        state.seasons = await loadSeasons(state.schoolId);
+        renderAll();
+        seasonForm.reset();
+        setFormStatus("season-form-status", `Created ${name}.`);
+      } catch (err) {
+        console.error("Create season failed", err);
+        setFormStatus("season-form-status", err.message || "Failed to create season.", true);
+      }
+    }));
+  }
+
+  // ── Team form ──
+  const teamForm = $("#team-form");
+  if (teamForm) {
+    teamForm.addEventListener("submit", guardedSubmit("team", "team-form-status", async () => {
+      const name = $("#team-name")?.value?.trim();
+      const sportId = $("#team-sport")?.value;
+      const seasonText = $("#team-season")?.value?.trim() || null;
+      const level = $("#team-level")?.value || "varsity";
+      const headCoachId = $("#team-coach")?.value || null;
+
+      // Gather selected athletes from multi-select
+      const athleteSelect = $("#team-athletes");
+      const selectedAthleteIds = athleteSelect
+        ? Array.from(athleteSelect.selectedOptions).map((o) => o.value)
+        : [];
+
+      if (!name || !sportId) {
+        setFormStatus("team-form-status", "Team name and sport are required.", true);
+        return;
+      }
+
+      try {
+        setFormStatus("team-form-status", "Creating team...");
+
+        // If user typed a season name, find or create that season
+        let seasonId = null;
+        if (seasonText) {
+          const existing = state.seasons.find(
+            (s) => s.name.toLowerCase() === seasonText.toLowerCase()
+          );
+          if (existing) {
+            seasonId = existing.season_id;
+          } else {
+            const newSeason = await createSeason({ schoolId: state.schoolId, name: seasonText });
+            state.seasons = await loadSeasons(state.schoolId);
+            seasonId = newSeason.season_id;
+          }
+        }
+
+        const team = await createTeam({
+          schoolId: state.schoolId, sportId, seasonId, name, level, headCoachId,
+        });
+
+        // Add selected athletes to roster
+        if (selectedAthleteIds.length && team?.team_id) {
+          await Promise.all(
+            selectedAthleteIds.map((athleteId) =>
+              addToRoster({ teamId: team.team_id, athleteId }).catch((err) => {
+                console.warn("Roster add skipped:", err.message);
+              })
+            )
+          );
+        }
+
+        state.teams = await loadTeams(state.schoolId);
+        renderAll();
+        teamForm.reset();
+        const extras = [];
+        if (headCoachId) extras.push("coach assigned");
+        if (selectedAthleteIds.length) extras.push(`${selectedAthleteIds.length} athlete(s) added`);
+        setFormStatus("team-form-status", `Created ${name}${extras.length ? ` — ${extras.join(", ")}` : ""}.`);
+      } catch (err) {
+        console.error("Create team failed", err);
+        setFormStatus("team-form-status", err.message || "Failed to create team.", true);
+      }
+    }));
+  }
+
+  // ── Match type toggle ──
+  $$(".sch-toggle-btn[data-match-type]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const type = btn.dataset.matchType;
+      const hidden = $("#match-type");
+      if (hidden) hidden.value = type;
+
+      $$(".sch-toggle-btn[data-match-type]").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      const isInternal = type === "internal";
+      // Show/hide fields based on type
+      const opponentTeamField = $("#match-opponent-team-field");
+      const opponentSchoolField = $("#match-opponent-school-field");
+      const opponentCustomField = $("#match-opponent-custom-field");
+      const homeField = $("#match-home-field");
+
+      if (opponentTeamField) opponentTeamField.style.display = isInternal ? "" : "none";
+      if (opponentSchoolField) opponentSchoolField.style.display = isInternal ? "none" : "";
+      if (opponentCustomField) opponentCustomField.style.display = isInternal ? "none" : "";
+      if (homeField) homeField.style.display = isInternal ? "none" : "";
+    });
+  });
+
+  // ── Match form ──
+  const matchForm = $("#match-form");
+  if (matchForm) {
+    matchForm.addEventListener("submit", guardedSubmit("match", "match-form-status", async () => {
+      const matchType = $("#match-type")?.value || "internal";
+      const teamId = $("#match-team")?.value;
+      const matchDate = $("#match-date")?.value;
+      const matchTime = $("#match-time")?.value || null;
+      const location = $("#match-location")?.value?.trim() || null;
+
+      if (!teamId || !matchDate) {
+        setFormStatus("match-form-status", "Team and date are required.", true);
+        return;
+      }
+
+      let opponentName = "";
+      let opponentTeamId = null;
+      let opponentSchoolId = null;
+      let isHome = true;
+
+      if (matchType === "internal") {
+        // Internal match — pick second team from your school
+        opponentTeamId = $("#match-opponent-team")?.value || null;
+        if (!opponentTeamId) {
+          setFormStatus("match-form-status", "Select the opponent team.", true);
+          return;
+        }
+        if (opponentTeamId === teamId) {
+          setFormStatus("match-form-status", "Pick two different teams.", true);
+          return;
+        }
+        // Build opponent name from team
+        const oppTeam = state.teams.find((t) => t.team_id === opponentTeamId);
+        opponentName = oppTeam?.name || "School Team";
+      } else {
+        // External match — pick school or type name
+        const opponentDropdown = $("#match-opponent")?.value?.trim() || "";
+        const opponentCustom = $("#match-opponent-custom")?.value?.trim() || "";
+        opponentName = opponentCustom || opponentDropdown;
+        if (!opponentName) {
+          setFormStatus("match-form-status", "Select or type the opponent school.", true);
+          return;
+        }
+        // Find opponent_school_id if they picked from dropdown
+        if (opponentDropdown && !opponentCustom) {
+          const school = state.allSchools.find((s) => s.name === opponentDropdown);
+          opponentSchoolId = school?.school_id || null;
+        }
+        isHome = $("#match-home")?.value !== "false";
+      }
+
+      try {
+        setFormStatus("match-form-status", "Scheduling match...");
+        await createMatch({
+          teamId,
+          opponentName,
+          matchDate,
+          matchTime,
+          location,
+          isHomeGame: isHome,
+          matchType,
+          opponentTeamId,
+          opponentSchoolId,
+        });
+        state.matches = await loadAllSchoolMatches(state.schoolId);
+        renderAll();
+        matchForm.reset();
+        // Reset toggle to internal
+        $$(".sch-toggle-btn[data-match-type]").forEach((b) => b.classList.toggle("active", b.dataset.matchType === "internal"));
+        if ($("#match-type")) $("#match-type").value = "internal";
+        $("#match-opponent-team-field") && ($("#match-opponent-team-field").style.display = "");
+        $("#match-opponent-school-field") && ($("#match-opponent-school-field").style.display = "none");
+        $("#match-opponent-custom-field") && ($("#match-opponent-custom-field").style.display = "none");
+        $("#match-home-field") && ($("#match-home-field").style.display = "none");
+        setFormStatus("match-form-status", `Scheduled: ${matchType === "internal" ? "internal" : "vs " + opponentName}.`);
+      } catch (err) {
+        console.error("Create match failed", err);
+        setFormStatus("match-form-status", err.message || "Failed to schedule match.", true);
+      }
+    }));
+  }
+}
+
+function bindDelegatedClicks() {
+  // ── Add to Roster button ──
+  document.addEventListener("click", async (e) => {
+    if (e.target.id !== "roster-add-btn") return;
+    if (state.submitting.rosterAdd) return;
+    state.submitting.rosterAdd = true;
+
+    const athleteId = $("#roster-add-athlete")?.value;
+    const jersey = $("#roster-add-jersey")?.value?.trim() || null;
+    const position = $("#roster-add-position")?.value?.trim() || null;
+
+    if (!athleteId || !state.selectedRosterTeamId) {
+      setFormStatus("roster-form-status", "Select an athlete first.", true);
+      state.submitting.rosterAdd = false;
+      return;
+    }
+
+    try {
+      setFormStatus("roster-form-status", "Adding to roster...");
+      await addToRoster({ teamId: state.selectedRosterTeamId, athleteId, jerseyNumber: jersey, position });
+      await refreshRoster(state.selectedRosterTeamId);
+      renderRosterList();
+      setFormStatus("roster-form-status", "Athlete added to roster.");
+    } catch (err) {
+      console.error("Add to roster failed", err);
+      setFormStatus("roster-form-status", err.message || "Failed to add athlete.", true);
+    } finally {
+      state.submitting.rosterAdd = false;
+    }
+  });
+
+  // ── View team detail ──
+  document.addEventListener("click", async (e) => {
+    // Don't open team detail if clicking a delete button
+    if (e.target.closest("button[data-delete-team]")) return;
+
+    const viewTeam = e.target.closest("[data-view-team]");
+    if (viewTeam) {
+      e.preventDefault();
+      await openTeamDetail(viewTeam.dataset.viewTeam);
+    }
+  });
+
+  // ── Back to teams ──
+  const backBtn = $("#team-detail-back");
+  if (backBtn) {
+    backBtn.addEventListener("click", () => {
+      state.viewingTeamId = "";
+      state.teamRoster = [];
+      switchSection("teams");
+    });
+  }
+
+  // ── Team detail: Add to roster ──
+  document.addEventListener("click", async (e) => {
+    if (e.target.id !== "td-roster-add-btn") return;
+    if (state.submitting.tdRosterAdd) return;
+    state.submitting.tdRosterAdd = true;
+
+    const athleteId = $("#td-roster-athlete")?.value;
+    const jersey = $("#td-roster-jersey")?.value?.trim() || null;
+    const position = $("#td-roster-position")?.value?.trim() || null;
+
+    if (!athleteId || !state.viewingTeamId) {
+      setFormStatus("td-roster-status", "Select an athlete first.", true);
+      state.submitting.tdRosterAdd = false;
+      return;
+    }
+
+    try {
+      setFormStatus("td-roster-status", "Adding...");
+      await addToRoster({ teamId: state.viewingTeamId, athleteId, jerseyNumber: jersey, position });
+      state.teamRoster = await loadRoster(state.viewingTeamId);
+      renderTeamDetailRoster();
+      setFormStatus("td-roster-status", "Added.");
+    } catch (err) {
+      console.error("TD add roster failed", err);
+      setFormStatus("td-roster-status", err.message || "Failed.", true);
+    } finally {
+      state.submitting.tdRosterAdd = false;
+    }
+  });
+
+  // ── Team detail: Remove from roster ──
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-td-remove-roster]");
+    if (!btn) return;
+    btn.disabled = true;
+    try {
+      await removeFromRoster(btn.dataset.tdRemoveRoster);
+      state.teamRoster = await loadRoster(state.viewingTeamId);
+      renderTeamDetailRoster();
+    } catch (err) {
+      console.error("TD remove roster failed", err);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.addEventListener("click", async (e) => {
+    const target = e.target.closest("button[data-delete-sport], button[data-delete-season], button[data-activate-season], button[data-delete-team], button[data-delete-match], button[data-remove-roster], button[data-approve-request], button[data-reject-request]");
+    if (!target) return;
+
+    target.disabled = true;
+
+    try {
+      // Delete sport
+      if (target.dataset.deleteSport) {
+        await deleteSport(target.dataset.deleteSport);
+        state.sports = await loadSports(state.schoolId);
+        renderAll();
+        return;
+      }
+
+      // Delete season
+      if (target.dataset.deleteSeason) {
+        await deleteSeason(target.dataset.deleteSeason);
+        state.seasons = await loadSeasons(state.schoolId);
+        renderAll();
+        return;
+      }
+
+      // Activate season
+      if (target.dataset.activateSeason) {
+        await setActiveSeason(state.schoolId, target.dataset.activateSeason);
+        state.seasons = await loadSeasons(state.schoolId);
+        renderAll();
+        return;
+      }
+
+      // Delete team
+      if (target.dataset.deleteTeam) {
+        await deleteTeam(target.dataset.deleteTeam);
+        state.teams = await loadTeams(state.schoolId);
+        renderAll();
+        return;
+      }
+
+      // Delete match
+      if (target.dataset.deleteMatch) {
+        await deleteMatch(target.dataset.deleteMatch);
+        state.matches = await loadAllSchoolMatches(state.schoolId);
+        renderAll();
+        return;
+      }
+
+      // Remove from roster
+      if (target.dataset.removeRoster) {
+        await removeFromRoster(target.dataset.removeRoster);
+        await refreshRoster(state.selectedRosterTeamId);
+        renderRosterList();
+        return;
+      }
+
+      // Approve request
+      if (target.dataset.approveRequest) {
+        await reviewSchoolJoinRequest({
+          requestId: target.dataset.approveRequest,
+          decision: "approve",
+          reviewedByUserId: state.appUserId,
+        });
+        state.pendingRequests = await loadPendingSchoolRequests({ schoolId: state.schoolId }).catch(() => []);
+        renderRequestsList();
+        return;
+      }
+
+      // Reject request
+      if (target.dataset.rejectRequest) {
+        await reviewSchoolJoinRequest({
+          requestId: target.dataset.rejectRequest,
+          decision: "reject",
+          reviewedByUserId: state.appUserId,
+        });
+        state.pendingRequests = await loadPendingSchoolRequests({ schoolId: state.schoolId }).catch(() => []);
+        renderRequestsList();
+        return;
+      }
+    } catch (err) {
+      console.error("Action failed", err);
+      alert(err.message || "Action failed. Please try again.");
+    } finally {
+      target.disabled = false;
+    }
+  });
+}
+
+function bindRosterFilter() {
+  const select = $("#roster-team-filter");
+  if (!select) return;
+  select.addEventListener("change", async () => {
+    state.selectedRosterTeamId = select.value;
+    await refreshRoster(state.selectedRosterTeamId);
+    renderRosterList();
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
 
 async function initSchoolDashboard() {
   const auth = getGlobalAppState().auth;
   if (!auth?.session && !auth?.authUser) return;
-
   if (!isSchoolAdmin(auth)) {
     window.location.replace("index.html");
     return;
   }
-
-  if (state.initialized) return;
+  if (state.initialized || state.initializing) return;  // prevent concurrent inits
+  state.initializing = true;
 
   try {
-    setStatus("Loading school dashboard…");
+    const statusEl = $("#school-dashboard-status");
+    if (statusEl) statusEl.textContent = "Loading school dashboard...";
+
     const context = await resolveSchoolContext();
     state.schoolId = context.schoolId;
     state.schoolName = context.schoolName;
-    state.schoolUserId = context.appUserId;
+    state.appUserId = context.appUserId;
 
+    const subtitleEl = $("#school-dashboard-subtitle");
     if (subtitleEl) {
       subtitleEl.textContent = `Manage athletes, staff, teams, and schedule for ${state.schoolName}.`;
     }
 
-    await refreshSchoolData();
-    bindSectionNav();
-    bindRequestEvents({ ...auth, appUserId: context.appUserId });
-    bindTeamForm();
-    bindMatchForm();
-    bindLeagueForm();
-    bindPostForm();
-    bindTeamsModal();
+    await loadAllData();
+    renderAll();
+
+    initSectionNav();
+    bindForms();
+    bindDelegatedClicks();
+    bindRosterFilter();
+    bindModals();
+
     state.initialized = true;
-    setStatus(`School dashboard ready for ${state.schoolName}.`);
-  } catch (error) {
-    console.error("School dashboard load failed", error);
-    setStatus(error.message || "Unable to load the school dashboard.", true);
+    if (statusEl) statusEl.textContent = "";
+  } catch (err) {
+    console.error("School dashboard init failed", err);
+    state.initializing = false;  // allow retry on failure
+    const statusEl = $("#school-dashboard-status");
+    if (statusEl) {
+      statusEl.textContent = err.message || "Unable to load the school dashboard.";
+      statusEl.classList.add("is-error");
+    }
   }
 }
 
+// ── Bootstrap ─────────────────────────────────────────────────
 window.addEventListener("session-ready", () => {
   void initSchoolDashboard();
 });
@@ -1288,4 +1425,5 @@ window.addEventListener("ua-app-state-change", () => {
   }
 });
 
+// Immediate try in case state is already set
 void initSchoolDashboard();
