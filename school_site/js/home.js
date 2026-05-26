@@ -22,7 +22,7 @@ const fallbackFollowingSeed = [
     authorName: "Ava Kim",
     authorRole: "athlete",
     sport: "soccer",
-    caption: "Back on the field this week. Appreciate everyone who checked in during rehab. 💚",
+    caption: "Back on the field this week. Appreciate everyone who checked in during rehab.",
     created_at: new Date(Date.now() - 1000 * 60 * 300).toISOString(),
     source: "fallback",
   },
@@ -58,6 +58,7 @@ let activeFilter    = "all";
 let appUserId       = null;
 let followedIds     = [];
 let followingRows   = [...fallbackFollowingSeed];
+let myReactions     = new Set();   // post_ids the current user has liked
 let uiBound         = false;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -108,7 +109,7 @@ function roleLabel(role) {
 }
 
 function sportEmoji(sport) {
-  const map = { basketball: "🏀", soccer: "⚽", football: "🏈", track: "🏃", baseball: "⚾", volleyball: "🏐", tennis: "🎾" };
+  const map = { basketball: "BB", soccer: "SC", football: "FB", track: "TK", baseball: "BA", volleyball: "VB", tennis: "TN" };
   return map[sport] || "";
 }
 
@@ -149,14 +150,21 @@ function renderRows(rows) {
     const emoji   = sportEmoji(sport);
     const isSeed  = row.source === "fallback";
     const seed    = row.authorName || row.authorRole || "user";
+    const liked   = row.post_id && myReactions.has(row.post_id);
+    const likeCount = row.interactions_count || 0;
 
     const article = document.createElement("article");
     article.className = "tweet-card";
+    const profileHref = row.authorUserId ? `user-profile.html?user_id=${encodeURIComponent(row.authorUserId)}` : "";
     article.innerHTML = `
-      <img class="tw-avatar" src="${avatarUrl(seed)}" alt="${escHtml(row.authorName || "User")}">
+      ${profileHref
+        ? `<a href="${profileHref}" class="tw-avatar-link"><img class="tw-avatar" src="${avatarUrl(seed)}" alt="${escHtml(row.authorName || "User")}"></a>`
+        : `<img class="tw-avatar" src="${avatarUrl(seed)}" alt="${escHtml(row.authorName || "User")}">`}
       <div class="tweet-body">
         <div class="tweet-head">
-          <span class="tweet-name">${escHtml(row.authorName || roleLabel(row.authorRole))}</span>
+          ${profileHref
+            ? `<a href="${profileHref}" class="tweet-name tweet-name-link">${escHtml(row.authorName || roleLabel(row.authorRole))}</a>`
+            : `<span class="tweet-name">${escHtml(row.authorName || roleLabel(row.authorRole))}</span>`}
           <span class="tweet-meta">${roleLabel(row.authorRole)}${sport ? ` · ${emoji} ${sport}` : ""}</span>
           <span class="tweet-time">${formatTime(row.created_at)}</span>
         </div>
@@ -164,13 +172,11 @@ function renderRows(rows) {
         ${renderMedia(row.media || [])}
         ${isSeed ? `<div class="tweet-seed-badge">Sample post</div>` : ""}
         <div class="tweet-actions">
-          <button class="tweet-action" title="Comment">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span>Reply</span>
-          </button>
-          <button class="tweet-action" title="Like">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            <span>${row.interactions_count || 0}</span>
+          <button class="tweet-action tweet-like-btn ${liked ? "is-liked" : ""}"
+                  ${row.post_id ? `data-post-id="${escHtml(row.post_id)}"` : ""}
+                  title="${liked ? "Unlike" : "Like"}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="${liked ? "currentColor" : "none"}" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span class="like-count">${likeCount}</span>
           </button>
           <button class="tweet-action" title="Share">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
@@ -273,7 +279,23 @@ async function loadFollowingFeed() {
   );
 
   const posts = postsRes.data || [];
+
+  // Load current user's reactions for these posts
+  const postIds = posts.map((p) => p.post_id).filter(Boolean);
+  if (appUserId && postIds.length) {
+    const { data: reactionData } = await supabase
+      .from("post_reactions")
+      .select("post_id")
+      .eq("user_id", appUserId)
+      .in("post_id", postIds);
+    myReactions = new Set((reactionData || []).map((r) => r.post_id));
+  } else {
+    myReactions = new Set();
+  }
+
   followingRows = (posts.length ? posts : fallbackFollowingSeed).map((row) => ({
+    post_id:           row.post_id || null,
+    authorUserId:      row.author_user_id || null,
     authorName:        row.author_user_id ? (nameMap.get(row.author_user_id) || roleLabel(row.author_role)) : row.authorName,
     authorRole:        row.author_role || row.authorRole,
     caption:           row.caption,
@@ -352,9 +374,9 @@ async function handleComposerSubmit(event) {
     const score     = recapScore?.value.trim();
     const standouts = recapStandout?.value.trim();
     const highlights= recapHighlights?.value.trim();
-    if (score)      finalCaption += `\n📊 Score: ${score}`;
-    if (standouts)  finalCaption += `\n⭐ Standouts: ${standouts}`;
-    if (highlights) finalCaption += `\n📝 ${highlights}`;
+    if (score)      finalCaption += `\nScore: ${score}`;
+    if (standouts)  finalCaption += `\nStandouts: ${standouts}`;
+    if (highlights) finalCaption += `\n${highlights}`;
   }
 
   try {
@@ -444,6 +466,54 @@ function bindUI() {
   });
 
   composerForm?.addEventListener("submit", handleComposerSubmit);
+
+  // Like / reaction toggle (event delegation on feed)
+  feedListEl?.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".tweet-like-btn[data-post-id]");
+    if (!btn || !appUserId) return;
+
+    const postId = btn.dataset.postId;
+    const isLiked = btn.classList.contains("is-liked");
+    const countEl = btn.querySelector(".like-count");
+    const svg = btn.querySelector("svg");
+    let count = parseInt(countEl?.textContent || "0", 10);
+
+    // Optimistic UI update
+    if (isLiked) {
+      btn.classList.remove("is-liked");
+      if (svg) svg.setAttribute("fill", "none");
+      count = Math.max(0, count - 1);
+      myReactions.delete(postId);
+    } else {
+      btn.classList.add("is-liked");
+      btn.classList.add("like-pop");
+      if (svg) svg.setAttribute("fill", "currentColor");
+      count += 1;
+      myReactions.add(postId);
+      setTimeout(() => btn.classList.remove("like-pop"), 400);
+    }
+    if (countEl) countEl.textContent = String(count);
+
+    // Update the row data too
+    const row = followingRows.find((r) => r.post_id === postId);
+    if (row) row.interactions_count = count;
+
+    // DB update
+    try {
+      if (isLiked) {
+        await supabase.from("post_reactions")
+          .delete()
+          .eq("post_id", postId)
+          .eq("user_id", appUserId);
+      } else {
+        await supabase.from("post_reactions")
+          .upsert({ post_id: postId, user_id: appUserId, reaction: "like" },
+                   { onConflict: "post_id,user_id" });
+      }
+    } catch (err) {
+      console.error("Reaction toggle failed:", err);
+    }
+  });
 }
 
 // ── Session entry point ───────────────────────────────────────────────────────

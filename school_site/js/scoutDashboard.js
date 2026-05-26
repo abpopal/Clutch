@@ -3,6 +3,7 @@ import { loadAthleteDirectory } from "./athleteDirectoryData.js?v=20260418b";
 import { normalizeText } from "./athleteData.js";
 import { getGlobalAppState, isScout } from "./roleUtils.js";
 import { getSavedAthleteIds, getScoutWorkspaceSnapshot, toggleSavedAthlete } from "./scoutWorkspace.js?v=20260418b";
+import { loadWatchlists, createWatchlist, updateWatchlist, deleteWatchlist, addAthleteToWatchlist, removeAthleteFromWatchlist, updateWatchlistAthlete } from "./watchlistStore.js";
 import { createScoutAthleteMap } from "./scoutAthleteMap.js";
 import { summarizeRegions } from "./scoutRegionInsights.js";
 
@@ -133,47 +134,79 @@ function scoutName() {
   return state.viewerName || "Scout";
 }
 
+function athleteTier(rating) {
+  const r = Number(rating || 0) / 10;
+  if (r >= 9) return { tier: "elite", label: "Elite", icon: "E" };
+  if (r >= 8) return { tier: "premium", label: "Premium", icon: "P" };
+  if (r >= 7) return { tier: "rising", label: "Rising", icon: "R" };
+  return { tier: "standard", label: "Standard", icon: "S" };
+}
+
 function athleteCardMarkup(athlete, { saved = false, compact = false } = {}) {
   const stats = (athlete.profile?.sports?.[0]?.stats || []).slice(0, compact ? 2 : 3);
+  const ratingVal = performanceDisplay(athlete.performanceRating);
+  const { tier, label: tierLabel, icon: tierIcon } = athleteTier(athlete.performanceRating);
+  const trend = trendDeltaFor(athlete);
+  const readiness = Number(athlete.readiness || 0);
+  const readinessDisplay = readiness > 0 ? (readiness / 10).toFixed(1) : "—";
+
   return `
-    <article class="scout-athlete-row ${compact ? "is-compact" : ""} ${state.selectedAthleteId === athlete.userId ? "is-selected" : ""}" data-athlete-card-id="${escapeHtml(athlete.userId)}">
-      <img class="scout-athlete-avatar" src="https://i.pravatar.cc/320?u=${encodeURIComponent(athlete.userId || athlete.athleteId || athlete.name)}" alt="${escapeHtml(athlete.name)}">
-
-      <div class="scout-athlete-copy">
-        <div class="scout-athlete-topline">
-          <div>
-            <strong>${escapeHtml(athlete.name)}</strong>
-            <p>${escapeHtml(`${athlete.position} • ${athlete.schoolName || "Untitled Athletic Academy"}`)}</p>
-          </div>
-          <span class="pp-chip">${escapeHtml(athlete.primarySportLabel || "Athlete")}</span>
+    <article class="sc-card sc-card--${tier} ${compact ? "sc-card--compact" : ""} ${state.selectedAthleteId === athlete.userId ? "sc-card--selected" : ""}" data-athlete-card-id="${escapeHtml(athlete.userId)}">
+      <div class="sc-card-accent"></div>
+      <div class="sc-card-header">
+        <div class="sc-avatar-wrap">
+          <img class="sc-avatar" src="https://i.pravatar.cc/320?u=${encodeURIComponent(athlete.userId || athlete.athleteId || athlete.name)}" alt="${escapeHtml(athlete.name)}">
+          <div class="sc-rating-badge sc-rating-badge--${tier}">${escapeHtml(ratingVal)}</div>
         </div>
+        <div class="sc-header-info">
+          <div class="sc-name">${escapeHtml(athlete.name)}</div>
+          <div class="sc-meta">${escapeHtml(athlete.position)} · ${escapeHtml(athlete.schoolName || "Untitled Athletic Academy")}</div>
+          <div class="sc-tags">
+            <span class="sc-tier-tag sc-tier-tag--${tier}">${tierIcon} ${escapeHtml(tierLabel)}</span>
+            <span class="sc-sport-tag">${escapeHtml(athlete.primarySportLabel || "Athlete")}</span>
+            ${athlete.gradYear ? `<span class="sc-grad-tag">Class ${escapeHtml(athlete.gradYear)}</span>` : ""}
+          </div>
+        </div>
+        <button class="sc-save-btn ${saved ? "sc-save-btn--saved" : ""}" type="button" data-save-id="${escapeHtml(athlete.userId)}" title="${saved ? "Saved" : "Save Athlete"}">
+          ${saved ? "★" : "☆"}
+        </button>
+      </div>
 
-        ${athlete.athleteId ? `<small class="ua-mono">${escapeHtml(athlete.athleteId)}</small>` : ""}
-
-        <div class="pp-pill-row">
-          ${athlete.location ? `<span class="pp-chip">${escapeHtml(athlete.location)}</span>` : ""}
-          ${athlete.gradYear ? `<span class="pp-chip">Class ${escapeHtml(athlete.gradYear)}</span>` : ""}
-          ${athlete.performanceRating ? `<span class="pp-chip">${escapeHtml(performanceDisplay(athlete.performanceRating))} rating</span>` : ""}
+      ${!compact ? `
+      <div class="sc-card-body">
+        <div class="sc-metrics-row">
+          <div class="sc-metric">
+            <div class="sc-metric-val">${escapeHtml(ratingVal)}</div>
+            <div class="sc-metric-label">Rating</div>
+          </div>
+          <div class="sc-metric">
+            <div class="sc-metric-val">${escapeHtml(readinessDisplay)}</div>
+            <div class="sc-metric-label">Readiness</div>
+          </div>
+          <div class="sc-metric">
+            <div class="sc-metric-val sc-metric-val--trend">+${trend.toFixed(1)}</div>
+            <div class="sc-metric-label">Trend</div>
+          </div>
         </div>
 
         ${stats.length ? `
-          <div class="scout-athlete-stats">
+          <div class="sc-stats-row">
             ${stats.map((item) => `
-              <div class="scout-athlete-stat">
-                <strong>${escapeHtml(item.value || "—")}</strong>
-                <span>${escapeHtml(item.label)}</span>
+              <div class="sc-stat">
+                <div class="sc-stat-val">${escapeHtml(item.value || "—")}</div>
+                <div class="sc-stat-label">${escapeHtml(item.label)}</div>
               </div>
             `).join("")}
           </div>
         ` : ""}
 
-        <div class="pp-inline-actions">
-          <a class="pp-link-btn" href="user-profile.html?user_id=${encodeURIComponent(athlete.userId)}">Open Profile</a>
-          <a class="pp-link-btn" href="compare.html?athlete_a=${encodeURIComponent(athlete.userId)}">Compare</a>
-          <button class="pp-btn ${saved ? "" : "pp-btn--primary"}" type="button" data-save-id="${escapeHtml(athlete.userId)}">
-            ${saved ? "Saved" : "Save Athlete"}
-          </button>
-        </div>
+        ${athlete.location ? `<div class="sc-location">${escapeHtml(athlete.location)}</div>` : ""}
+      </div>
+      ` : ""}
+
+      <div class="sc-card-footer">
+        <a class="sc-action-btn" href="user-profile.html?user_id=${encodeURIComponent(athlete.userId)}">Profile</a>
+        <a class="sc-action-btn" href="compare.html?athlete_a=${encodeURIComponent(athlete.userId)}">Compare</a>
       </div>
     </article>
   `;
@@ -332,22 +365,37 @@ function renderInsights(results, regionInsights) {
   }
 }
 
+function regionTierColor(avgRating) {
+  if (avgRating >= 88) return "#2563eb";
+  if (avgRating >= 78) return "#14b8a6";
+  if (avgRating >= 65) return "#f59e0b";
+  return "#64748b";
+}
+
 function renderRegions(regionInsights) {
   if (!topRegionsEl) return;
+  const maxCount = Math.max(1, ...regionInsights.topRegions.map((r) => r.athleteCount));
+
   topRegionsEl.innerHTML = regionInsights.topRegions.length
-    ? regionInsights.topRegions.map((region) => `
-        <div class="scout-mini-row">
-          <div class="scout-mini-copy">
-            <strong>${escapeHtml(region.district)}</strong>
-            <p>${escapeHtml(`${region.athleteCount} athletes`)}</p>
-            <span>${escapeHtml(region.area)}</span>
-          </div>
-          <div class="scout-mini-score">
-            <strong>${escapeHtml(performanceDisplay(region.averagePerformanceRating))}</strong>
-            <span>${escapeHtml(`${performanceDisplay(region.averagePerformanceRating)} avg`)}</span>
-          </div>
-        </div>
-      `).join("")
+    ? regionInsights.topRegions.map((region, i) => {
+        const pct = Math.round((region.athleteCount / maxCount) * 100);
+        const color = regionTierColor(region.averagePerformanceRating);
+        return `
+          <div class="sd-region-row">
+            <div class="sd-region-rank">${i + 1}</div>
+            <div class="sd-region-info">
+              <div class="sd-region-name">${escapeHtml(region.district)}</div>
+              <div class="sd-region-area">${escapeHtml(region.area)}</div>
+              <div class="sd-region-bar-wrap">
+                <div class="sd-region-bar" style="width:${pct}%; background:${color}"></div>
+              </div>
+            </div>
+            <div class="sd-region-stats">
+              <span class="sd-region-count">${escapeHtml(String(region.athleteCount))}</span>
+              <span class="sd-region-avg" style="color:${color}">${escapeHtml(performanceDisplay(region.averagePerformanceRating))} avg</span>
+            </div>
+          </div>`;
+      }).join("")
     : `<div class="pp-empty">Regional insights will appear once athlete locations are available.</div>`;
 }
 
@@ -497,6 +545,242 @@ function bindEvents() {
   });
 }
 
+// ── Watchlists ────────────────────────────────────────────────
+const wlCreateBtn = document.querySelector("#wl-create-btn");
+const wlCreateForm = document.querySelector("#wl-create-form");
+const wlNameInput = document.querySelector("#wl-name-input");
+const wlColorInput = document.querySelector("#wl-color-input");
+const wlSaveBtn = document.querySelector("#wl-save-btn");
+const wlCancelBtn = document.querySelector("#wl-cancel-btn");
+const wlTabsEl = document.querySelector("#wl-tabs");
+const wlPanelEl = document.querySelector("#wl-active-panel");
+
+const wlState = {
+  lists: [],
+  activeId: null,
+  addingAthleteId: null,
+};
+
+const PRIORITY_ICONS = { high: "H", normal: "N", low: "L" };
+const WL_COLORS = ["#2d9bb2","#8b5cf6","#ef4444","#f59e0b","#14b8a6","#ec4899","#6366f1","#22c55e"];
+
+function wlActiveList() {
+  return wlState.lists.find((l) => l.watchlist_id === wlState.activeId) || null;
+}
+
+function renderWlTabs() {
+  if (!wlTabsEl) return;
+  if (!wlState.lists.length) { wlTabsEl.innerHTML = ""; return; }
+  wlTabsEl.innerHTML = wlState.lists.map((l) => `
+    <button class="wl-tab ${l.watchlist_id === wlState.activeId ? "wl-tab--active" : ""}"
+            data-wl-tab="${l.watchlist_id}" style="border-color:${escapeHtml(l.color || "#2d9bb2")}">
+      <span class="wl-tab-dot" style="background:${escapeHtml(l.color || "#2d9bb2")}"></span>
+      ${escapeHtml(l.name)}
+      <span class="wl-tab-count">${(l.watchlist_athletes || []).length}</span>
+    </button>
+  `).join("");
+}
+
+function renderWlPanel() {
+  if (!wlPanelEl) return;
+  const list = wlActiveList();
+  if (!list) {
+    wlPanelEl.innerHTML = `<div class="sd-empty">Create a watchlist to start tracking athletes.</div>`;
+    return;
+  }
+
+  const entries = (list.watchlist_athletes || [])
+    .map((e) => {
+      const athlete = state.athletes.find((a) => a.userId === e.athlete_id);
+      return athlete ? { ...e, athlete } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      const po = { high: 0, normal: 1, low: 2 };
+      return (po[a.priority] ?? 1) - (po[b.priority] ?? 1);
+    });
+
+  const addDropdown = state.athletes
+    .filter((a) => !entries.some((e) => e.athlete_id === a.userId))
+    .slice(0, 100)
+    .map((a) => `<option value="${escapeHtml(a.userId)}">${escapeHtml(a.name)} — ${escapeHtml(a.primarySportLabel || a.position)}</option>`)
+    .join("");
+
+  wlPanelEl.innerHTML = `
+    <div class="wl-panel-head">
+      <div class="wl-panel-info">
+        <span class="wl-panel-color" style="background:${escapeHtml(list.color || "#2d9bb2")}"></span>
+        <h3 class="wl-panel-name">${escapeHtml(list.name)}</h3>
+        <span class="wl-panel-badge">${entries.length} athlete${entries.length === 1 ? "" : "s"}</span>
+      </div>
+      <div class="wl-panel-actions">
+        <button class="ua-btn ua-btn--ghost ua-btn--sm" data-wl-rename="${list.watchlist_id}">Rename</button>
+        <button class="ua-btn ua-btn--ghost ua-btn--sm wl-btn-danger" data-wl-delete="${list.watchlist_id}">Delete</button>
+      </div>
+    </div>
+    <div class="wl-add-row">
+      <select class="wl-add-select" id="wl-add-select">
+        <option value="">+ Add athlete…</option>
+        ${addDropdown}
+      </select>
+      <select class="wl-add-priority" id="wl-add-priority">
+        <option value="normal">Normal</option>
+        <option value="high">High</option>
+        <option value="low">Low</option>
+      </select>
+      <button class="ua-btn ua-btn--primary ua-btn--sm" id="wl-add-athlete-btn">Add</button>
+    </div>
+    ${entries.length ? `
+      <div class="wl-athlete-list">
+        ${entries.map((e) => `
+          <div class="wl-athlete-row" data-wl-athlete="${e.athlete_id}">
+            <img class="wl-athlete-avatar" src="https://i.pravatar.cc/320?u=${encodeURIComponent(e.athlete.userId)}" alt="">
+            <div class="wl-athlete-info">
+              <strong>${escapeHtml(e.athlete.name)}</strong>
+              <span>${escapeHtml(e.athlete.primarySportLabel || e.athlete.position)} · ${escapeHtml(e.athlete.schoolName || "")}</span>
+              ${e.notes ? `<span class="wl-athlete-notes">${escapeHtml(e.notes)}</span>` : ""}
+            </div>
+            <div class="wl-athlete-rating">${escapeHtml(performanceDisplay(e.athlete.performanceRating))}</div>
+            <span class="wl-athlete-priority wl-priority-${e.priority}" title="${e.priority}">${PRIORITY_ICONS[e.priority] || "N"}</span>
+            <select class="wl-priority-select" data-wl-change-priority="${e.athlete_id}">
+              <option value="high" ${e.priority === "high" ? "selected" : ""}>High</option>
+              <option value="normal" ${e.priority === "normal" ? "selected" : ""}>Normal</option>
+              <option value="low" ${e.priority === "low" ? "selected" : ""}>Low</option>
+            </select>
+            <button class="wl-remove-btn" data-wl-remove="${e.athlete_id}" title="Remove">✕</button>
+          </div>
+        `).join("")}
+      </div>
+    ` : `<div class="sd-empty">No athletes in this list yet. Use the dropdown above to add some.</div>`}
+  `;
+}
+
+function renderWatchlists() {
+  renderWlTabs();
+  renderWlPanel();
+}
+
+async function refreshWatchlists() {
+  if (!state.viewerUserId) return;
+  try {
+    wlState.lists = await loadWatchlists(state.viewerUserId);
+    if (wlState.lists.length && !wlState.activeId) {
+      wlState.activeId = wlState.lists[0].watchlist_id;
+    }
+    if (wlState.activeId && !wlState.lists.some((l) => l.watchlist_id === wlState.activeId)) {
+      wlState.activeId = wlState.lists[0]?.watchlist_id || null;
+    }
+    renderWatchlists();
+  } catch (err) {
+    console.error("Watchlists load failed", err);
+  }
+}
+
+function bindWatchlistEvents() {
+  wlCreateBtn?.addEventListener("click", () => {
+    if (wlCreateForm) wlCreateForm.hidden = false;
+    wlNameInput?.focus();
+  });
+
+  wlCancelBtn?.addEventListener("click", () => {
+    if (wlCreateForm) wlCreateForm.hidden = true;
+    if (wlNameInput) wlNameInput.value = "";
+  });
+
+  wlSaveBtn?.addEventListener("click", async () => {
+    const name = wlNameInput?.value?.trim();
+    if (!name) return;
+    const color = wlColorInput?.value || "#2d9bb2";
+    try {
+      await createWatchlist(state.viewerUserId, { name, color });
+      if (wlNameInput) wlNameInput.value = "";
+      if (wlCreateForm) wlCreateForm.hidden = true;
+      await refreshWatchlists();
+    } catch (err) {
+      console.error("Create watchlist failed", err);
+    }
+  });
+
+  wlNameInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") wlSaveBtn?.click();
+  });
+
+  // Tab clicks
+  wlTabsEl?.addEventListener("click", (e) => {
+    const tab = e.target.closest("[data-wl-tab]");
+    if (!tab) return;
+    wlState.activeId = tab.dataset.wlTab;
+    renderWatchlists();
+  });
+
+  // Panel delegated events
+  document.addEventListener("click", async (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    // Delete list
+    const delBtn = target.closest("[data-wl-delete]");
+    if (delBtn) {
+      if (!confirm("Delete this watchlist and all its athletes?")) return;
+      try {
+        await deleteWatchlist(delBtn.dataset.wlDelete);
+        wlState.activeId = null;
+        await refreshWatchlists();
+      } catch (err) { console.error(err); }
+      return;
+    }
+
+    // Rename list
+    const renBtn = target.closest("[data-wl-rename]");
+    if (renBtn) {
+      const list = wlState.lists.find((l) => l.watchlist_id === renBtn.dataset.wlRename);
+      if (!list) return;
+      const newName = prompt("Rename watchlist:", list.name);
+      if (!newName?.trim()) return;
+      try {
+        await updateWatchlist(list.watchlist_id, { name: newName.trim() });
+        await refreshWatchlists();
+      } catch (err) { console.error(err); }
+      return;
+    }
+
+    // Remove athlete
+    const rmBtn = target.closest("[data-wl-remove]");
+    if (rmBtn && wlState.activeId) {
+      try {
+        await removeAthleteFromWatchlist(wlState.activeId, rmBtn.dataset.wlRemove);
+        await refreshWatchlists();
+      } catch (err) { console.error(err); }
+      return;
+    }
+
+    // Add athlete
+    if (target.id === "wl-add-athlete-btn") {
+      const sel = document.querySelector("#wl-add-select");
+      const priSel = document.querySelector("#wl-add-priority");
+      const athleteId = sel?.value;
+      const priority = priSel?.value || "normal";
+      if (!athleteId || !wlState.activeId) return;
+      try {
+        await addAthleteToWatchlist(wlState.activeId, athleteId, { priority });
+        await refreshWatchlists();
+      } catch (err) { console.error(err); }
+    }
+  });
+
+  // Priority change
+  document.addEventListener("change", async (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLSelectElement)) return;
+    const athleteId = target.dataset?.wlChangePriority;
+    if (!athleteId || !wlState.activeId) return;
+    try {
+      await updateWatchlistAthlete(wlState.activeId, athleteId, { priority: target.value });
+      await refreshWatchlists();
+    } catch (err) { console.error(err); }
+  });
+}
+
 async function resolveViewerUserId(auth) {
   if (auth?.appUserId) return auth.appUserId;
   const authUserId = auth?.session?.user?.id || auth?.authUser?.id;
@@ -542,7 +826,9 @@ async function initScoutDashboard() {
     renderFilters();
     bindEvents();
     bindSidebarLinks();
+    bindWatchlistEvents();
     renderDashboard();
+    await refreshWatchlists();
     state.initialized = true;
     setStatus("Scout dashboard ready.");
   } catch (error) {

@@ -11,6 +11,7 @@ const roleFilter = document.querySelector("#filter-role");
 const sportFilter = document.querySelector("#filter-sport");
 
 let viewerAppUserId = null;
+let followingSet = new Set();
 let directoryRows = [];
 let allPosts = [];
 let eventsBound = false;
@@ -49,12 +50,33 @@ async function resolveViewerUserId(authUserId) {
   return data?.user_id || null;
 }
 
+async function loadFollowing() {
+  if (!viewerAppUserId) return;
+  const { data } = await supabase
+    .from("follow")
+    .select("followed_user_id")
+    .eq("follower_user_id", viewerAppUserId);
+  followingSet = new Set((data || []).map((r) => r.followed_user_id));
+}
+
 async function followUser(targetUserId) {
   if (!viewerAppUserId || !targetUserId || viewerAppUserId === targetUserId) return;
   const { error } = await supabase
     .from("follow")
     .insert({ follower_user_id: viewerAppUserId, followed_user_id: targetUserId });
   if (error) throw error;
+  followingSet.add(targetUserId);
+}
+
+async function unfollowUser(targetUserId) {
+  if (!viewerAppUserId || !targetUserId) return;
+  const { error } = await supabase
+    .from("follow")
+    .delete()
+    .eq("follower_user_id", viewerAppUserId)
+    .eq("followed_user_id", targetUserId);
+  if (error) throw error;
+  followingSet.delete(targetUserId);
 }
 
 function rowName(user, school, directoryEntry) {
@@ -184,48 +206,65 @@ function renderSearchRows(rows) {
     return;
   }
 
-  resultEl.innerHTML = rows.map((row) => `
-    <article class="ua-search-athlete-card">
-      <div class="ua-panel-head">
-        <div>
-          <strong>${escapeHtml(row.name)}</strong>
-          <p>${escapeHtml(row.subtitle || row.schoolName || "Untitled Athletic member")}</p>
+  resultEl.innerHTML = rows.map((row) => {
+    const isSelf = viewerAppUserId === row.userId;
+    const isFollowing = followingSet.has(row.userId);
+    const initials = escapeHtml(row.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase());
+    const roleClass = `src-role-${row.role.replace(/_/g, "-")}`;
+    return `
+    <article class="src-card" data-open-id="${row.userId}">
+      <div class="src-top">
+        <div class="src-avatar ${roleClass}">${initials}</div>
+        <div class="src-identity">
+          <span class="src-name">${escapeHtml(row.name)}</span>
+          <span class="src-subtitle">${escapeHtml(row.subtitle || row.schoolName || "Member")}</span>
         </div>
-        <span class="ua-chip">${escapeHtml(roleLabel(row.role))}</span>
+        <span class="src-role-badge ${roleClass}">${escapeHtml(roleLabel(row.role))}</span>
       </div>
-      ${row.athleteId ? `<small class="ua-mono">${escapeHtml(row.athleteId)}</small>` : ""}
-      <div class="ua-pill-row">
-        ${row.schoolName ? `<span class="ua-chip">${escapeHtml(row.schoolName)}</span>` : ""}
-        ${row.location ? `<span class="ua-chip">${escapeHtml(row.location)}</span>` : ""}
-        ${row.readiness ? `<span class="ua-chip">${row.readiness} readiness</span>` : ""}
-      </div>
-      <div class="ua-pill-row">
-        ${(row.sportIcons || []).map((icon) => `<span class="ua-chip">${escapeHtml(icon)}</span>`).join("")}
-      </div>
-      <p class="ua-search-card-email">${escapeHtml(row.email || "Email unavailable")}</p>
-      <div class="ua-inline-actions">
-        <button class="btn" type="button" data-open-id="${row.userId}">Open Profile</button>
-        <button class="btn" type="button" data-follow-id="${row.userId}" ${!viewerAppUserId || viewerAppUserId === row.userId ? "hidden" : ""}>Follow</button>
+      ${row.athleteId || row.schoolName || row.location ? `
+      <div class="src-details">
+        ${row.athleteId ? `<span class="src-detail"><svg class="src-detail-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2a1 1 0 011-1h8a1 1 0 011 1v1H3V2zm0 2h10v1H3V4zm1 2h8l-.5 8H4.5L4 6z"/></svg>${escapeHtml(row.athleteId)}</span>` : ""}
+        ${row.schoolName ? `<span class="src-detail"><svg class="src-detail-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L1 5l7 4 7-4-7-4zM2 7v4l6 3.5L14 11V7L8 10.5 2 7z"/></svg>${escapeHtml(row.schoolName)}</span>` : ""}
+        ${row.location ? `<span class="src-detail"><svg class="src-detail-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a5 5 0 00-5 5c0 4.5 5 9 5 9s5-4.5 5-9a5 5 0 00-5-5zm0 7a2 2 0 110-4 2 2 0 010 4z"/></svg>${escapeHtml(row.location)}</span>` : ""}
+      </div>` : ""}
+      ${row.readiness || (row.sportIcons && row.sportIcons.length) ? `
+      <div class="src-tags">
+        ${row.readiness ? `<span class="src-tag src-tag-readiness">${row.readiness}% ready</span>` : ""}
+        ${(row.sportIcons || []).map((icon) => `<span class="src-tag">${escapeHtml(icon)}</span>`).join("")}
+      </div>` : ""}
+      <div class="src-actions">
+        <button class="src-btn src-btn-profile" type="button" data-open-id="${row.userId}">View Profile</button>
+        ${isSelf ? "" : `<button class="src-btn src-btn-follow ${isFollowing ? "is-following" : ""}" type="button" data-follow-id="${row.userId}">${isFollowing ? "Following" : "Follow"}</button>`}
       </div>
     </article>
-  `).join("");
+  `;
+  }).join("");
 
-  Array.from(resultEl.querySelectorAll("[data-open-id]")).forEach((button) => {
-    button.addEventListener("click", () => {
-      window.location.href = `user-profile.html?user_id=${encodeURIComponent(button.dataset.openId)}`;
+  Array.from(resultEl.querySelectorAll("article.src-card[data-open-id]")).forEach((card) => {
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("[data-follow-id]")) return;
+      window.location.href = `user-profile.html?user_id=${encodeURIComponent(card.dataset.openId)}`;
     });
   });
 
   Array.from(resultEl.querySelectorAll("[data-follow-id]")).forEach((button) => {
     button.addEventListener("click", async () => {
+      const targetId = button.dataset.followId;
+      const isCurrentlyFollowing = followingSet.has(targetId);
       button.disabled = true;
       try {
-        await followUser(button.dataset.followId);
-        button.textContent = "Following";
-        button.classList.add("warn");
+        if (isCurrentlyFollowing) {
+          await unfollowUser(targetId);
+          button.textContent = "Follow";
+          button.classList.remove("is-following");
+        } else {
+          await followUser(targetId);
+          button.textContent = "Following";
+          button.classList.add("is-following");
+        }
       } catch (error) {
-        console.error("Follow failed", error);
-        button.textContent = "Failed";
+        console.error("Follow toggle failed", error);
+        button.textContent = "Error";
       } finally {
         button.disabled = false;
       }
@@ -297,7 +336,7 @@ function bindEvents() {
 window.addEventListener("session-ready", async ({ detail }) => {
   try {
     viewerAppUserId = await resolveViewerUserId(detail.session.user.id);
-    await loadDirectory();
+    await Promise.all([loadDirectory(), loadFollowing()]);
     if (exactQueryInput && queryParamValue("q")) {
       exactQueryInput.value = queryParamValue("q");
     }

@@ -4,38 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Untitled Athletics - Coach Dashboard</title>
-  <link rel="stylesheet" href="styles.css?v=20260520b">
-  <link rel="stylesheet" href="school-dashboard.css?v=20260520b">
-  <link rel="stylesheet" href="coach-dashboard.css?v=20260520b">
-  <script type="module" src="js/app.js?v=20260520b"></script>
-  <script type="module" src="js/coachDashboard.js?v=20260520b"></script>
+  <script>var t=localStorage.getItem("ua-theme");if(t)document.documentElement.setAttribute("data-theme",t);</script>
+  <link rel="stylesheet" href="styles.css?v=20260523g">
+  <link rel="stylesheet" href="school-dashboard.css?v=20260523g">
+  <link rel="stylesheet" href="coach-dashboard.css?v=20260523g">
+  <script type="module" src="js/app.js?v=20260524a"></script>
+  <script type="module" src="js/coachDashboard.js?v=20260523g"></script>
 </head>
 <body data-page="coach-dashboard" data-requires-session="true">
 <div class="app-layout">
 
-  <aside class="sidebar" id="sidebar">
-    <div class="brand">
-      <div class="logo">UA</div>
-      <span class="role-pill" id="role-pill">coach</span>
-    </div>
-    <div>
-      <p class="nav-label">Main</p>
-      <nav class="nav">
-        <a class="nav-btn" data-nav="home" href="index.html"><span class="nav-icon">🏠</span><span class="nav-text">Home</span></a>
-        <a class="nav-btn" data-nav="pulse" href="pulse.html"><span class="nav-icon">⚡</span><span class="nav-text">Pulse</span></a>
-        <a class="nav-btn" data-nav="search" href="explore.html"><span class="nav-icon">🔍</span><span class="nav-text">Explore</span></a>
-        <a class="nav-btn" data-nav="profile" href="profile.html"><span class="nav-icon">👤</span><span class="nav-text">Profile</span></a>
-        <a class="nav-btn" data-nav="messages" href="messages.html"><span class="nav-icon">💬</span><span class="nav-text">Messages</span></a>
-        <a class="nav-btn" data-nav="scout-dashboard" data-role-allow="scout" href="scout-dashboard.html"><span class="nav-icon">📋</span><span class="nav-text">Scout Hub</span></a>
-        <a class="nav-btn" data-nav="school-dashboard" data-role-allow="school_admin" href="school-dashboard.html"><span class="nav-icon">🏫</span><span class="nav-text">School</span></a>
-        <a class="nav-btn active" data-nav="coach-dashboard" data-role-allow="coach" href="coach-dashboard.html"><span class="nav-icon">🏋️</span><span class="nav-text">Coach Hub</span></a>
-      </nav>
-    </div>
-    <div class="sidebar-foot">
-      <button class="btn-ghost full" id="sign-out-btn">Sign out</button>
-    </div>
-  </aside>
-
+  <aside class="sidebar" id="sidebar" data-shared-sidebar></aside>
   <div class="mobile-overlay" id="mobile-overlay"></div>
 
   <div class="page-wrap">
@@ -45,16 +24,25 @@
       <!-- ═══ TAB BAR (always visible) ═════════════════════════════ -->
       <div class="coach-tab-bar" id="coach-tab-bar">
         <button class="coach-tab active" data-section="overview">
-          <span class="coach-tab-icon">📊</span> Overview
+           Overview
         </button>
         <button class="coach-tab" data-section="my-teams">
-          <span class="coach-tab-icon">🏆</span> My Teams
+           My Teams
         </button>
         <button class="coach-tab" data-section="training">
-          <span class="coach-tab-icon">📋</span> Training
+           Training
+        </button>
+        <button class="coach-tab" data-section="stats">
+           Stats
         </button>
         <button class="coach-tab" data-section="schedule">
-          <span class="coach-tab-icon">📅</span> Schedule
+           Schedule
+        </button>
+        <button class="coach-tab" data-section="attendance">
+           Attendance
+        </button>
+        <button class="coach-tab" data-section="formations">
+           Tactics
         </button>
       </div>
 
@@ -97,19 +85,19 @@
           <div class="sch-card-body">
             <div class="sch-qa-grid">
               <button class="sch-qa-item" data-goto="my-teams">
-                <div class="sch-qa-icon" style="background:var(--brand-soft)">🏆</div>
+                <div class="sch-qa-icon" style="background:var(--brand-soft)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
                 <div><div class="sch-qa-label">View My Teams</div><div class="sch-qa-hint">Manage roster &amp; details</div></div>
               </button>
               <button class="sch-qa-item" data-goto="training">
-                <div class="sch-qa-icon" style="background:var(--purple-soft)">📋</div>
+                <div class="sch-qa-icon" style="background:var(--purple-soft)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
                 <div><div class="sch-qa-label">Schedule Training</div><div class="sch-qa-hint">Practice, film, conditioning</div></div>
               </button>
               <button class="sch-qa-item" data-goto="schedule">
-                <div class="sch-qa-icon" style="background:var(--amber-soft)">📅</div>
+                <div class="sch-qa-icon" style="background:var(--amber-soft)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
                 <div><div class="sch-qa-label">Match Schedule</div><div class="sch-qa-hint">View upcoming games</div></div>
               </button>
               <button class="sch-qa-item" id="coach-qa-calendar" data-goto="overview">
-                <div class="sch-qa-icon" style="background:var(--green-soft)">🗓️</div>
+                <div class="sch-qa-icon" style="background:var(--green-soft)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
                 <div><div class="sch-qa-label">This Week</div><div class="sch-qa-hint" id="coach-week-summary">Loading...</div></div>
               </button>
             </div>
@@ -373,6 +361,62 @@
         </div>
       </section>
 
+      <!-- ═══ STATS (enter athlete stats per match) ══════════════ -->
+      <section class="sch-section" id="coach-section-stats">
+        <div class="sch-page-head">
+          <div>
+            <h1 class="sch-page-title">Athlete Stats</h1>
+            <p class="sch-page-sub">Enter and review game stats for your athletes.</p>
+          </div>
+        </div>
+
+        <!-- Step 1: Pick team -->
+        <div class="sch-card">
+          <div class="sch-card-head">
+            <span class="sch-card-title">Select Team & Match</span>
+          </div>
+          <div class="sch-card-body">
+            <div class="sch-form" style="gap:12px; border:0; padding-bottom:0; margin-bottom:0;">
+              <div class="sch-form-row">
+                <div class="sch-field">
+                  <label class="sch-label" for="stats-team">Team</label>
+                  <select id="stats-team" class="sch-select">
+                    <option value="">— Select a team —</option>
+                  </select>
+                </div>
+                <div class="sch-field">
+                  <label class="sch-label" for="stats-match">Match</label>
+                  <select id="stats-match" class="sch-select">
+                    <option value="">— Select a match —</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Stat entry grid (populated by JS) -->
+        <div class="sch-card" id="stats-entry-card" style="display:none">
+          <div class="sch-card-head">
+            <span class="sch-card-title" id="stats-entry-title">Enter Stats</span>
+            <button class="sch-btn sch-btn--primary sch-btn--sm" id="stats-save-btn">Save All Stats</button>
+          </div>
+          <div class="sch-card-body">
+            <div id="stats-save-status" class="sch-form-status"></div>
+            <div id="stats-entry-grid" style="overflow-x:auto"></div>
+          </div>
+        </div>
+
+        <!-- Season averages summary -->
+        <div class="sch-card" id="stats-summary-card" style="display:none">
+          <div class="sch-card-head">
+            <span class="sch-card-title" id="stats-summary-title">Season Averages</span>
+          </div>
+          <div class="sch-card-body" id="stats-summary-body">
+          </div>
+        </div>
+      </section>
+
       <!-- ═══ SCHEDULE (all matches) ════════════════════════════ -->
       <section class="sch-section" id="coach-section-schedule">
         <div class="sch-page-head">
@@ -387,6 +431,135 @@
 
         <div id="coach-all-matches-list" class="sch-list sch-list--spaced">
           <div class="sch-empty">No matches scheduled.</div>
+        </div>
+      </section>
+
+      <!-- ═══ ATTENDANCE ════════════════════════════════════════ -->
+      <section class="sch-section" id="coach-section-attendance">
+        <div class="sch-page-head">
+          <div>
+            <h1 class="sch-page-title">Attendance</h1>
+            <p class="sch-page-sub">Track who showed up for trainings and matches.</p>
+          </div>
+        </div>
+
+        <div class="sch-card">
+          <div class="sch-card-head">
+            <span class="sch-card-title">Select Event</span>
+          </div>
+          <div class="sch-card-body">
+            <div class="sch-form" style="gap:12px;border:0;padding-bottom:0;margin-bottom:0">
+              <div class="sch-form-row">
+                <div class="sch-field">
+                  <label class="sch-label" for="att-team">Team</label>
+                  <select id="att-team" class="sch-select">
+                    <option value="">— Select a team —</option>
+                  </select>
+                </div>
+                <div class="sch-field">
+                  <label class="sch-label" for="att-event-type">Event Type</label>
+                  <select id="att-event-type" class="sch-select">
+                    <option value="training">Training</option>
+                    <option value="match">Match</option>
+                  </select>
+                </div>
+                <div class="sch-field">
+                  <label class="sch-label" for="att-event">Event</label>
+                  <select id="att-event" class="sch-select">
+                    <option value="">— Select an event —</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attendance grid -->
+        <div class="sch-card" id="att-grid-card" style="display:none">
+          <div class="sch-card-head">
+            <span class="sch-card-title" id="att-grid-title">Mark Attendance</span>
+            <button class="sch-btn sch-btn--primary sch-btn--sm" id="att-save-btn">Save Attendance</button>
+          </div>
+          <div class="sch-card-body">
+            <div id="att-save-status" class="sch-form-status"></div>
+            <div id="att-grid"></div>
+          </div>
+        </div>
+
+        <!-- Attendance Summary -->
+        <div class="sch-card" id="att-summary-card" style="display:none">
+          <div class="sch-card-head">
+            <span class="sch-card-title">Attendance Summary</span>
+          </div>
+          <div class="sch-card-body" id="att-summary-body"></div>
+        </div>
+      </section>
+
+      <!-- ═══ FORMATIONS / TACTICS ═════════════════════════════ -->
+      <section class="sch-section" id="coach-section-formations">
+        <div class="sch-page-head">
+          <div>
+            <h1 class="sch-page-title">Tactical Board</h1>
+            <p class="sch-page-sub">Build and save formations for your teams.</p>
+          </div>
+        </div>
+
+        <div class="sch-card">
+          <div class="sch-card-head">
+            <span class="sch-card-title">Select Team</span>
+          </div>
+          <div class="sch-card-body">
+            <div class="sch-form" style="gap:12px;border:0;padding-bottom:0;margin-bottom:0">
+              <div class="sch-form-row">
+                <div class="sch-field">
+                  <label class="sch-label" for="tac-team">Team</label>
+                  <select id="tac-team" class="sch-select">
+                    <option value="">— Select a team —</option>
+                  </select>
+                </div>
+                <div class="sch-field">
+                  <label class="sch-label" for="tac-formation-select">Saved Formations</label>
+                  <select id="tac-formation-select" class="sch-select">
+                    <option value="">— New formation —</option>
+                  </select>
+                </div>
+              </div>
+              <div class="sch-form-row">
+                <div class="sch-field">
+                  <label class="sch-label" for="tac-name">Formation Name</label>
+                  <input id="tac-name" type="text" class="sch-input" placeholder="e.g. 4-3-3 Attack" value="Untitled Formation">
+                </div>
+                <div class="sch-field" style="flex:0 0 auto;align-self:flex-end">
+                  <button class="sch-btn sch-btn--primary sch-btn--sm" id="tac-save-btn">Save</button>
+                  <button class="sch-btn sch-btn--ghost sch-btn--sm" id="tac-new-btn">+ New</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tac-board-card" class="sch-card" style="display:none">
+          <div class="sch-card-head">
+            <span class="sch-card-title" id="tac-board-title">Formation</span>
+            <div style="display:flex;gap:8px">
+              <button class="sch-btn sch-btn--ghost sch-btn--xs" id="tac-add-player">+ Add Player</button>
+              <button class="sch-btn sch-btn--ghost sch-btn--xs" id="tac-clear-board">Clear</button>
+              <button class="sch-btn sch-btn--danger sch-btn--xs" id="tac-delete-btn" style="display:none">Delete</button>
+            </div>
+          </div>
+          <div class="sch-card-body" style="padding:0;overflow:hidden">
+            <div id="tac-save-status" class="sch-form-status" style="padding:0 16px"></div>
+            <div class="tac-board-container">
+              <div class="tac-field" id="tac-field">
+                <div class="tac-field-markings"></div>
+                <!-- Players rendered here by JS -->
+              </div>
+            </div>
+            <div class="tac-notes-area" style="padding:12px 16px;border-top:1px solid var(--line)">
+              <label class="sch-label" for="tac-notes">Formation Notes</label>
+              <textarea id="tac-notes" class="sch-input" rows="2" placeholder="Notes about this formation..." style="resize:vertical;min-height:48px"></textarea>
+            </div>
+          </div>
         </div>
       </section>
 

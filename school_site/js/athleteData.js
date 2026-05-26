@@ -1,17 +1,17 @@
 const SPORT_META = {
-  basketball: { label: "Basketball", icon: "🏀", accent: "#d7a23d" },
-  football: { label: "Football", icon: "🏈", accent: "#d76f3d" },
-  baseball: { label: "Baseball", icon: "⚾", accent: "#8cc9ff" },
-  track: { label: "Track", icon: "🏃", accent: "#8fe1bc" },
-  soccer: { label: "Soccer", icon: "⚽", accent: "#9db7ff" },
+  basketball: { label: "Basketball", icon: "BB", accent: "#d7a23d" },
+  football: { label: "Football", icon: "FB", accent: "#d76f3d" },
+  baseball: { label: "Baseball", icon: "BA", accent: "#8cc9ff" },
+  track: { label: "Track", icon: "TK", accent: "#8fe1bc" },
+  soccer: { label: "Soccer", icon: "SC", accent: "#9db7ff" },
 };
 
 export const VERIFICATION_BADGES = {
   coach: { key: "coach", label: "Coach Verified", short: "Coach", icon: "✓", tone: "coach" },
-  school: { key: "school", label: "School Verified", short: "School", icon: "🏫", tone: "school" },
-  video: { key: "video", label: "Video Verified", short: "Video", icon: "🎬", tone: "video" },
-  event: { key: "event", label: "Event Verified", short: "Event", icon: "🏆", tone: "event" },
-  official: { key: "official", label: "Official", short: "Official", icon: "⭐", tone: "official" },
+  school: { key: "school", label: "School Verified", short: "School", icon: "S", tone: "school" },
+  video: { key: "video", label: "Video Verified", short: "Video", icon: "V", tone: "video" },
+  event: { key: "event", label: "Event Verified", short: "Event", icon: "E", tone: "event" },
+  official: { key: "official", label: "Official", short: "Official", icon: "O", tone: "official" },
 };
 
 function sportMeta(key) {
@@ -285,7 +285,7 @@ const ATHLETE_PRESETS = [
       {
         id: "basketball",
         label: "Basketball",
-        icon: "🏀",
+        icon: "BB",
         position: "Forward / Point Guard",
         season: "Winter",
         grade: "11th Grade",
@@ -317,15 +317,15 @@ const ATHLETE_PRESETS = [
           { stat: "Burst", marcus: 88, avg: 64 },
         ],
         timeline: [
-          { year: "9th", emoji: "🌱", stats: { PPG: "11.4", APG: "2.9", RPG: "4.1" }, awards: ["Rotation Guard"], rank: "Regional #41", milestone: "Earned varsity minutes early." },
-          { year: "10th", emoji: "📈", stats: { PPG: "17.8", APG: "4.4", RPG: "6.0" }, awards: ["All-Region HM"], rank: "Regional #23", milestone: "Became primary perimeter creator." },
-          { year: "11th", emoji: "⭐", stats: { PPG: "24.3", APG: "5.8", RPG: "8.6" }, awards: ["All-District 1st Team", "Team MVP"], rank: "Regional #12", milestone: "Turned into a full-court scouting target." },
+          { year: "9th", emoji: "I", stats: { PPG: "11.4", APG: "2.9", RPG: "4.1" }, awards: ["Rotation Guard"], rank: "Regional #41", milestone: "Earned varsity minutes early." },
+          { year: "10th", emoji: "II", stats: { PPG: "17.8", APG: "4.4", RPG: "6.0" }, awards: ["All-Region HM"], rank: "Regional #23", milestone: "Became primary perimeter creator." },
+          { year: "11th", emoji: "III", stats: { PPG: "24.3", APG: "5.8", RPG: "8.6" }, awards: ["All-District 1st Team", "Team MVP"], rank: "Regional #12", milestone: "Turned into a full-court scouting target." },
         ],
       },
       {
         id: "football",
         label: "Football",
-        icon: "🏈",
+        icon: "FB",
         position: "Wide Receiver",
         season: "Fall",
         grade: "11th Grade",
@@ -356,15 +356,15 @@ const ATHLETE_PRESETS = [
           { stat: "Physicality", marcus: 74, avg: 58 },
         ],
         timeline: [
-          { year: "9th", emoji: "🌱", stats: { YDS: "336", TD: "3", REC: "26" }, awards: ["JV Call-Up"], rank: "Regional WR #51", milestone: "Created vertical threat reps." },
-          { year: "10th", emoji: "📈", stats: { YDS: "718", TD: "7", REC: "44" }, awards: ["Breakout Player"], rank: "Regional WR #29", milestone: "Became featured route winner." },
-          { year: "11th", emoji: "⭐", stats: { YDS: "1042", TD: "11", REC: "63" }, awards: ["All-Region WR"], rank: "Regional WR #16", milestone: "Crossed the 1,000-yard mark." },
+          { year: "9th", emoji: "I", stats: { YDS: "336", TD: "3", REC: "26" }, awards: ["JV Call-Up"], rank: "Regional WR #51", milestone: "Created vertical threat reps." },
+          { year: "10th", emoji: "II", stats: { YDS: "718", TD: "7", REC: "44" }, awards: ["Breakout Player"], rank: "Regional WR #29", milestone: "Became featured route winner." },
+          { year: "11th", emoji: "III", stats: { YDS: "1042", TD: "11", REC: "63" }, awards: ["All-Region WR"], rank: "Regional WR #16", milestone: "Crossed the 1,000-yard mark." },
         ],
       },
       {
         id: "baseball",
         label: "Baseball",
-        icon: "⚾",
+        icon: "BA",
         position: "Center Field",
         season: "Spring",
         grade: "11th Grade",
@@ -395,15 +395,15 @@ const ATHLETE_PRESETS = [
           { stat: "Instincts", marcus: 76, avg: 60 },
         ],
         timeline: [
-          { year: "9th", emoji: "🌱", stats: { AVG: ".262", OBP: ".312", SB: "7" }, awards: ["Depth Outfielder"], rank: "Regional CF #38", milestone: "Entered lineup for speed value." },
-          { year: "10th", emoji: "📈", stats: { AVG: ".311", OBP: ".368", SB: "12" }, awards: ["Lead-Off Trial"], rank: "Regional CF #23", milestone: "Held lead-off role more consistently." },
-          { year: "11th", emoji: "⭐", stats: { AVG: ".347", OBP: ".411", SB: "17" }, awards: ["All-District CF"], rank: "Regional CF #14", milestone: "Turned into a top-of-order creator." },
+          { year: "9th", emoji: "I", stats: { AVG: ".262", OBP: ".312", SB: "7" }, awards: ["Depth Outfielder"], rank: "Regional CF #38", milestone: "Entered lineup for speed value." },
+          { year: "10th", emoji: "II", stats: { AVG: ".311", OBP: ".368", SB: "12" }, awards: ["Lead-Off Trial"], rank: "Regional CF #23", milestone: "Held lead-off role more consistently." },
+          { year: "11th", emoji: "III", stats: { AVG: ".347", OBP: ".411", SB: "17" }, awards: ["All-District CF"], rank: "Regional CF #14", milestone: "Turned into a top-of-order creator." },
         ],
       },
       {
         id: "track",
         label: "Track",
-        icon: "🏃",
+        icon: "TK",
         position: "100m",
         season: "Spring",
         grade: "11th Grade",
@@ -433,9 +433,9 @@ const ATHLETE_PRESETS = [
           { stat: "Consistency", marcus: 79, avg: 60 },
         ],
         timeline: [
-          { year: "9th", emoji: "🌱", stats: { "100M": "11.42", "200M": "22.88", "Long Jump": `20'1"` }, awards: ["Varsity Relay Alternate"], rank: "Regional Sprint #43", milestone: "Established baseline speed markers." },
-          { year: "10th", emoji: "📈", stats: { "100M": "11.03", "200M": "22.19", "Long Jump": `21'4"` }, awards: ["Section Finalist"], rank: "Regional Sprint #25", milestone: "Legit sprint upside became visible." },
-          { year: "11th", emoji: "⭐", stats: { "100M": "10.74", "200M": "21.81", "Long Jump": `22'1"` }, awards: ["State Qualifier"], rank: "Regional Sprint #12", milestone: "Hit verified state-qualifying times." },
+          { year: "9th", emoji: "I", stats: { "100M": "11.42", "200M": "22.88", "Long Jump": `20'1"` }, awards: ["Varsity Relay Alternate"], rank: "Regional Sprint #43", milestone: "Established baseline speed markers." },
+          { year: "10th", emoji: "II", stats: { "100M": "11.03", "200M": "22.19", "Long Jump": `21'4"` }, awards: ["Section Finalist"], rank: "Regional Sprint #25", milestone: "Legit sprint upside became visible." },
+          { year: "11th", emoji: "III", stats: { "100M": "10.74", "200M": "21.81", "Long Jump": `22'1"` }, awards: ["State Qualifier"], rank: "Regional Sprint #12", milestone: "Hit verified state-qualifying times." },
         ],
       },
     ],
@@ -610,7 +610,7 @@ const ATHLETE_PRESETS = [
       {
         id: "basketball",
         label: "Basketball",
-        icon: "🏀",
+        icon: "BB",
         position: "Point Guard",
         season: "Winter",
         grade: "11th Grade",
@@ -641,15 +641,15 @@ const ATHLETE_PRESETS = [
           { stat: "Poise", marcus: 91, avg: 64 },
         ],
         timeline: [
-          { year: "9th", emoji: "🌱", stats: { APG: "4.6", PPG: "9.7", "AST/TO": "1.8" }, awards: ["Varsity Rotation"], rank: "Regional PG #22", milestone: "Became second-unit organizer." },
-          { year: "10th", emoji: "📈", stats: { APG: "7.4", PPG: "13.4", "AST/TO": "2.4" }, awards: ["All-District HM"], rank: "Regional PG #11", milestone: "Shifted into lead guard role." },
-          { year: "11th", emoji: "⭐", stats: { APG: "9.2", PPG: "17.1", "AST/TO": "3.1" }, awards: ["District POY", "All-State 2nd Team"], rank: "Regional PG #7", milestone: "Turned into one of the best facilitators in the region." },
+          { year: "9th", emoji: "I", stats: { APG: "4.6", PPG: "9.7", "AST/TO": "1.8" }, awards: ["Varsity Rotation"], rank: "Regional PG #22", milestone: "Became second-unit organizer." },
+          { year: "10th", emoji: "II", stats: { APG: "7.4", PPG: "13.4", "AST/TO": "2.4" }, awards: ["All-District HM"], rank: "Regional PG #11", milestone: "Shifted into lead guard role." },
+          { year: "11th", emoji: "III", stats: { APG: "9.2", PPG: "17.1", "AST/TO": "3.1" }, awards: ["District POY", "All-State 2nd Team"], rank: "Regional PG #7", milestone: "Turned into one of the best facilitators in the region." },
         ],
       },
       {
         id: "soccer",
         label: "Soccer",
-        icon: "⚽",
+        icon: "SC",
         position: "Midfielder",
         season: "Spring",
         grade: "11th Grade",
@@ -680,9 +680,9 @@ const ATHLETE_PRESETS = [
           { stat: "Ball Security", marcus: 88, avg: 64 },
         ],
         timeline: [
-          { year: "9th", emoji: "🌱", stats: { Assists: "6", Goals: "3", Chances: "18" }, awards: ["Rotation Midfielder"], rank: "Regional MF #33", milestone: "Earned minutes as connector." },
-          { year: "10th", emoji: "📈", stats: { Assists: "12", Goals: "5", Chances: "31" }, awards: ["Starter"], rank: "Regional MF #17", milestone: "Became primary chance creator." },
-          { year: "11th", emoji: "⭐", stats: { Assists: "18", Goals: "8", Chances: "46" }, awards: ["All-District Midfielder"], rank: "Regional MF #8", milestone: "One of the best midfield playmakers in the area." },
+          { year: "9th", emoji: "I", stats: { Assists: "6", Goals: "3", Chances: "18" }, awards: ["Rotation Midfielder"], rank: "Regional MF #33", milestone: "Earned minutes as connector." },
+          { year: "10th", emoji: "II", stats: { Assists: "12", Goals: "5", Chances: "31" }, awards: ["Starter"], rank: "Regional MF #17", milestone: "Became primary chance creator." },
+          { year: "11th", emoji: "III", stats: { Assists: "18", Goals: "8", Chances: "46" }, awards: ["All-District Midfielder"], rank: "Regional MF #8", milestone: "One of the best midfield playmakers in the area." },
         ],
       },
     ],
@@ -822,7 +822,7 @@ function sportsFromStats(stats, position) {
     const fallbackSport = {
       id: "basketball",
       label: "Basketball",
-      icon: "🏀",
+      icon: "BB",
       position: position || "Athlete",
       season: "Current",
       grade: "Current",
@@ -848,9 +848,9 @@ function sportsFromStats(stats, position) {
         { stat: "Context", marcus: 74, avg: 51 },
       ],
       timeline: [
-        { year: "9th", emoji: "🌱", stats: { Impact: "42", Efficiency: "55", Assists: "6" }, awards: ["Baseline"], rank: "Regional #55", milestone: "Initial varsity exposure." },
-        { year: "10th", emoji: "📈", stats: { Impact: "56", Efficiency: "67", Assists: "8" }, awards: ["Growth"], rank: "Regional #33", milestone: "Consistent contributor." },
-        { year: "11th", emoji: "⭐", stats: { Impact: "68", Efficiency: "77", Assists: "11" }, awards: ["Trusted"], rank: "Regional #19", milestone: "Built a legitimate scouting profile." },
+        { year: "9th", emoji: "I", stats: { Impact: "42", Efficiency: "55", Assists: "6" }, awards: ["Baseline"], rank: "Regional #55", milestone: "Initial varsity exposure." },
+        { year: "10th", emoji: "II", stats: { Impact: "56", Efficiency: "67", Assists: "8" }, awards: ["Growth"], rank: "Regional #33", milestone: "Consistent contributor." },
+        { year: "11th", emoji: "III", stats: { Impact: "68", Efficiency: "77", Assists: "11" }, awards: ["Trusted"], rank: "Regional #19", milestone: "Built a legitimate scouting profile." },
       ],
     };
     const performance = calculateSportPerformanceRating(fallbackSport);
@@ -909,7 +909,7 @@ function sportsFromStats(stats, position) {
       compareRadar,
       timeline: progression.map((row, index) => ({
         year: row.year,
-        emoji: ["🌱", "📈", "⭐"][index] || "•",
+        emoji: ["I", "II", "III"][index] || "•",
         stats: Object.fromEntries(
           Object.entries(row)
             .filter(([keyName]) => keyName !== "year")

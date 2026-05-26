@@ -68,6 +68,7 @@
 /* ── Hero banner ──────────────────────────────────────────────── */
 
 .pp-hero {
+  position: relative;
   border-radius: 20px;
   overflow: hidden;
   color: #fff;
@@ -119,6 +120,58 @@
   color: #fff;
   font-size: 13px;
   font-weight: 700;
+}
+
+/* ── Avatar + cover upload buttons ── */
+.pp-avatar-edit-btn {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: rgba(0,0,0,.55);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .2s, background .15s;
+  z-index: 3;
+}
+.pp-avatar-wrap:hover .pp-avatar-edit-btn {
+  opacity: 1;
+}
+.pp-avatar-edit-btn:hover {
+  background: rgba(0,0,0,.75);
+}
+
+.pp-cover-edit-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(0,0,0,.45);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .2s, background .15s;
+  z-index: 3;
+  backdrop-filter: blur(6px);
+}
+.pp-hero:hover .pp-cover-edit-btn {
+  opacity: 1;
+}
+.pp-cover-edit-btn:hover {
+  background: rgba(0,0,0,.7);
 }
 
 .pp-headline {
@@ -404,9 +457,11 @@
 
 .pp-metrics-bar {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 1px;
   background: rgba(255,255,255,.06);
+  border-radius: 0 0 20px 20px;
+  overflow: hidden;
 }
 
 .pp-metric-tile {
@@ -641,6 +696,15 @@
   color: var(--accent);
   font-size: 12px;
   font-weight: 600;
+}
+
+.pp-chip--role {
+  background: rgba(255,255,255,.15);
+  color: #fff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  padding: 5px 12px;
 }
 
 .pp-pill {
@@ -1545,4 +1609,108 @@
   .pp-schedule-row { grid-template-columns: 1fr; }
   .pp-mini-stats--season { grid-template-columns: 1fr; }
   .pp-post-feed { max-width: 100%; }
+  .pp-measurables-grid { grid-template-columns: repeat(2, 1fr); }
+  .pp-real-stats-grid  { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── Measurables Card ────────────────────────────────────────── */
+.pp-card--measurables { border-left: 3px solid var(--brand); }
+
+.pp-measurables-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 14px 18px;
+}
+
+.pp-measurable-item {
+  text-align: center;
+  padding: 10px 6px;
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface-2, rgba(255,255,255,.04));
+  transition: transform .15s, box-shadow .15s;
+}
+.pp-measurable-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+
+.pp-measurable-val {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+  line-height: 1.2;
+}
+
+.pp-measurable-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--muted, #888);
+  margin-top: 4px;
+}
+
+/* ── Real Stats (Season Averages) Card ───────────────────────── */
+.pp-card--real-stats { border-left: 3px solid var(--accent, #22c55e); }
+
+.pp-card--real-stats .pp-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pp-card--real-stats .pp-chip {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(34,197,94,.15);
+  color: #22c55e;
+  animation: pp-pulse-chip 2s ease-in-out infinite;
+}
+
+@keyframes pp-pulse-chip {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .6; }
+}
+
+.pp-real-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 14px 18px;
+}
+
+.pp-real-stat {
+  text-align: center;
+  padding: 12px 6px;
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface-2, rgba(255,255,255,.04));
+  transition: transform .15s, box-shadow .15s;
+}
+.pp-real-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+
+.pp-real-stat-val {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--brand, #2d9bb2);
+  line-height: 1.1;
+}
+
+.pp-real-stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  margin-top: 4px;
+  text-transform: capitalize;
+}
+
+.pp-real-stat-meta {
+  font-size: 10px;
+  color: var(--muted, #888);
+  margin-top: 2px;
 }

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Untitled Athletics • School Rankings</title>
+  <script>var t=localStorage.getItem("ua-theme");if(t)document.documentElement.setAttribute("data-theme",t);</script>
+  <link rel="stylesheet" href="styles.css?v=20260523g">
+  <link rel="stylesheet" href="rankings.css?v=20260523g">
+  <script type="module" src="js/app.js?v=20260524a"></script>
+  <script type="module" src="js/rankings.js?v=20260523g"></script>
+</head>
+<body data-page="rankings" data-requires-session="true">
+<div class="app-layout">
+
+  <aside class="sidebar" id="sidebar" data-shared-sidebar></aside>
+  <div class="mobile-overlay" id="mobile-overlay"></div>
+
+  <div class="page-wrap">
+    <header class="site-header" data-shared-header></header>
+    <main class="rk-main">
+
+      <!-- Header -->
+      <div class="rk-page-header">
+        <div>
+          <h1 class="rk-page-title">School Rankings</h1>
+          <p class="rk-page-sub">See how schools stack up based on athlete performance, wins, and depth.</p>
+        </div>
+      </div>
+
+      <!-- Metrics -->
+      <div class="rk-metrics-bar">
+        <div class="rk-metric"><span class="rk-metric-val" id="rk-total-schools">–</span><span class="rk-metric-label">Schools</span></div>
+        <div class="rk-metric"><span class="rk-metric-val" id="rk-total-athletes">–</span><span class="rk-metric-label">Athletes</span></div>
+        <div class="rk-metric"><span class="rk-metric-val" id="rk-total-sports">–</span><span class="rk-metric-label">Sports</span></div>
+        <div class="rk-metric"><span class="rk-metric-val" id="rk-avg-rating">–</span><span class="rk-metric-label">Avg Rating</span></div>
+      </div>
+
+      <!-- Filters -->
+      <div class="rk-toolbar">
+        <div class="rk-toolbar-search">
+          
+          <input id="rk-search" type="text" class="rk-search-input" placeholder="Search schools…" autocomplete="off">
+        </div>
+        <div class="rk-toolbar-filters">
+          <select id="rk-sport-filter" class="rk-select"><option value="all">All Sports</option></select>
+          <select id="rk-region-filter" class="rk-select"><option value="all">All Regions</option></select>
+          <select id="rk-sort" class="rk-select">
+            <option value="composite">Composite Score</option>
+            <option value="avgRating">Avg Rating</option>
+            <option value="athleteCount">Most Athletes</option>
+            <option value="topRating">Top Athlete</option>
+            <option value="winRate">Win Rate</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Leaderboard -->
+      <div class="rk-section">
+        <div id="rk-leaderboard" class="rk-leaderboard">
+          <div class="rk-empty">Loading rankings…</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

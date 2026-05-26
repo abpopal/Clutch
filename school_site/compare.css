@@ -1,109 +1,159 @@
-.compare-page-wrap {
-  background: linear-gradient(180deg, #edf2fb 0%, #f8fafc 42%, #eef3fb 100%);
-}
+/* ============================================================
+   COMPARE PAGE  (cmp-*)
+   Dark-first, uses CSS custom properties from styles.css
+   ============================================================ */
 
-.compare-main {
-  padding: 20px 22px 28px;
-}
-
-.compare-shell {
+.cmp-main {
+  padding: 24px 28px 40px;
   display: grid;
-  gap: 18px;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.compare-hero,
-.compare-card,
-.compare-empty,
-.compare-person-card,
-.compare-stat-card,
-.compare-chart-card,
-.compare-insight-card {
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(203, 213, 225, 0.72);
-  box-shadow: 0 18px 40px rgba(148, 163, 184, 0.18);
+/* ── Page header ─────────────────────────────────────────── */
+.cmp-page-header {
+  margin-bottom: 4px;
 }
 
-.compare-hero,
-.compare-card {
-  padding: 22px;
+.cmp-page-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 6px;
 }
 
-.compare-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
-.compare-card-head h2,
-.compare-card-head h3 {
+.cmp-page-sub {
+  color: var(--muted);
+  font-size: .9rem;
   margin: 0;
-  color: #111827;
 }
 
-.compare-controls {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.compare-controls label {
-  display: grid;
-  gap: 8px;
-  color: #475467;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.compare-controls select {
-  width: 100%;
-  min-height: 48px;
+/* ── Selector card ───────────────────────────────────────── */
+.cmp-selector-card {
   border-radius: 16px;
-  border: 1px solid #d6dfec;
-  background: #f8fafc;
-  color: #111827;
-  padding: 0 14px;
-  font: inherit;
-}
-
-.compare-stage,
-.compare-stage-main,
-.compare-stat-grid,
-.compare-person-grid,
-.compare-summary-grid {
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  padding: 24px;
   display: grid;
   gap: 18px;
 }
 
+.cmp-selector-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr 160px;
+  gap: 16px;
+  align-items: end;
+}
+
+.cmp-selector-col {
+  display: grid;
+  gap: 6px;
+}
+
+.cmp-label {
+  font-size: .75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+}
+
+.cmp-select {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1.5px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 0 36px 0 14px;
+  font: inherit;
+  font-size: .875rem;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+  cursor: pointer;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.cmp-select:hover {
+  border-color: rgba(36, 95, 115, .35);
+}
+
+.cmp-select:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(36, 95, 115, .15);
+}
+
+.cmp-vs {
+  align-self: end;
+  padding-bottom: 10px;
+  font-weight: 800;
+  font-size: .9rem;
+  color: var(--brand);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.cmp-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* ── Status ──────────────────────────────────────────────── */
+.cmp-status {
+  color: var(--muted);
+  font-size: .8125rem;
+}
+
+.cmp-status.is-error {
+  color: var(--danger, #ef4444);
+}
+
+/* ── Stage (results area) ────────────────────────────────── */
+.cmp-stage {
+  display: grid;
+  gap: 20px;
+}
+
+.cmp-empty {
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  padding: 40px 28px;
+  color: var(--muted);
+  text-align: center;
+  font-size: .9rem;
+}
+
+/* ── Comparison layout (rendered by JS using compare-* classes) */
 .compare-stage-main {
-  grid-template-columns: minmax(0, 1fr) 320px;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
   align-items: start;
 }
 
-.compare-status {
-  color: rgba(17, 24, 39, 0.62);
-  font-size: 13px;
+.compare-stage-main > div {
+  display: grid;
+  gap: 20px;
 }
 
-.compare-status.is-error {
-  color: #b42318;
+/* ── Person grid ─────────────────────────────────────────── */
+.compare-person-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
 }
 
-.compare-empty {
-  padding: 28px;
-  color: #667085;
-}
-
-.compare-person-grid,
-.compare-summary-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.compare-person-card,
-.compare-chart-card,
-.compare-insight-card {
+.compare-person-card {
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--line);
   padding: 22px;
 }
 
@@ -111,179 +161,176 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .compare-avatar {
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid rgba(37, 99, 235, 0.12);
+  border: 2.5px solid var(--line);
+  flex-shrink: 0;
 }
 
 .compare-person-topline h3 {
-  margin: 0 0 4px;
-  color: #111827;
-  font-size: 22px;
+  margin: 0 0 2px;
+  color: var(--text);
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
-.compare-person-topline p,
-.compare-person-meta span,
-.compare-stat-card span,
-.compare-insight-list li,
-.compare-chart-empty {
-  color: #667085;
-}
-
-.compare-person-topline p,
-.compare-person-meta {
+.compare-person-topline p {
   margin: 0;
+  color: var(--muted);
+  font-size: .8125rem;
 }
 
 .compare-person-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 8px 14px;
+  margin: 0 0 16px;
+  font-size: .8125rem;
+  color: var(--muted);
 }
 
-.compare-pill-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.compare-pill {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 8px 12px;
-  background: #edf2fe;
-  color: #274690;
-  font-size: 13px;
-  font-weight: 600;
-}
-
+/* ── Summary grid (GPA/Readiness pills inside person card) */
 .compare-summary-grid {
-  margin-top: 18px;
-}
-
-.compare-stat-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 4px;
 }
 
 .compare-stat-card {
-  border-radius: 20px;
-  border: 1px solid #e6edf8;
-  background: #f8fafc;
-  padding: 18px;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: var(--surface-2);
+  padding: 14px;
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .compare-stat-card-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-}
-
-.compare-stat-card-head strong,
-.compare-metric-label,
-.compare-metric-value,
-.compare-metric-name,
-.compare-insight-list strong {
-  color: #111827;
+  gap: 8px;
 }
 
 .compare-stat-card-head strong {
-  font-size: 17px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .compare-stat-card-head span {
-  font-size: 12px;
-  letter-spacing: 0.08em;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .06em;
   text-transform: uppercase;
+  color: var(--muted);
 }
 
-.compare-stat-values {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  gap: 12px;
+.compare-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.compare-pill {
+  display: inline-flex;
   align-items: center;
-}
-
-.compare-metric {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-}
-
-.compare-metric.is-right {
-  text-align: right;
-}
-
-.compare-metric-value {
-  font-size: 26px;
-  line-height: 1;
-  font-weight: 700;
-}
-
-.compare-metric-value.is-better {
-  color: #0f766e;
-}
-
-.compare-metric-name {
-  font-size: 13px;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: rgba(45, 155, 178, .1);
+  color: var(--brand);
+  font-size: .75rem;
   font-weight: 600;
 }
 
-.compare-vs {
-  color: #98a2b3;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+/* ── Chart card ──────────────────────────────────────────── */
+.compare-chart-card,
+.compare-card {
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  padding: 22px;
 }
 
 .compare-chart-card {
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .compare-chart-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
   flex-wrap: wrap;
 }
 
+.compare-chart-head h3 {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.compare-card-head {
+  margin-bottom: 16px;
+}
+
+.compare-card-head h2 {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: .6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+}
+
 .compare-metric-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 6px;
 }
 
 .compare-metric-pill {
-  border: 1px solid #d0d9e8;
+  border: 1.5px solid var(--line);
   border-radius: 999px;
-  background: #f8fafc;
-  color: #344054;
-  padding: 10px 13px;
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 6px 12px;
   cursor: pointer;
   font: inherit;
+  font-size: .75rem;
+  font-weight: 600;
+  transition: all .2s;
+}
+
+.compare-metric-pill:hover {
+  border-color: var(--brand);
+  color: var(--brand);
 }
 
 .compare-metric-pill.is-active {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--brand);
+  border-color: var(--brand);
   color: #fff;
 }
 
 .compare-chart-shell {
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .compare-chart-svg {
@@ -293,76 +340,151 @@
 }
 
 .compare-grid-line {
-  stroke: #e6edf8;
+  stroke: var(--line);
   stroke-width: 1;
 }
 
 .compare-axis-label {
-  fill: #667085;
+  fill: var(--muted);
   font-size: 11px;
-  letter-spacing: 0.04em;
+  letter-spacing: .04em;
 }
 
 .compare-chart-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 16px;
 }
 
 .compare-chart-legend span {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #667085;
-  font-size: 13px;
+  color: var(--muted);
+  font-size: .8125rem;
 }
 
 .compare-chart-legend i {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 999px;
   display: inline-block;
 }
 
 .compare-chart-empty {
+  padding: 24px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1.5px solid var(--line);
+  color: var(--muted);
+  font-size: .875rem;
+}
+
+/* ── Stat grid (side-by-side stats) ──────────────────────── */
+.compare-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.compare-stat-values {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.compare-metric {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.compare-metric.is-right {
+  text-align: right;
+}
+
+.compare-metric-value {
+  font-size: 1.35rem;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.compare-metric-value.is-better {
+  color: var(--success, #14b8a6);
+}
+
+.compare-metric-name {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.compare-vs {
+  color: var(--muted);
+  font-size: .6875rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .6;
+}
+
+/* ── Insight card (sidebar) ──────────────────────────────── */
+.compare-insight-card {
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--line);
   padding: 22px;
-  border-radius: 18px;
-  background: #f8fafc;
-  border: 1px solid #e6edf8;
+  position: sticky;
+  top: 24px;
 }
 
 .compare-insight-card h3 {
   margin: 0 0 14px;
-  color: #111827;
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 
 .compare-insight-list {
   margin: 0;
   padding-left: 18px;
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .compare-insight-list li {
-  line-height: 1.55;
+  line-height: 1.5;
+  color: var(--muted);
+  font-size: .875rem;
 }
 
+.compare-insight-list strong {
+  color: var(--text);
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 1180px) {
   .compare-stage-main {
     grid-template-columns: 1fr;
   }
-
   .compare-insight-card {
+    position: static;
     order: -1;
   }
 }
 
 @media (max-width: 920px) {
-  .compare-main {
-    padding: 16px;
+  .cmp-main {
+    padding: 18px;
   }
-
-  .compare-controls,
+  .cmp-selector-row {
+    grid-template-columns: 1fr;
+  }
+  .cmp-vs {
+    display: none;
+  }
   .compare-person-grid,
   .compare-summary-grid,
   .compare-stat-grid {
@@ -371,23 +493,20 @@
 }
 
 @media (max-width: 640px) {
-  .compare-hero,
-  .compare-card,
+  .cmp-selector-card,
   .compare-person-card,
   .compare-chart-card,
+  .compare-card,
   .compare-insight-card,
-  .compare-empty {
-    padding: 18px;
+  .cmp-empty {
+    padding: 16px;
   }
-
   .compare-stat-values {
     grid-template-columns: 1fr;
   }
-
   .compare-metric.is-right {
     text-align: left;
   }
-
   .compare-vs {
     display: none;
   }

@@ -4,53 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Untitled Athletics • Home</title>
-  <link rel="stylesheet" href="styles.css?v=20260508e">
-  <script type="module" src="js/app.js?v=20260508e"></script>
-  <script type="module" src="js/home.js?v=20260508e"></script>
+  <script>var t=localStorage.getItem("ua-theme");if(t)document.documentElement.setAttribute("data-theme",t);</script>
+  <link rel="stylesheet" href="styles.css?v=20260523g">
+  <script type="module" src="js/app.js?v=20260524a"></script>
+  <script type="module" src="js/home.js?v=20260523g"></script>
 </head>
 <body data-page="home" data-requires-session="true">
   <div class="app-layout">
 
     <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <div class="logo">UA</div>
-        <span class="role-pill" id="role-pill">guest</span>
-      </div>
-
-      <div>
-        <p class="nav-label">Main</p>
-        <nav class="nav">
-          <a class="nav-btn" data-nav="home" href="index.html">
-            <span class="nav-icon">🏠</span><span class="nav-text">Home</span>
-          </a>
-          <a class="nav-btn" data-nav="pulse" href="pulse.html">
-            <span class="nav-icon">⚡</span><span class="nav-text">Pulse</span>
-          </a>
-          <a class="nav-btn" data-nav="search" href="explore.html">
-            <span class="nav-icon">🔍</span><span class="nav-text">Explore</span>
-          </a>
-          <a class="nav-btn" data-nav="profile" href="profile.html">
-            <span class="nav-icon">👤</span><span class="nav-text">Profile</span>
-          </a>
-          <a class="nav-btn" data-nav="messages" href="messages.html"><span class="nav-icon">💬</span><span class="nav-text">Messages</span></a>
-        <a class="nav-btn" data-nav="scout-dashboard" data-role-allow="scout" href="scout-dashboard.html">
-            <span class="nav-icon">📋</span><span class="nav-text">Scout Hub</span>
-          </a>
-          <a class="nav-btn" data-nav="school-dashboard" data-role-allow="school_admin" href="school-dashboard.html">
-            <span class="nav-icon">🏫</span><span class="nav-text">School</span>
-          </a>
-          <a class="nav-btn" data-nav="coach-dashboard" data-role-allow="coach" href="coach-dashboard.html">
-            <span class="nav-icon">🏋️</span><span class="nav-text">Coach Hub</span>
-          </a>
-        </nav>
-      </div>
-
-      <div class="sidebar-foot">
-        <button class="btn-ghost full" id="sign-out-btn">Sign out</button>
-      </div>
-    </aside>
-
+    <aside class="sidebar" id="sidebar" data-shared-sidebar></aside>
     <div class="mobile-overlay" id="mobile-overlay"></div>
 
     <!-- Page wrap -->
@@ -99,13 +62,13 @@
 
                 <div class="composer-foot">
                   <div class="composer-tools">
-                    <label class="composer-tool-btn" title="Add photo/video">
-                      📷
+                    <label class="composer-tool-btn" title="Add photo or video">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                       <input type="file" accept="image/*,video/*" hidden id="composer-media">
                     </label>
                     <select id="composer-visibility" class="composer-select">
-                      <option value="public">🌐 Everyone</option>
-                      <option value="followers">👥 Followers</option>
+                      <option value="public">Everyone</option>
+                      <option value="followers">Followers</option>
                     </select>
                   </div>
                   <button class="btn primary sm" type="submit">Post</button>
@@ -149,12 +112,12 @@
           <div class="right-widget">
             <h3 class="widget-title">Explore sports</h3>
             <div class="sport-tags">
-              <a href="explore.html?sport=basketball" class="sport-tag">🏀 Basketball</a>
-              <a href="explore.html?sport=soccer"     class="sport-tag">⚽ Soccer</a>
-              <a href="explore.html?sport=football"   class="sport-tag">🏈 Football</a>
-              <a href="explore.html?sport=track"      class="sport-tag">🏃 Track</a>
-              <a href="explore.html?sport=baseball"   class="sport-tag">⚾ Baseball</a>
-              <a href="explore.html?sport=volleyball" class="sport-tag">🏐 Volleyball</a>
+              <a href="explore.html?sport=basketball" class="sport-tag">Basketball</a>
+              <a href="explore.html?sport=soccer"     class="sport-tag">Soccer</a>
+              <a href="explore.html?sport=football"   class="sport-tag">Football</a>
+              <a href="explore.html?sport=track"      class="sport-tag">Track</a>
+              <a href="explore.html?sport=baseball"   class="sport-tag">Baseball</a>
+              <a href="explore.html?sport=volleyball" class="sport-tag">Volleyball</a>
             </div>
           </div>
 

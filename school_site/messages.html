@@ -4,9 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Untitled Athletics • Messages</title>
-  <link rel="stylesheet" href="styles.css?v=20260508e">
-  <script type="module" src="js/app.js?v=20260508e"></script>
-  <script type="module" src="js/messages.js?v=20260508e"></script>
+  <script>var t=localStorage.getItem("ua-theme");if(t)document.documentElement.setAttribute("data-theme",t);</script>
+  <link rel="stylesheet" href="styles.css?v=20260523g">
+  <script type="module" src="js/app.js?v=20260524a"></script>
+  <script type="module" src="js/messages.js?v=20260522a"></script>
   <style>
     .msg-layout {
       display: grid;
@@ -54,8 +55,8 @@
       transition: background .12s;
     }
 
-    .msg-convo-item:hover,
-    .msg-convo-item.active { background: var(--surface); }
+    .msg-convo-item:hover { background: var(--surface); }
+    .msg-convo-item.active { background: var(--surface); border-left: 3px solid var(--brand, #245f73); }
 
     .msg-convo-name {
       font-size: .9375rem;
@@ -221,29 +222,7 @@
 <body data-page="messages" data-requires-session="true">
 <div class="app-layout">
 
-  <aside class="sidebar" id="sidebar">
-    <div class="brand">
-      <div class="logo">UA</div>
-      <span class="role-pill" id="role-pill">guest</span>
-    </div>
-    <div>
-      <p class="nav-label">Main</p>
-      <nav class="nav">
-        <a class="nav-btn" data-nav="home" href="index.html"><span class="nav-icon">🏠</span><span class="nav-text">Home</span></a>
-        <a class="nav-btn" data-nav="pulse" href="pulse.html"><span class="nav-icon">⚡</span><span class="nav-text">Pulse</span></a>
-        <a class="nav-btn" data-nav="search" href="explore.html"><span class="nav-icon">🔍</span><span class="nav-text">Explore</span></a>
-        <a class="nav-btn" data-nav="profile" href="profile.html"><span class="nav-icon">👤</span><span class="nav-text">Profile</span></a>
-        <a class="nav-btn" data-nav="messages" href="messages.html"><span class="nav-icon">💬</span><span class="nav-text">Messages</span></a>
-        <a class="nav-btn" data-nav="scout-dashboard" data-role-allow="scout" href="scout-dashboard.html"><span class="nav-icon">📋</span><span class="nav-text">Scout Hub</span></a>
-        <a class="nav-btn" data-nav="school-dashboard" data-role-allow="school_admin" href="school-dashboard.html"><span class="nav-icon">🏫</span><span class="nav-text">School</span></a>
-        <a class="nav-btn" data-nav="coach-dashboard" data-role-allow="coach" href="coach-dashboard.html"><span class="nav-icon">🏋️</span><span class="nav-text">Coach Hub</span></a>
-      </nav>
-    </div>
-    <div class="sidebar-foot">
-      <button class="btn-ghost full" id="sign-out-btn">Sign out</button>
-    </div>
-  </aside>
-
+  <aside class="sidebar" id="sidebar" data-shared-sidebar></aside>
   <div class="mobile-overlay" id="mobile-overlay"></div>
 
   <div class="page-wrap" style="overflow:hidden;">
@@ -254,7 +233,7 @@
         <!-- Conversation List -->
         <div class="msg-sidebar">
           <div class="msg-sidebar-head">
-            <span class="msg-sidebar-title">💬 Messages</span>
+            <span class="msg-sidebar-title">Messages</span>
             <button class="ua-btn ua-btn--primary ua-btn--sm" id="new-convo-btn">+ New</button>
           </div>
           <div id="convo-list" class="msg-convo-list">
@@ -265,7 +244,7 @@
         <!-- Thread Panel -->
         <div class="msg-thread" id="msg-thread">
           <div class="msg-thread-empty" id="thread-empty">
-            <span class="msg-thread-empty-icon">💬</span>
+            <span class="msg-thread-empty-icon"></span>
             <span>Select a conversation to start messaging.</span>
           </div>
           <div id="thread-head" class="msg-thread-head" hidden></div>

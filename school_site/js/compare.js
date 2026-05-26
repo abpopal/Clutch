@@ -5,6 +5,7 @@ import { loadAthleteDirectory } from "./athleteDirectoryData.js";
 const athleteASelect = document.querySelector("#compare-athlete-a");
 const athleteBSelect = document.querySelector("#compare-athlete-b");
 const sportSelect = document.querySelector("#compare-sport");
+const compareBtn = document.querySelector("#compare-btn");
 const statusEl = document.querySelector("#compare-status");
 const stageEl = document.querySelector("#compare-stage");
 
@@ -444,6 +445,10 @@ function bindEvents() {
 
   sportSelect?.addEventListener("change", () => {
     state.sportId = sportSelect.value;
+    renderComparison();
+  });
+
+  compareBtn?.addEventListener("click", () => {
     renderComparison();
   });
 

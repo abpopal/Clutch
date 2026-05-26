@@ -1,0 +1,276 @@
+/* ═══════════════════════════════════════════════════════════════
+   School Rankings
+   ═══════════════════════════════════════════════════════════════ */
+
+.rk-main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1.25rem 4rem;
+}
+
+/* ── Page header ─────────────────────────────────────────────── */
+.rk-page-header {
+  padding: 2rem 0 1rem;
+}
+.rk-page-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+}
+.rk-page-sub {
+  color: var(--muted);
+  font-size: .875rem;
+  margin: .25rem 0 0;
+}
+
+/* ── Metrics bar ─────────────────────────────────────────────── */
+.rk-metrics-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+.rk-metric {
+  background: var(--surface);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.rk-metric-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text);
+  font-family: "Space Grotesk", sans-serif;
+}
+.rk-metric-label {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────── */
+.rk-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: center;
+  padding: .75rem 0;
+}
+.rk-toolbar-search {
+  flex: 1 1 220px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.rk-search-icon {
+  position: absolute;
+  left: .875rem;
+  font-size: .85rem;
+  pointer-events: none;
+}
+.rk-search-input {
+  width: 100%;
+  padding: 8px 12px 8px 2.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: .875rem;
+}
+.rk-search-input:focus { outline: none; border-color: var(--brand); }
+
+.rk-toolbar-filters {
+  display: flex;
+  gap: .4rem;
+  flex-wrap: wrap;
+}
+.rk-select {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: .8125rem;
+  cursor: pointer;
+}
+
+/* ── Leaderboard ─────────────────────────────────────────────── */
+.rk-leaderboard {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.rk-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--muted);
+  font-size: .875rem;
+}
+.rk-empty--error { color: #ef4444; }
+
+/* ── School card ─────────────────────────────────────────────── */
+.rk-card {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform .15s, box-shadow .15s, border-color .15s;
+}
+.rk-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.2);
+  border-color: var(--tier-color, var(--line));
+}
+.rk-card--top {
+  border-left: 4px solid var(--tier-color, var(--brand));
+}
+
+/* Rank column */
+.rk-card-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  background: var(--surface-2, rgba(255,255,255,.03));
+  border-right: 1px solid var(--line);
+}
+.rk-rank-icon {
+  font-size: 1.5rem;
+}
+.rk-rank-num {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--muted);
+  font-family: "Space Grotesk", sans-serif;
+}
+
+/* Body */
+.rk-card-body {
+  flex: 1;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rk-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: .75rem;
+}
+
+.rk-school-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rk-school-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+}
+.rk-school-location {
+  font-size: .75rem;
+  color: var(--muted);
+}
+
+.rk-tier-badge {
+  font-size: .65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: #fff;
+  flex: 0 0 auto;
+}
+
+/* Score bar */
+.rk-score-bar-wrap {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--surface-2, rgba(255,255,255,.06));
+  overflow: hidden;
+}
+.rk-score-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .5s ease;
+}
+
+/* Stats row */
+.rk-card-stats {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+.rk-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.rk-stat-val {
+  font-size: .9375rem;
+  font-weight: 700;
+  color: var(--text);
+  font-family: "Space Grotesk", sans-serif;
+}
+.rk-stat-label {
+  font-size: .625rem;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Sport tags */
+.rk-sport-tags {
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+.rk-sport-tag {
+  font-size: .6875rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-2, rgba(255,255,255,.06));
+  color: var(--muted);
+  font-weight: 600;
+}
+.rk-sport-tag--more {
+  background: var(--brand, #2d9bb2);
+  color: #fff;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .rk-metrics-bar { grid-template-columns: repeat(2, 1fr); }
+  .rk-card { flex-direction: column; }
+  .rk-card-rank {
+    min-width: unset;
+    padding: 8px;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .rk-card-stats { gap: .75rem; }
+  .rk-toolbar-filters { width: 100%; }
+  .rk-select { flex: 1; }
+}

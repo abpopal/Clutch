@@ -4,44 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Untitled Athletics • Scout Hub</title>
-  <link rel="stylesheet" href="styles.css?v=20260508e">
-  <link rel="stylesheet" href="scout-dashboard.css?v=20260508e">
-  <script type="module" src="js/app.js?v=20260508e"></script>
-  <script type="module" src="js/scoutDashboard.js?v=20260508e"></script>
+  <script>var t=localStorage.getItem("ua-theme");if(t)document.documentElement.setAttribute("data-theme",t);</script>
+  <link rel="stylesheet" href="styles.css?v=20260523g">
+  <link rel="stylesheet" href="scout-dashboard.css?v=20260523g">
+  <script type="module" src="js/app.js?v=20260524a"></script>
+  <script type="module" src="js/scoutDashboard.js?v=20260523g"></script>
 </head>
 <body data-page="scout-dashboard" data-requires-session="true">
 <div class="app-layout">
 
-  <aside class="sidebar" id="sidebar">
-    <div class="brand">
-      <div class="logo">UA</div>
-      <span class="role-pill" id="role-pill">guest</span>
-    </div>
-    <div>
-      <p class="nav-label">Main</p>
-      <nav class="nav">
-        <a class="nav-btn" data-nav="home" href="index.html"><span class="nav-icon">🏠</span><span class="nav-text">Home</span></a>
-        <a class="nav-btn" data-nav="pulse" href="pulse.html"><span class="nav-icon">⚡</span><span class="nav-text">Pulse</span></a>
-        <a class="nav-btn" data-nav="search" href="explore.html"><span class="nav-icon">🔍</span><span class="nav-text">Explore</span></a>
-        <a class="nav-btn" data-nav="profile" href="profile.html"><span class="nav-icon">👤</span><span class="nav-text">Profile</span></a>
-        <a class="nav-btn" data-nav="messages" href="messages.html"><span class="nav-icon">💬</span><span class="nav-text">Messages</span></a>
-        <a class="nav-btn" data-nav="scout-dashboard" data-role-allow="scout" href="scout-dashboard.html"><span class="nav-icon">📋</span><span class="nav-text">Scout Hub</span></a>
-        <a class="nav-btn" data-nav="school-dashboard" data-role-allow="school_admin" href="school-dashboard.html"><span class="nav-icon">🏫</span><span class="nav-text">School</span></a>
-        <a class="nav-btn" data-nav="coach-dashboard" data-role-allow="coach" href="coach-dashboard.html"><span class="nav-icon">🏋️</span><span class="nav-text">Coach Hub</span></a>
-      </nav>
-      <p class="nav-label" style="margin-top:1.5rem">Scout Nav</p>
-      <nav class="nav">
-        <a class="nav-btn scout-dashboard-nav-link" href="#sd-athletes">📋 Athletes</a>
-        <a class="nav-btn scout-dashboard-nav-link" href="#sd-saved">⭐ Saved</a>
-        <a class="nav-btn scout-dashboard-nav-link" href="#sd-insights">📈 Insights</a>
-        <a class="nav-btn scout-dashboard-nav-link" href="#sd-map">🗺 Map</a>
-        <a class="nav-btn scout-dashboard-nav-link" href="#sd-notes">📝 Notes</a>
-      </nav>
-    </div>
-    <div class="sidebar-foot">
-      <button class="btn-ghost full" id="sign-out-btn">Sign out</button>
-    </div>
-  </aside>
+  <aside class="sidebar" id="sidebar" data-shared-sidebar></aside>
+  <div data-sidebar-extra-content hidden>
+    <p class="nav-label" style="margin-top:1.5rem">Scout Nav</p>
+    <nav class="nav">
+      <a class="nav-btn scout-dashboard-nav-link" href="#sd-athletes">Athletes</a>
+      <a class="nav-btn scout-dashboard-nav-link" href="#sd-saved">Saved</a>
+      <a class="nav-btn scout-dashboard-nav-link" href="#sd-watchlists">Watchlists</a>
+      <a class="nav-btn scout-dashboard-nav-link" href="#sd-insights">Insights</a>
+      <a class="nav-btn scout-dashboard-nav-link" href="#sd-map">Map</a>
+      <a class="nav-btn scout-dashboard-nav-link" href="#sd-notes">Notes</a>
+    </nav>
+  </div>
 
   <div class="mobile-overlay" id="mobile-overlay"></div>
 
@@ -58,7 +41,7 @@
         <div class="sd-page-header-actions">
           <span class="sd-saved-badge">Saved: <strong id="scout-saved-count">0</strong></span>
           <span class="sd-hero-badge"><strong id="scout-hero-count">0</strong> saved</span>
-          <a href="compare.html" class="ua-btn ua-btn--secondary ua-btn--sm">⚖ Compare</a>
+          <a href="compare.html" class="ua-btn ua-btn--secondary ua-btn--sm">Compare</a>
         </div>
       </div>
 
@@ -78,11 +61,11 @@
       <!-- Search Toolbar -->
       <div class="sd-toolbar">
         <div class="sd-toolbar-search">
-          <span class="sd-search-icon">🔍</span>
+          
           <input id="scout-filter-query" type="text" class="sd-search-input" placeholder="Name, school, sport, ID…" autocomplete="off">
         </div>
         <div class="sd-toolbar-actions">
-          <button id="scout-filter-toggle" class="ua-btn ua-btn--ghost ua-btn--sm">⚙ Filters</button>
+          <button id="scout-filter-toggle" class="ua-btn ua-btn--ghost ua-btn--sm">Filters</button>
           <select id="scout-sort" class="sd-sort-select">
             <option value="rating">Rating ↓</option>
             <option value="readiness">Readiness ↓</option>
@@ -117,33 +100,51 @@
       <!-- Saved Athletes -->
       <div class="sd-section" id="sd-saved">
         <div class="sd-section-header">
-          <span class="sd-section-title">⭐ Saved Athletes</span>
+          <span class="sd-section-title">Saved Athletes</span>
         </div>
         <div id="scout-dashboard-saved" class="sd-results-grid">
           <div class="sd-empty">No saved athletes yet.</div>
         </div>
       </div>
 
+      <!-- Watchlists -->
+      <div class="sd-section" id="sd-watchlists">
+        <div class="sd-section-header">
+          <span class="sd-section-title">Watchlists</span>
+          <button class="ua-btn ua-btn--secondary ua-btn--sm" id="wl-create-btn">+ New List</button>
+        </div>
+        <div id="wl-create-form" class="wl-create-form" hidden>
+          <input id="wl-name-input" type="text" class="wl-input" placeholder="List name…" maxlength="60">
+          <input id="wl-color-input" type="color" class="wl-color-picker" value="#2d9bb2">
+          <button class="ua-btn ua-btn--primary ua-btn--sm" id="wl-save-btn">Create</button>
+          <button class="ua-btn ua-btn--ghost ua-btn--sm" id="wl-cancel-btn">Cancel</button>
+        </div>
+        <div id="wl-tabs" class="wl-tabs"></div>
+        <div id="wl-active-panel" class="wl-active-panel">
+          <div class="sd-empty">Create a watchlist to start tracking athletes.</div>
+        </div>
+      </div>
+
       <!-- Insights Row -->
       <div class="sd-section" id="sd-insights">
         <div class="sd-section-header">
-          <span class="sd-section-title">📈 Insights</span>
+          <span class="sd-section-title">Insights</span>
         </div>
         <div class="sd-insights-row">
           <div class="sd-insight-card">
-            <div class="sd-insight-title">⭐ Top This Week</div>
+            <div class="sd-insight-title">Top This Week</div>
             <div id="scout-top-athletes-week" class="sd-insight-body">Loading…</div>
           </div>
           <div class="sd-insight-card">
-            <div class="sd-insight-title">📈 Rising Prospects</div>
+            <div class="sd-insight-title">Rising Prospects</div>
             <div id="scout-rising-prospects" class="sd-insight-body">Loading…</div>
           </div>
           <div class="sd-insight-card">
-            <div class="sd-insight-title">📍 Nearby Athletes</div>
+            <div class="sd-insight-title">Nearby Athletes</div>
             <div id="scout-nearby-athletes" class="sd-insight-body">Loading…</div>
           </div>
           <div class="sd-insight-card">
-            <div class="sd-insight-title">📍 Top Nearby</div>
+            <div class="sd-insight-title">Top Nearby</div>
             <div id="scout-top-nearby" class="sd-insight-body">Loading…</div>
           </div>
         </div>
@@ -152,7 +153,7 @@
       <!-- Map & Regions -->
       <div class="sd-section" id="sd-map">
         <div class="sd-section-header">
-          <span class="sd-section-title">🗺 Athlete Map</span>
+          <span class="sd-section-title">Athlete Heat Map</span>
         </div>
         <div class="sd-map-row">
           <div class="sd-map-card">
@@ -163,6 +164,13 @@
           <div class="sd-region-card">
             <div class="sd-card-title">Top Regions</div>
             <div id="scout-top-regions" class="sd-region-list">Loading…</div>
+            <div class="sd-region-legend">
+              <div class="sd-region-legend-title">Rating Tiers</div>
+              <div class="sd-region-legend-item"><span class="sd-legend-dot" style="background:#2563eb"></span> Elite (88+)</div>
+              <div class="sd-region-legend-item"><span class="sd-legend-dot" style="background:#14b8a6"></span> Strong (78+)</div>
+              <div class="sd-region-legend-item"><span class="sd-legend-dot" style="background:#f59e0b"></span> Developing (65+)</div>
+              <div class="sd-region-legend-item"><span class="sd-legend-dot" style="background:#64748b"></span> Emerging</div>
+            </div>
           </div>
         </div>
       </div>
@@ -170,7 +178,7 @@
       <!-- Notes Summary -->
       <div class="sd-section" id="sd-notes">
         <div class="sd-section-header">
-          <span class="sd-section-title">📝 My Notes</span>
+          <span class="sd-section-title">My Notes</span>
         </div>
         <div id="scout-notes-summary" class="sd-notes-summary">
           Private notes saved from athlete profiles will be summarized here.

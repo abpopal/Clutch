@@ -1,6 +1,27 @@
 import { supabase } from "./supabaseClient.js";
 import { buildAuthState, normalizeRole, roleLabel, setGlobalAppState } from "./roleUtils.js";
 
+/* ── Theme toggle ────────────────────────────────────────── */
+// Apply saved theme immediately (before render)
+(function initTheme() {
+  const saved = localStorage.getItem("ua-theme");
+  if (saved) document.documentElement.setAttribute("data-theme", saved);
+})();
+
+// Bind theme toggle — called after header partial loads
+function bindThemeToggle() {
+  const cb = document.querySelector("#theme-toggle-cb");
+  if (!cb) return;
+  const theme = document.documentElement.getAttribute("data-theme");
+  cb.checked = theme === "light";
+
+  cb.addEventListener("change", () => {
+    const next = cb.checked ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("ua-theme", next);
+  });
+}
+
 const COMMANDS = [
   { label: "Go to Home Feed", hint: "Posts from followed accounts", href: "index.html" },
   { label: "Open Pulse", hint: "Trending posts and momentum", href: "pulse.html" },
@@ -10,36 +31,50 @@ const COMMANDS = [
   { label: "Open School Dashboard", hint: "School-admin workspace for athletes, staff, teams, matches, and media", href: "school-dashboard.html", roles: ["school_admin"] },
 ];
 
-const HEADER_CACHE_KEY = "ua:header:v20260430";
+const HEADER_CACHE_KEY = "ua:header:v20260524a";
+const SIDEBAR_CACHE_KEY = "ua:sidebar:v20260524a";
 
-async function mountSharedHeader() {
-  const headerHost = document.querySelector("[data-shared-header]");
-  if (!headerHost) return;
+async function loadPartial(selector, url, cacheKey) {
+  const host = document.querySelector(selector);
+  if (!host) return;
 
-  // Serve from sessionStorage instantly if available, then revalidate in background
-  const cached = sessionStorage.getItem(HEADER_CACHE_KEY);
+  const cached = sessionStorage.getItem(cacheKey);
   if (cached) {
-    headerHost.innerHTML = cached;
-    // Revalidate in background (don't block)
-    fetch("partials/site-header.html?v=20260430", { cache: "default" })
+    host.innerHTML = cached;
+    fetch(url, { cache: "default" })
       .then((r) => r.ok ? r.text() : null)
-      .then((html) => { if (html) sessionStorage.setItem(HEADER_CACHE_KEY, html); })
+      .then((html) => { if (html) sessionStorage.setItem(cacheKey, html); })
       .catch(() => {});
     return;
   }
 
-  const response = await fetch("partials/site-header.html?v=20260430", { cache: "default" });
-  if (!response.ok) {
-    throw new Error(`Unable to load shared header (${response.status})`);
-  }
+  const response = await fetch(url, { cache: "default" });
+  if (!response.ok) throw new Error(`Unable to load partial (${response.status})`);
   const html = await response.text();
-  headerHost.innerHTML = html;
-  try { sessionStorage.setItem(HEADER_CACHE_KEY, html); } catch (_) {}
+  host.innerHTML = html;
+  try { sessionStorage.setItem(cacheKey, html); } catch (_) {}
+}
+
+async function mountSharedHeader() {
+  await loadPartial("[data-shared-header]", "partials/site-header.html?v=20260524a", HEADER_CACHE_KEY);
+}
+
+async function mountSharedSidebar() {
+  await loadPartial("#sidebar[data-shared-sidebar]", "partials/sidebar.html?v=20260524a", SIDEBAR_CACHE_KEY);
+  // Move any page-specific sidebar-extra content into the slot
+  const extraSlot = document.querySelector("#sidebar-extra");
+  const extraSource = document.querySelector("[data-sidebar-extra-content]");
+  if (extraSlot && extraSource) {
+    extraSlot.innerHTML = extraSource.innerHTML;
+    extraSource.remove();
+  }
 }
 
 async function initApp() {
   try {
+    await mountSharedSidebar();
     await mountSharedHeader();
+    bindThemeToggle();
   } catch (error) {
     console.error("Header mount failed", error);
   }
@@ -84,7 +119,7 @@ async function initApp() {
     accountMenuBtn.setAttribute("aria-expanded", nextOpen ? "true" : "false");
   }
 
-  function updateHeaderAccount(session, appUserId) {
+  async function updateHeaderAccount(session, appUserId) {
     if (!headerAccount || !accountMenuBtn || !headerAvatar) return;
 
     if (!session) {
@@ -94,9 +129,22 @@ async function initApp() {
     }
 
     const seed = appUserId || session.user?.user_metadata?.name || session.user?.id;
-    headerAvatar.src = avatarUrlFor(seed);
     headerAvatar.alt = `${session.user?.user_metadata?.name || "User"} profile photo`;
     headerAccount.hidden = false;
+
+    // Try to load real avatar from users table
+    if (appUserId) {
+      try {
+        const row = await fetchFirst(
+          supabase.from("users").select("avatar_url").eq("user_id", appUserId)
+        );
+        if (row?.avatar_url) {
+          headerAvatar.src = row.avatar_url;
+          return;
+        }
+      } catch (_) { /* fall through to default */ }
+    }
+    headerAvatar.src = avatarUrlFor(seed);
   }
 
   async function fetchFirst(query) {
@@ -385,20 +433,41 @@ async function initApp() {
     updateHeaderAccount(session, appUserId);
     setGlobalAppState({ auth: buildAuthState({ session, appUserId, role }) });
 
-    // Load unread notification count silently on session start
+    // Load unread notification count + subscribe to realtime
     if (appUserId) {
       supabase
         .from("notifications")
         .select("notification_id", { count: "exact", head: true })
         .eq("user_id", appUserId)
+        .neq("type", "message")
         .is("read_at", null)
         .then(({ count }) => {
-          if (notifCount && typeof count === "number") {
-            notifCount.textContent = String(count);
-            notifCount.hidden = count === 0;
-          }
+          if (typeof count === "number") updateBadge(count);
         })
         .catch(() => {/* ignore */});
+
+      subscribeToNotifications(appUserId);
+
+      // Unread message count badge on sidebar Messages link
+      supabase
+        .from("notifications")
+        .select("notification_id", { count: "exact", head: true })
+        .eq("user_id", appUserId)
+        .eq("type", "message")
+        .is("read_at", null)
+        .then(({ count }) => {
+          const msgLink = document.querySelector('.nav-btn[data-nav="messages"]');
+          if (msgLink && typeof count === "number" && count > 0) {
+            let badge = msgLink.querySelector(".nav-msg-badge");
+            if (!badge) {
+              badge = document.createElement("span");
+              badge.className = "nav-msg-badge";
+              msgLink.appendChild(badge);
+            }
+            badge.textContent = count > 99 ? "99+" : String(count);
+          }
+        })
+        .catch(() => {});
     }
 
     if (currentPage === "login") {
@@ -426,7 +495,7 @@ async function initApp() {
   mobileOverlay?.addEventListener("click", () => toggleSidebar(false));
 
   menuBtn?.setAttribute("aria-label", "Open menu");
-  if (menuBtn) menuBtn.textContent = "☰";
+  if (menuBtn) menuBtn.textContent = "Menu";
 
   accountMenuBtn?.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -479,6 +548,13 @@ async function initApp() {
 
   let notifOpen = false;
   let currentAppUserId = null;
+  let notifChannel = null;
+
+  const NOTIF_ICONS = {
+    follow: "F", unfollow: "F", message: "M",
+    team_invite: "T", match_scheduled: "S", stat_posted: "St",
+    profile_view: "V", scout_save: "Sv", achievement: "A", general: "N",
+  };
 
   function formatNotifTime(iso) {
     if (!iso) return "";
@@ -490,14 +566,83 @@ async function initApp() {
     return `${Math.round(h / 24)}d ago`;
   }
 
+  function escHtml(s) { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
+
+  function notifLinkFor(n) {
+    if (n.link) return n.link;
+    // Fallback links based on notification type
+    switch (n.type) {
+      case "follow":
+      case "unfollow":
+      case "profile_view":
+        // body usually starts with the user's name — no user_id available, go to explore
+        return "explore.html";
+      case "message":
+        return "messages.html";
+      case "stat_posted":
+      case "achievement":
+        return "profile.html";
+      case "scout_save":
+        return "scout-dashboard.html";
+      case "team_invite":
+      case "match_scheduled":
+        return "school-dashboard.html";
+      default:
+        return "";
+    }
+  }
+
+  function notifItemHtml(n) {
+    const icon = n.icon || NOTIF_ICONS[n.type] || "N";
+    const link = notifLinkFor(n);
+    const linkAttr = link ? ` data-notif-link="${escHtml(link)}"` : "";
+    const isUnread = !n.read_at;
+    return `
+      <div class="notif-item${isUnread ? " unread" : " read"}" data-notif-id="${n.notification_id}" data-notif-type="${escHtml(n.type || "general")}"${linkAttr}>
+        <span class="notif-item-icon notif-icon-${escHtml(n.type || "general")}">${icon}</span>
+        <div class="notif-item-content">
+          <span class="notif-item-title">${escHtml(n.title || n.type)}${isUnread ? '<span class="notif-unread-dot"></span>' : ""}</span>
+          ${n.body ? `<span class="notif-item-body">${escHtml(n.body)}</span>` : ""}
+          <span class="notif-item-time">${formatNotifTime(n.created_at)}</span>
+        </div>
+      </div>`;
+  }
+
+  function showNotifToast(n) {
+    const icon = n.icon || NOTIF_ICONS[n.type] || "N";
+    const el = document.createElement("div");
+    el.className = "notif-toast";
+    el.innerHTML = `<span class="notif-toast-icon">${icon}</span><div class="notif-toast-body"><strong>${escHtml(n.title || n.type)}</strong>${n.body ? `<span>${escHtml(n.body)}</span>` : ""}</div>`;
+    if (n.link) {
+      el.style.cursor = "pointer";
+      el.addEventListener("click", () => { window.location.href = n.link; });
+    }
+    document.body.appendChild(el);
+    requestAnimationFrame(() => el.classList.add("show"));
+    setTimeout(() => {
+      el.classList.remove("show");
+      el.addEventListener("transitionend", () => el.remove());
+    }, 5000);
+  }
+
+  function updateBadge(count) {
+    if (notifCount) {
+      notifCount.textContent = String(count);
+      notifCount.hidden = count === 0;
+    }
+    if (count > 0 && notifBtn) notifBtn.classList.add("has-unread");
+    else if (notifBtn) notifBtn.classList.remove("has-unread");
+  }
+
   async function loadNotifications(appUserId) {
     if (!appUserId || !notifList) return;
     const { data, error } = await supabase
       .from("notifications")
-      .select("notification_id, type, title, body, read_at, created_at")
+      .select("notification_id, type, title, body, icon, link, read_at, created_at")
       .eq("user_id", appUserId)
+      .neq("type", "message")
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(30);
 
     if (error || !data) {
       if (notifList) notifList.innerHTML = `<div class="notif-empty">Could not load notifications.</div>`;
@@ -505,23 +650,14 @@ async function initApp() {
     }
 
     const unread = data.filter((n) => !n.read_at).length;
-    if (notifCount) {
-      notifCount.textContent = String(unread);
-      notifCount.hidden = unread === 0;
-    }
+    updateBadge(unread);
 
     if (!data.length) {
       notifList.innerHTML = `<div class="notif-empty">No notifications yet.</div>`;
       return;
     }
 
-    notifList.innerHTML = data.map((n) => `
-      <div class="notif-item${n.read_at ? "" : " unread"}" data-notif-id="${n.notification_id}">
-        <span class="notif-item-title">${n.title || n.type}</span>
-        ${n.body ? `<span class="notif-item-body">${n.body}</span>` : ""}
-        <span class="notif-item-time">${formatNotifTime(n.created_at)}</span>
-      </div>
-    `).join("");
+    notifList.innerHTML = data.map(notifItemHtml).join("");
   }
 
   async function markAllRead(appUserId) {
@@ -531,8 +667,43 @@ async function initApp() {
       .update({ read_at: new Date().toISOString() })
       .eq("user_id", appUserId)
       .is("read_at", null);
-    if (notifCount) { notifCount.textContent = "0"; notifCount.hidden = true; }
+    updateBadge(0);
     document.querySelectorAll(".notif-item.unread").forEach((el) => el.classList.remove("unread"));
+  }
+
+  async function markOneRead(notifId) {
+    if (!notifId) return;
+    await supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("notification_id", notifId)
+      .is("read_at", null);
+  }
+
+  function subscribeToNotifications(appUserId) {
+    if (notifChannel) supabase.removeChannel(notifChannel);
+    notifChannel = supabase
+      .channel("notif-" + appUserId)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${appUserId}` },
+        (payload) => {
+          const n = payload.new;
+          // Skip message notifications — those go to the messages page
+          if (n.type === "message") return;
+          showNotifToast(n);
+          // bump badge
+          const cur = parseInt(notifCount?.textContent || "0", 10);
+          updateBadge(cur + 1);
+          // prepend to list if panel open
+          if (notifList && !notifPanel?.hidden) {
+            const empty = notifList.querySelector(".notif-empty");
+            if (empty) empty.remove();
+            notifList.insertAdjacentHTML("afterbegin", notifItemHtml(n));
+          }
+        }
+      )
+      .subscribe();
   }
 
   notifBtn?.addEventListener("click", (e) => {
@@ -544,6 +715,30 @@ async function initApp() {
   });
 
   notifMarkRead?.addEventListener("click", () => markAllRead(currentAppUserId));
+
+  // Click on a notification item → mark read + navigate
+  document.addEventListener("click", (e) => {
+    const item = e.target.closest?.(".notif-item");
+    if (!item) return;
+
+    const id = item.dataset.notifId;
+    const link = item.dataset.notifLink;
+
+    // Mark as read visually + in DB
+    if (item.classList.contains("unread")) {
+      item.classList.remove("unread");
+      item.classList.add("read");
+      const dot = item.querySelector(".notif-unread-dot");
+      if (dot) dot.remove();
+      if (id) markOneRead(id);
+      // Decrement badge
+      const cur = parseInt(notifCount?.textContent || "0", 10);
+      updateBadge(Math.max(0, cur - 1));
+    }
+
+    // Navigate if there's a link
+    if (link) window.location.href = link;
+  });
 
   document.addEventListener("click", (e) => {
     const wrap = document.querySelector("#notif-wrap");

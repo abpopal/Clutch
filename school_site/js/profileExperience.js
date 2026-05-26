@@ -1,6 +1,7 @@
 import { supabase } from "./supabaseClient.js";
 import { badgeMeta, buildAthleteProfile, formatScoutSummary, getSportMeta } from "./athleteData.js?v=20260430";
 import { getGlobalAppState, normalizeRole } from "./roleUtils.js";
+import { loadCoachTeams } from "./schoolSportsStore.js";
 import {
   destroyProfileStatsCharts,
   mountProfileStatsCharts,
@@ -52,6 +53,10 @@ const state = {
   role: "athlete",
   scoutWorkspace: null,
   profile: null,
+  coachRow: null,
+  schoolRow: null,
+  scoutRow: null,
+  coachTeams: [],
   posts: [],
   counts: { posts: 0, followers: 0, following: 0 },
   activeTab: "overview",
@@ -164,6 +169,7 @@ function currentSport() {
 }
 
 function heroImageFor(profile) {
+  if (profile?.coverUrl) return profile.coverUrl;
   const sportId = profile?.sports?.[0]?.id || "default";
   return HERO_IMAGES[sportId] || HERO_IMAGES.default;
 }
@@ -193,6 +199,7 @@ function scheduleItems(profile) {
 }
 
 function avatarImageFor(profile) {
+  if (profile?.avatarUrl) return profile.avatarUrl;
   const seed = profile?.userId || profile?.athleteId || profile?.name || "athlete";
   return `https://i.pravatar.cc/320?u=${encodeURIComponent(seed)}`;
 }
@@ -393,6 +400,70 @@ async function fetchAthleteStats(athleteId) {
   return data || [];
 }
 
+async function fetchAthleteProfile(userId) {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("athlete_profiles")
+      .select("*")
+      .eq("user_id", userId)
+      .limit(1);
+    return data?.[0] || null;
+  } catch (_) { return null; }
+}
+
+async function fetchSeasonAverages(userId) {
+  if (!userId) return null;
+  try {
+    // Find all matches for teams this athlete is on
+    const { data: rosterRows } = await supabase
+      .from("roster_entries")
+      .select("team_id")
+      .eq("athlete_id", userId);
+    if (!rosterRows?.length) return null;
+
+    const teamIds = [...new Set(rosterRows.map((r) => r.team_id))];
+    const { data: matches } = await supabase
+      .from("matches")
+      .select("match_id")
+      .in("team_id", teamIds);
+    if (!matches?.length) return null;
+
+    const matchIds = matches.map((m) => m.match_id);
+    const { data: allStats } = await supabase
+      .from("athlete_stats")
+      .select("stat_type, stat_value")
+      .eq("athlete_id", userId)
+      .in("match_id", matchIds);
+    if (!allStats?.length) return null;
+
+    // Calculate averages per stat_type
+    const totals = {};
+    const counts = {};
+    const gamesPlayed = new Set();
+
+    for (const s of allStats) {
+      if (!totals[s.stat_type]) { totals[s.stat_type] = 0; counts[s.stat_type] = 0; }
+      totals[s.stat_type] += parseFloat(s.stat_value) || 0;
+      counts[s.stat_type] += 1;
+    }
+
+    const averages = {};
+    for (const key of Object.keys(totals)) {
+      averages[key] = {
+        total: totals[key],
+        count: counts[key],
+        avg: totals[key] / counts[key],
+      };
+    }
+    averages._gamesPlayed = allStats.length > 0 ? Math.max(...Object.values(counts)) : 0;
+    return averages;
+  } catch (err) {
+    console.warn("Could not load season averages:", err);
+    return null;
+  }
+}
+
 async function fetchIsFollowing() {
   if (!state.viewerUserId || !state.targetUserId || state.viewerUserId === state.targetUserId) return false;
   const data = await fetchFirst(
@@ -519,8 +590,8 @@ async function loadProfileBundle(userId) {
     throw new Error("Profile not found.");
   }
 
-  // Run school name, counts, posts, stats, and real match schedule all in parallel
-  const [schoolName, counts, posts, stats, realSchedule] = await Promise.all([
+  // Run school name, counts, posts, stats, match schedule, and profile edits all in parallel
+  const [schoolName, counts, posts, stats, realSchedule, athleteProfileRow, seasonStats] = await Promise.all([
     records.athleteRow?.school_id
       ? fetchSchoolName(records.athleteRow.school_id)
       : Promise.resolve(records.schoolRow?.name || ""),
@@ -528,6 +599,8 @@ async function loadProfileBundle(userId) {
     fetchVisiblePosts(userId, state.isSelf, state.isFollowing),
     fetchAthleteStats(records.athleteRow?.athlete_id),
     fetchAthleteMatchSchedule(userId),
+    fetchAthleteProfile(userId),
+    fetchSeasonAverages(userId),
   ]);
 
   const resolvedRole = inferredRole || normalizedUserRole || "user";
@@ -549,9 +622,46 @@ async function loadProfileBundle(userId) {
     fallbackRole: resolvedRole || "athlete",
   });
 
+  // Inject avatar/cover URLs from users table
+  if (userRow.avatar_url) profile.avatarUrl = userRow.avatar_url;
+  if (userRow.cover_url) profile.coverUrl = userRow.cover_url;
+
   // Override schedule with real match data if the athlete has any
   if (realSchedule.length) {
     profile.schedule = realSchedule;
+  }
+
+  // Override with athlete_profiles data (athlete-editable fields)
+  if (athleteProfileRow) {
+    if (athleteProfileRow.bio) profile.bio = athleteProfileRow.bio;
+    if (athleteProfileRow.position) profile.position = athleteProfileRow.position;
+    if (athleteProfileRow.hometown) profile.hometown = athleteProfileRow.hometown;
+    if (athleteProfileRow.goals) profile.goals = athleteProfileRow.goals;
+    if (athleteProfileRow.gpa) profile.gpa = String(athleteProfileRow.gpa);
+    if (athleteProfileRow.height_inches || athleteProfileRow.weight_lbs) {
+      const h = athleteProfileRow.height_inches;
+      const w = athleteProfileRow.weight_lbs;
+      profile.measurables = {
+        ...profile.measurables,
+        ...(h ? { Height: `${Math.floor(h / 12)}'${h % 12}"` } : {}),
+        ...(w ? { Weight: `${w} lbs` } : {}),
+      };
+      if (athleteProfileRow.measurables) {
+        const m = athleteProfileRow.measurables;
+        if (m.wingspan) profile.measurables.Wingspan = m.wingspan;
+        if (m.vertical) profile.measurables.Vertical = m.vertical;
+        if (m.speed) profile.measurables.Speed = m.speed;
+        if (m.reach) profile.measurables.Reach = m.reach;
+      }
+    }
+    if (athleteProfileRow.highlights?.length) {
+      profile.editableHighlights = athleteProfileRow.highlights;
+    }
+  }
+
+  // Override with real season averages from athlete_stats
+  if (seasonStats && Object.keys(seasonStats).length) {
+    profile.realSeasonStats = seasonStats;
   }
 
   return {
@@ -567,19 +677,49 @@ async function loadProfileBundle(userId) {
     stats,
     profile,
     role: resolvedRole,
+    athleteProfileRow,
   };
 }
 
 function heroMetricItems(profile, sport) {
+  const m = profile?.measurables || {};
   const metrics = [
-    { label: "Height", value: profile?.measurables?.Height || "6'1\"" },
-    { label: "Weight", value: profile?.measurables?.Weight || "178 lbs" },
-    { label: "Speed", value: profile?.measurables?.Speed || "4.52 sec" },
-    { label: "GPA", value: profile?.gpa || "3.8" },
-  ];
-  (sport?.stats || []).slice(0, 2).forEach((stat) => {
-    metrics.push({ label: stat.label, value: stat.value });
-  });
+    { label: "Height", value: m.Height || "" },
+    { label: "Weight", value: m.Weight || "" },
+    { label: "Speed", value: m.Speed || "" },
+    { label: "GPA", value: profile?.gpa || "" },
+  ].filter((item) => item.value);
+
+  // Add real season avg stats if available
+  const realStats = profile?.realSeasonStats;
+  if (realStats) {
+    const topStatKeys = ["points", "goals", "pass_yards", "kills", "wins", "hits"];
+    for (const key of topStatKeys) {
+      if (realStats[key]) {
+        const avg = realStats[key].avg;
+        const label = key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+        metrics.push({ label: `Avg ${label}`, value: avg.toFixed(1) });
+        break;
+      }
+    }
+    const secondaryKeys = ["assists", "rebounds", "tackles", "digs", "rbi"];
+    for (const key of secondaryKeys) {
+      if (realStats[key]) {
+        const avg = realStats[key].avg;
+        const label = key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+        metrics.push({ label: `Avg ${label}`, value: avg.toFixed(1) });
+        break;
+      }
+    }
+  }
+
+  // Fall back to sport stats from athleteData preset
+  if (metrics.length < 4) {
+    (sport?.stats || []).slice(0, 4 - metrics.length).forEach((stat) => {
+      metrics.push({ label: stat.label, value: stat.value });
+    });
+  }
+
   return metrics.slice(0, 6);
 }
 
@@ -670,6 +810,21 @@ function findSportStatValue(sport, keywords) {
 
 function genericSeasonStats(profile, sport) {
   const seasonYear = new Date().getFullYear();
+
+  // If we have real season stats from athlete_stats, use those
+  const realStats = profile?.realSeasonStats;
+  if (realStats && Object.keys(realStats).filter((k) => !k.startsWith("_")).length > 0) {
+    const gp = realStats._gamesPlayed || 0;
+    const items = [{ label: "Games", value: String(gp) }];
+    for (const [key, val] of Object.entries(realStats)) {
+      if (key.startsWith("_")) continue;
+      const label = key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+      const display = val.avg % 1 === 0 ? String(Math.round(val.avg)) : val.avg.toFixed(1);
+      items.push({ label, value: display });
+    }
+    return { year: seasonYear, items: items.slice(0, 6) };
+  }
+
   const defaultsBySport = {
     basketball: [
       { label: "Games", value: String(seededValue(`${profile.userId}:games`, 20, 30)) },
@@ -1041,6 +1196,64 @@ function tabStageMarkup() {
   }
 }
 
+function measurablesCardMarkup(profile) {
+  const m = profile?.measurables || {};
+  const entries = Object.entries(m).filter(([, v]) => v);
+  if (!entries.length) return "";
+
+  return `
+    <article class="pp-card pp-card--measurables">
+      <div class="pp-card-head">
+        <h3>Measurables</h3>
+      </div>
+      <div class="pp-measurables-grid">
+        ${entries.map(([label, value]) => `
+          <div class="pp-measurable-item">
+            <div class="pp-measurable-val">${escapeHtml(value)}</div>
+            <div class="pp-measurable-label">${escapeHtml(label)}</div>
+          </div>
+        `).join("")}
+      </div>
+    </article>
+  `;
+}
+
+function realStatsCardMarkup(profile) {
+  const rs = profile?.realSeasonStats;
+  if (!rs || !Object.keys(rs).length) return "";
+
+  const statEntries = Object.entries(rs)
+    .filter(([, v]) => v && v.avg !== undefined)
+    .sort((a, b) => (b[1].avg || 0) - (a[1].avg || 0))
+    .slice(0, 6);
+
+  if (!statEntries.length) return "";
+
+  return `
+    <article class="pp-card pp-card--real-stats">
+      <div class="pp-card-head">
+        <h3>Season Averages</h3>
+        <span class="pp-chip">Live Data</span>
+      </div>
+      <div class="pp-real-stats-grid">
+        ${statEntries.map(([key, data]) => {
+          const label = key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+          const avg = data.avg;
+          const total = data.total;
+          const games = data.games;
+          return `
+            <div class="pp-real-stat">
+              <div class="pp-real-stat-val">${escapeHtml(avg % 1 === 0 ? String(avg) : avg.toFixed(1))}</div>
+              <div class="pp-real-stat-label">${escapeHtml(label)}</div>
+              <div class="pp-real-stat-meta">${escapeHtml(String(total))} total · ${escapeHtml(String(games))} GP</div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </article>
+  `;
+}
+
 function overviewTabMarkup(profile, sport) {
   const achievements = genericAchievementItems(profile, sport);
   const recent = recentPosts().slice(0, 4);
@@ -1059,6 +1272,9 @@ function overviewTabMarkup(profile, sport) {
           ${(profile.strengths || []).map((item) => `<span class="pp-chip">${escapeHtml(item)}</span>`).join("")}
         </div>
       </article>
+
+      ${measurablesCardMarkup(profile)}
+      ${realStatsCardMarkup(profile)}
 
       <article class="pp-card">
         <div class="pp-card-head">
@@ -1124,8 +1340,7 @@ function overviewTabMarkup(profile, sport) {
                     </div>
                     <p class="pp-post-tile-caption">${escapeHtml(post.caption || "No caption")}</p>
                     <div class="pp-post-tile-actions">
-                      <span>❤ ${postEngagement(post, "likes")}</span>
-                      <span>💬 ${postEngagement(post, "comments")}</span>
+                      <span class="pp-action-icon">Likes: ${post.interactions_count || 0}</span>
                     </div>
                   </div>
                 </article>
@@ -1386,8 +1601,7 @@ function postsTabMarkup(profile) {
           <p>${escapeHtml(post.caption || "No caption added.")}</p>
           ${postMediaMarkup(post, profile, "pp-post-media pp-post-media--large")}
           <div class="pp-post-actions">
-            <span>❤ ${postEngagement(post, "likes")}</span>
-            <span>💬 ${postEngagement(post, "comments")}</span>
+            <span class="pp-action-icon">Likes: ${post.interactions_count || 0}</span>
             <span>↗ Share</span>
           </div>
         </article>
@@ -1633,7 +1847,349 @@ function scheduleTabMarkup(profile) {
   `;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// ── Non-athlete profile rendering (coach / scout / school_admin)
+// ═══════════════════════════════════════════════════════════════
+
+const ROLE_TABS = {
+  coach:        [{ id: "overview", label: "Overview" }, { id: "posts", label: "Posts" }],
+  scout:        [{ id: "overview", label: "Overview" }, { id: "posts", label: "Posts" }],
+  school_admin: [{ id: "overview", label: "Overview" }, { id: "posts", label: "Posts" }],
+};
+
+const ROLE_HERO_IMAGES = {
+  coach:        "https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=1600&q=80",
+  scout:        "https://images.unsplash.com/photo-1560272564-c83b66b1ad12?auto=format&fit=crop&w=1600&q=80",
+  school_admin: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=1600&q=80",
+};
+
+function roleHeroMetrics() {
+  const role = state.role;
+  if (role === "coach") {
+    const c = state.coachRow || {};
+    const teamCount = state.coachTeams?.length || 0;
+    return [
+      { label: "Teams", value: String(teamCount) },
+      { label: "Experience", value: c.years_experience ? `${c.years_experience} yrs` : "N/A" },
+      { label: "Posts", value: String(state.counts.posts || 0) },
+      { label: "Followers", value: String(state.counts.followers || 0) },
+    ].filter((m) => m.value && m.value !== "N/A");
+  }
+  if (role === "scout") {
+    const s = state.scoutRow || {};
+    return [
+      { label: "Organization", value: s.organization || "Independent" },
+      { label: "Title", value: s.title || "Scout" },
+      { label: "Posts", value: String(state.counts.posts || 0) },
+      { label: "Following", value: String(state.counts.following || 0) },
+    ].filter((m) => m.value);
+  }
+  // school_admin
+  const sch = state.schoolRow || {};
+  return [
+    { label: "Location", value: sch.location || "N/A" },
+    { label: "Posts", value: String(state.counts.posts || 0) },
+    { label: "Followers", value: String(state.counts.followers || 0) },
+    { label: "Following", value: String(state.counts.following || 0) },
+  ].filter((m) => m.value && m.value !== "N/A");
+}
+
+function roleSubtitle() {
+  const role = state.role;
+  if (role === "coach") {
+    const c = state.coachRow || {};
+    const teamNames = (state.coachTeams || []).slice(0, 2).map((t) => t.name || t.sports?.name || "Team").join(", ");
+    return teamNames || (c.years_experience ? `${c.years_experience} years coaching` : "Coach");
+  }
+  if (role === "scout") {
+    const s = state.scoutRow || {};
+    return [s.title, s.organization].filter(Boolean).join(" at ") || "Scout";
+  }
+  // school_admin
+  const sch = state.schoolRow || {};
+  return sch.location || "School Administrator";
+}
+
+function roleBio() {
+  if (state.role === "coach") return state.coachRow?.bio || "";
+  if (state.role === "school_admin") return state.schoolRow?.description || "";
+  return "";
+}
+
+function roleRoleName() {
+  const map = { coach: "Coach", scout: "Scout", school_admin: "School Admin", school: "School" };
+  return map[state.role] || "Member";
+}
+
+function coachOverviewMarkup() {
+  const profile = state.profile;
+  const bio = roleBio();
+  const teams = state.coachTeams || [];
+  const recent = recentPosts().slice(0, 3);
+
+  return `
+    <div class="pp-grid pp-grid--overview">
+      <article class="pp-card">
+        <div class="pp-card-head"><h3>About</h3></div>
+        <p class="pp-copy">${escapeHtml(bio || "No bio available yet.")}</p>
+        ${state.coachRow?.years_experience ? `<div class="pp-chip-stack"><span class="pp-chip">${escapeHtml(state.coachRow.years_experience)} years experience</span></div>` : ""}
+      </article>
+
+      <article class="pp-card">
+        <div class="pp-card-head"><h3>Teams</h3></div>
+        ${teams.length ? `
+          <div class="pp-list">
+            ${teams.map((t) => `
+              <div class="pp-list-row">
+                <strong>${escapeHtml(t.name || "Team")}</strong>
+                <span>${escapeHtml(t.sports?.name || "Sport")}${t.sports?.gender ? ` (${escapeHtml(t.sports.gender)})` : ""}</span>
+                <small>${escapeHtml(t.seasons?.name || "Current Season")}</small>
+              </div>
+            `).join("")}
+          </div>
+        ` : `<div class="pp-empty">No teams assigned yet.</div>`}
+      </article>
+
+      <article class="pp-card">
+        <div class="pp-card-head">
+          <h3>Recent Posts</h3>
+          ${recent.length ? `<button type="button" class="pp-link-btn" data-switch-tab="posts">View all</button>` : ""}
+        </div>
+        ${recent.length ? `
+          <div class="pp-post-grid">
+            ${recent.map((post) => `
+              <article class="pp-post-tile">
+                <div class="pp-post-tile-body">
+                  <div class="pp-post-tile-author">
+                    <img src="${escapeHtml(avatarImageFor(profile))}" alt="${escapeHtml(profile.name)}">
+                    <div>
+                      <strong>${escapeHtml(profile.name)}</strong>
+                      <span>${escapeHtml(formatRelativeTime(post.created_at))}</span>
+                    </div>
+                  </div>
+                  <p class="pp-post-tile-caption">${escapeHtml(post.caption || "No caption")}</p>
+                  <div class="pp-post-tile-actions">
+                    <span class="pp-action-icon">Likes: ${post.interactions_count || 0}</span>
+                  </div>
+                </div>
+              </article>
+            `).join("")}
+          </div>
+        ` : `<div class="pp-empty">No posts yet.</div>`}
+      </article>
+
+      <article class="pp-card">
+        <div class="pp-card-head"><h3>Contact</h3></div>
+        <div class="pp-basic-info">
+          <div><span>Name</span><strong>${escapeHtml(profile.name)}</strong></div>
+          <div><span>Email</span><strong>${escapeHtml(profile.email || "Available on request")}</strong></div>
+          <div><span>Role</span><strong>${escapeHtml(roleRoleName())}</strong></div>
+        </div>
+      </article>
+    </div>
+  `;
+}
+
+function scoutOverviewMarkup() {
+  const profile = state.profile;
+  const s = state.scoutRow || {};
+  const recent = recentPosts().slice(0, 3);
+
+  return `
+    <div class="pp-grid pp-grid--overview">
+      <article class="pp-card">
+        <div class="pp-card-head"><h3>About</h3></div>
+        <div class="pp-basic-info">
+          <div><span>Organization</span><strong>${escapeHtml(s.organization || "Independent")}</strong></div>
+          <div><span>Title</span><strong>${escapeHtml(s.title || "Scout")}</strong></div>
+          <div><span>Email</span><strong>${escapeHtml(profile.email || "Available on request")}</strong></div>
+        </div>
+      </article>
+
+      <article class="pp-card">
+        <div class="pp-card-head"><h3>Activity</h3></div>
+        <div class="pp-mini-stats pp-mini-stats--season">
+          <div class="pp-mini-stat"><strong>${state.counts.posts || 0}</strong><span>Posts</span></div>
+          <div class="pp-mini-stat"><strong>${state.counts.followers || 0}</strong><span>Followers</span></div>
+          <div class="pp-mini-stat"><strong>${state.counts.following || 0}</strong><span>Following</span></div>
+        </div>
+      </article>
+
+      <article class="pp-card">
+        <div class="pp-card-head">
+          <h3>Recent Posts</h3>
+          ${recent.length ? `<button type="button" class="pp-link-btn" data-switch-tab="posts">View all</button>` : ""}
+        </div>
+        ${recent.length ? `
+          <div class="pp-post-grid">
+            ${recent.map((post) => `
+              <article class="pp-post-tile">
+                <div class="pp-post-tile-body">
+                  <div class="pp-post-tile-author">
+                    <img src="${escapeHtml(avatarImageFor(profile))}" alt="${escapeHtml(profile.name)}">
+                    <div>
+                      <strong>${escapeHtml(profile.name)}</strong>
+                      <span>${escapeHtml(formatRelativeTime(post.created_at))}</span>
+                    </div>
+                  </div>
+                  <p class="pp-post-tile-caption">${escapeHtml(post.caption || "No caption")}</p>
+                </div>
+              </article>
+            `).join("")}
+          </div>
+        ` : `<div class="pp-empty">No posts yet.</div>`}
+      </article>
+    </div>
+  `;
+}
+
+function schoolOverviewMarkup() {
+  const profile = state.profile;
+  const sch = state.schoolRow || {};
+  const recent = recentPosts().slice(0, 3);
+
+  return `
+    <div class="pp-grid pp-grid--overview">
+      <article class="pp-card">
+        <div class="pp-card-head"><h3>About</h3></div>
+        <p class="pp-copy">${escapeHtml(sch.description || "No school description available yet.")}</p>
+      </article>
+
+      <article class="pp-card">
+        <div class="pp-card-head"><h3>School Info</h3></div>
+        <div class="pp-basic-info">
+          <div><span>School Name</span><strong>${escapeHtml(sch.name || profile.name)}</strong></div>
+          <div><span>Location</span><strong>${escapeHtml(sch.location || "Not specified")}</strong></div>
+          <div><span>Contact</span><strong>${escapeHtml(profile.email || "Available on request")}</strong></div>
+        </div>
+      </article>
+
+      <article class="pp-card">
+        <div class="pp-card-head"><h3>Activity</h3></div>
+        <div class="pp-mini-stats pp-mini-stats--season">
+          <div class="pp-mini-stat"><strong>${state.counts.posts || 0}</strong><span>Posts</span></div>
+          <div class="pp-mini-stat"><strong>${state.counts.followers || 0}</strong><span>Followers</span></div>
+          <div class="pp-mini-stat"><strong>${state.counts.following || 0}</strong><span>Following</span></div>
+        </div>
+      </article>
+
+      <article class="pp-card">
+        <div class="pp-card-head">
+          <h3>Recent Posts</h3>
+          ${recent.length ? `<button type="button" class="pp-link-btn" data-switch-tab="posts">View all</button>` : ""}
+        </div>
+        ${recent.length ? `
+          <div class="pp-post-grid">
+            ${recent.map((post) => `
+              <article class="pp-post-tile">
+                <div class="pp-post-tile-body">
+                  <div class="pp-post-tile-author">
+                    <img src="${escapeHtml(avatarImageFor(profile))}" alt="${escapeHtml(profile.name)}">
+                    <div>
+                      <strong>${escapeHtml(profile.name)}</strong>
+                      <span>${escapeHtml(formatRelativeTime(post.created_at))}</span>
+                    </div>
+                  </div>
+                  <p class="pp-post-tile-caption">${escapeHtml(post.caption || "No caption")}</p>
+                </div>
+              </article>
+            `).join("")}
+          </div>
+        ` : `<div class="pp-empty">No posts yet.</div>`}
+      </article>
+    </div>
+  `;
+}
+
+function roleOverviewTabMarkup() {
+  if (state.role === "coach") return coachOverviewMarkup();
+  if (state.role === "scout") return scoutOverviewMarkup();
+  return schoolOverviewMarkup();
+}
+
+function roleStageMarkup() {
+  if (state.activeTab === "posts") return postsTabMarkup(state.profile);
+  return roleOverviewTabMarkup();
+}
+
+function renderRoleProfile() {
+  const root = document.querySelector("#profile-experience");
+  if (!root) return;
+  destroyProfileStatsCharts();
+
+  const profile = state.profile;
+  if (!profile) {
+    root.innerHTML = `<div class="pp-empty">Loading profile…</div>`;
+    return;
+  }
+
+  const heroImage = ROLE_HERO_IMAGES[state.role] || ROLE_HERO_IMAGES.coach;
+  const heroMetrics = roleHeroMetrics();
+  const tabs = ROLE_TABS[state.role] || ROLE_TABS.coach;
+
+  root.innerHTML = `
+    <section class="pp-profile">
+      <div class="pp-hero" style="background-image:linear-gradient(180deg, rgba(8,15,28,.22), rgba(8,15,28,.88)), url('${escapeHtml(heroImage)}')">
+        ${state.isSelf ? `<button type="button" class="pp-cover-edit-btn" data-action="change-cover" title="Change cover photo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : ""}
+        <div class="pp-hero-main">
+          <div class="pp-identity">
+            <div class="pp-avatar-wrap">
+              <img class="pp-avatar" src="${escapeHtml(avatarImageFor(profile))}" alt="${escapeHtml(profile.name)}">
+              ${state.isSelf ? `<button type="button" class="pp-avatar-edit-btn" data-action="change-avatar" title="Change profile picture"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : `<span class="pp-avatar-badge">${escapeHtml(roleRoleName()[0])}</span>`}
+            </div>
+            <div class="pp-headline">
+              <div class="pp-name-row">
+                <h1>${escapeHtml(profile.name)}</h1>
+                <span class="pp-chip pp-chip--role">${escapeHtml(roleRoleName())}</span>
+              </div>
+              <p class="pp-role-line">${escapeHtml(roleSubtitle())}</p>
+              <div class="pp-social-stats">
+                <span class="pp-social-stat">${state.counts.posts ?? 0} <small>Posts</small></span>
+                <span class="pp-social-stat pp-social-stat--clickable" data-show-follow="followers">${state.counts.followers ?? 0} <small>Followers</small></span>
+                <span class="pp-social-stat pp-social-stat--clickable" data-show-follow="following">${state.counts.following ?? 0} <small>Following</small></span>
+              </div>
+              <div class="pp-action-row">
+                ${actionButtonsMarkup()}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pp-metrics-bar">
+          ${heroMetrics.map((item) => `
+            <div class="pp-metric-tile">
+              <span>${escapeHtml(item.label)}</span>
+              <strong>${escapeHtml(item.value)}</strong>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+
+      <div class="pp-tab-bar">
+        <div class="pp-tabs">
+          ${tabs.map((tab) => `
+            <button type="button" class="pp-tab ${state.activeTab === tab.id ? "is-active" : ""}" data-tab-id="${tab.id}">
+              ${escapeHtml(tab.label)}
+            </button>
+          `).join("")}
+        </div>
+      </div>
+
+      <div class="pp-stage">
+        ${roleStageMarkup()}
+      </div>
+    </section>
+    <div id="profile-toast" class="pp-toast" hidden></div>
+  `;
+}
+
 function renderProfile() {
+  // Route to role-specific profile for non-athletes
+  if (state.role && state.role !== "athlete" && state.role !== "user") {
+    renderRoleProfile();
+    return;
+  }
+
   const root = document.querySelector("#profile-experience");
   if (!root) return;
   destroyProfileStatsCharts();
@@ -1650,11 +2206,12 @@ function renderProfile() {
   root.innerHTML = `
     <section class="pp-profile">
       <div class="pp-hero" style="background-image:linear-gradient(180deg, rgba(8,15,28,.22), rgba(8,15,28,.88)), url('${escapeHtml(heroImageFor(profile))}')">
+        ${state.isSelf ? `<button type="button" class="pp-cover-edit-btn" data-action="change-cover" title="Change cover photo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : ""}
         <div class="pp-hero-main">
           <div class="pp-identity">
             <div class="pp-avatar-wrap">
               <img class="pp-avatar" src="${escapeHtml(avatarImageFor(profile))}" alt="${escapeHtml(profile.name)}">
-              <span class="pp-avatar-badge">✓</span>
+              ${state.isSelf ? `<button type="button" class="pp-avatar-edit-btn" data-action="change-avatar" title="Change profile picture"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : `<span class="pp-avatar-badge">V</span>`}
             </div>
             <div class="pp-headline">
               <div class="pp-name-row">
@@ -1742,26 +2299,26 @@ function ensureFollowOverlay() {
 
   overlay.innerHTML = `
     <div id="pp-follow-modal" style="
-      background:#fff; border-radius:16px; width:92%; max-width:420px;
+      background:var(--surface); border-radius:16px; width:92%; max-width:420px;
       max-height:70vh; display:flex; flex-direction:column;
-      box-shadow:0 24px 80px rgba(0,0,0,.3); transform:translateY(16px) scale(.97);
-      transition:transform .25s ease; overflow:hidden;
+      box-shadow:0 24px 80px rgba(0,0,0,.5); transform:translateY(16px) scale(.97);
+      transition:transform .25s ease; overflow:hidden; border:1px solid var(--line);
     ">
       <div style="
         display:flex; align-items:center; justify-content:space-between;
-        padding:18px 20px; border-bottom:1px solid #eee; flex-shrink:0;
+        padding:18px 20px; border-bottom:1px solid var(--line); flex-shrink:0;
       ">
-        <h3 id="pp-follow-modal-title" style="margin:0; font-size:1rem; font-weight:700; color:#111;">Followers</h3>
+        <h3 id="pp-follow-modal-title" style="margin:0; font-size:1rem; font-weight:700; color:var(--text);">Followers</h3>
         <button id="pp-follow-modal-close" style="
           width:32px; height:32px; border-radius:50%; border:none;
-          background:#f3f3f3; color:#666; font-size:1.2rem; cursor:pointer;
+          background:var(--surface-2); color:var(--muted); font-size:1.2rem; cursor:pointer;
           display:grid; place-items:center; transition:.15s;
         ">&times;</button>
       </div>
       <div id="pp-follow-modal-body" style="
         padding:6px 0; overflow-y:auto; flex:1;
       ">
-        <div style="text-align:center; padding:40px 20px; color:#999; font-size:.875rem;">Loading...</div>
+        <div style="text-align:center; padding:40px 20px; color:var(--muted); font-size:.875rem;">Loading...</div>
       </div>
     </div>`;
 
@@ -1776,7 +2333,7 @@ function ensureFollowOverlay() {
   // Hover effect on close btn
   const closeBtn = overlay.querySelector("#pp-follow-modal-close");
   closeBtn.addEventListener("mouseenter", () => { closeBtn.style.background = "#e8e8e8"; });
-  closeBtn.addEventListener("mouseleave", () => { closeBtn.style.background = "#f3f3f3"; });
+  closeBtn.addEventListener("mouseleave", () => { closeBtn.style.background = "var(--surface-2)"; });
 
   return overlay;
 }
@@ -1799,7 +2356,7 @@ async function openFollowModal(mode) {
   if (!overlay || !body) return;
 
   if (title) title.textContent = mode === "followers" ? "Followers" : "Following";
-  body.innerHTML = `<div style="text-align:center; padding:40px 20px; color:#999; font-size:.875rem;">Loading...</div>`;
+  body.innerHTML = `<div style="text-align:center; padding:40px 20px; color:var(--muted); font-size:.875rem;">Loading...</div>`;
   showFollowOverlay(overlay);
 
   try {
@@ -1821,7 +2378,7 @@ async function openFollowModal(mode) {
     }
 
     if (!userIds.length) {
-      body.innerHTML = `<div style="text-align:center; padding:40px 20px; color:#999; font-size:.875rem;">No ${mode} yet.</div>`;
+      body.innerHTML = `<div style="text-align:center; padding:40px 20px; color:var(--muted); font-size:.875rem;">No ${mode} yet.</div>`;
       return;
     }
 
@@ -1871,16 +2428,16 @@ async function openFollowModal(mode) {
             display:none; place-items:center; flex-shrink:0; color:#fff; font-weight:700; font-size:.9rem;
           ">${escapeHtml(initials)}</div>
           <div style="flex:1; min-width:0;">
-            <div style="font-size:.9rem; font-weight:600; color:#111; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            <div style="font-size:.9rem; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
               ${escapeHtml(name)}
             </div>
-            ${info.email && info.display_name ? `<div style="font-size:.75rem; color:#999; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(info.email)}</div>` : ""}
+            ${info.email && info.display_name ? `<div style="font-size:.75rem; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(info.email)}</div>` : ""}
           </div>
         </a>`;
     }).join("");
   } catch (err) {
     console.error("Failed to load follow list:", err);
-    body.innerHTML = `<div style="text-align:center; padding:40px 20px; color:#999; font-size:.875rem;">Failed to load list.</div>`;
+    body.innerHTML = `<div style="text-align:center; padding:40px 20px; color:var(--muted); font-size:.875rem;">Failed to load list.</div>`;
   }
 }
 
@@ -1895,8 +2452,401 @@ function closeFollowModal() {
 
 // Close on Escape key
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeFollowModal();
+  if (e.key === "Escape") { closeFollowModal(); closeEditProfileModal(); }
 });
+
+// ── Edit Profile modal (athlete-editable fields) ────────────
+function ensureEditProfileOverlay() {
+  let overlay = document.getElementById("pp-edit-overlay");
+  if (overlay) return overlay;
+
+  overlay = document.createElement("div");
+  overlay.id = "pp-edit-overlay";
+  Object.assign(overlay.style, {
+    position: "fixed", inset: "0", zIndex: "9999",
+    background: "rgba(0,0,0,.55)", backdropFilter: "blur(6px)",
+    WebkitBackdropFilter: "blur(6px)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    opacity: "0", pointerEvents: "none", transition: "opacity .25s ease",
+  });
+
+  overlay.innerHTML = `
+    <div id="pp-edit-modal" style="
+      background:var(--surface); border-radius:16px; width:94%; max-width:520px;
+      max-height:85vh; display:flex; flex-direction:column;
+      box-shadow:0 24px 80px rgba(0,0,0,.5); transform:translateY(16px) scale(.97);
+      transition:transform .25s ease; overflow:hidden; border:1px solid var(--line);
+    ">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--line); flex-shrink:0;">
+        <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:var(--text);">Edit Profile</h3>
+        <button id="pp-edit-close" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-2);color:var(--muted);font-size:1.2rem;cursor:pointer;display:grid;place-items:center;">&times;</button>
+      </div>
+      <div id="pp-edit-body" style="padding:20px 22px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:16px;">
+      </div>
+      <div style="padding:14px 22px; border-top:1px solid var(--line); flex-shrink:0; display:flex; gap:10px; justify-content:flex-end;">
+        <div id="pp-edit-status" style="flex:1; font-size:.8rem; color:var(--muted); align-self:center;"></div>
+        <button id="pp-edit-cancel" style="padding:8px 18px; border-radius:8px; border:1px solid var(--line); background:var(--surface-2); color:var(--text); font-size:.85rem; cursor:pointer; font-weight:600;">Cancel</button>
+        <button id="pp-edit-save" style="padding:8px 22px; border-radius:8px; border:none; background:var(--brand); color:#fff; font-size:.85rem; cursor:pointer; font-weight:600;">Save Changes</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) closeEditProfileModal(); });
+  overlay.querySelector("#pp-edit-close").addEventListener("click", closeEditProfileModal);
+  overlay.querySelector("#pp-edit-cancel").addEventListener("click", closeEditProfileModal);
+  overlay.querySelector("#pp-edit-save").addEventListener("click", () => void saveEditProfile());
+
+  return overlay;
+}
+
+function fieldHtml(label, id, type, value, placeholder, extra = "") {
+  if (type === "textarea") {
+    return `<div style="display:flex; flex-direction:column; gap:4px;">
+      <label style="font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--muted);" for="${id}">${label}</label>
+      <textarea id="${id}" placeholder="${placeholder}" style="padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:.875rem; min-height:80px; resize:vertical; font-family:inherit; color:var(--text); background:var(--surface-2);" ${extra}>${escapeHtml(value || "")}</textarea>
+    </div>`;
+  }
+  return `<div style="display:flex; flex-direction:column; gap:4px;">
+    <label style="font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--muted);" for="${id}">${label}</label>
+    <input id="${id}" type="${type}" value="${escapeHtml(value || "")}" placeholder="${placeholder}" style="padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:.875rem; color:var(--text); background:var(--surface-2);" ${extra}>
+  </div>`;
+}
+
+function inchesToFeetStr(inches) {
+  if (!inches) return "";
+  const ft = Math.floor(inches / 12);
+  const inPart = inches % 12;
+  return `${ft}'${inPart}"`;
+}
+
+function feetStrToInches(str) {
+  if (!str) return null;
+  const m = String(str).match(/(\d+)'?\s*(\d*)"?/);
+  if (!m) return null;
+  return parseInt(m[1], 10) * 12 + (parseInt(m[2], 10) || 0);
+}
+
+async function openEditProfileModal() {
+  const overlay = ensureEditProfileOverlay();
+  const body = document.getElementById("pp-edit-body");
+  if (!body) return;
+
+  // Load existing athlete_profiles data
+  let existing = null;
+  try {
+    const { data } = await supabase
+      .from("athlete_profiles")
+      .select("*")
+      .eq("user_id", state.targetUserId)
+      .limit(1);
+    existing = data?.[0] || null;
+  } catch (_) {}
+
+  const profile = state.profile || {};
+  const measurables = existing?.measurables || {};
+
+  body.innerHTML = `
+    <div style="font-size:.8rem; color:var(--muted); margin-bottom:4px;">Update your profile info. Changes are saved to the database and shown on your profile.</div>
+
+    ${fieldHtml("Bio", "edit-bio", "textarea", existing?.bio || profile.bio || "", "Tell scouts about yourself...")}
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      ${fieldHtml("Height", "edit-height", "text", existing?.height_inches ? inchesToFeetStr(existing.height_inches) : (profile.measurables?.Height || ""), "e.g. 6'1\"")}
+      ${fieldHtml("Weight (lbs)", "edit-weight", "number", existing?.weight_lbs || "", "e.g. 178")}
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      ${fieldHtml("GPA", "edit-gpa", "number", existing?.gpa || profile.gpa || "", "e.g. 3.8", 'step="0.01" min="0" max="5"')}
+      ${fieldHtml("Position", "edit-position", "text", existing?.position || profile.position || "", "e.g. Point Guard")}
+    </div>
+
+    ${fieldHtml("Hometown", "edit-hometown", "text", existing?.hometown || profile.hometown || "", "e.g. Atlanta, GA")}
+
+    ${fieldHtml("Recruiting Goals", "edit-goals", "textarea", existing?.goals || profile.goals || "", "What are you looking for in a college program?")}
+
+    <div style="border-top:1px solid var(--line); padding-top:14px;">
+      <div style="font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin-bottom:8px;">Measurables</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        ${fieldHtml("Wingspan", "edit-wingspan", "text", measurables.wingspan || profile.measurables?.Wingspan || "", "e.g. 6'4\"")}
+        ${fieldHtml("Vertical", "edit-vertical", "text", measurables.vertical || profile.measurables?.Vertical || "", 'e.g. 32"')}
+        ${fieldHtml("40yd / Speed", "edit-speed", "text", measurables.speed || profile.measurables?.Speed || "", "e.g. 4.52 sec")}
+        ${fieldHtml("Standing Reach", "edit-reach", "text", measurables.reach || profile.measurables?.Reach || "", "e.g. 8'0\"")}
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--line); padding-top:14px;">
+      <div style="font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin-bottom:8px;">Highlight Videos</div>
+      <div id="edit-highlights-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+      <button id="edit-add-highlight" type="button" style="margin-top:8px; padding:6px 14px; border-radius:6px; border:1px dashed var(--line); background:transparent; color:#245f73; font-size:.8rem; cursor:pointer; font-weight:600;">+ Add Highlight</button>
+    </div>
+  `;
+
+  // Populate highlights
+  const highlights = existing?.highlights || [];
+  const hlList = body.querySelector("#edit-highlights-list");
+  if (hlList) {
+    highlights.forEach((hl, i) => addHighlightRow(hlList, hl, i));
+    if (!highlights.length) addHighlightRow(hlList, {}, 0);
+  }
+
+  body.querySelector("#edit-add-highlight")?.addEventListener("click", () => {
+    const list = body.querySelector("#edit-highlights-list");
+    const idx = list?.children.length || 0;
+    addHighlightRow(list, {}, idx);
+  });
+
+  // Show overlay
+  void overlay.offsetWidth;
+  overlay.style.opacity = "1";
+  overlay.style.pointerEvents = "auto";
+  const modal = overlay.querySelector("#pp-edit-modal");
+  if (modal) modal.style.transform = "translateY(0) scale(1)";
+}
+
+function addHighlightRow(container, hl, index) {
+  if (!container) return;
+  const row = document.createElement("div");
+  row.style.cssText = "display:grid; grid-template-columns:1fr 2fr auto; gap:8px; align-items:center;";
+  row.innerHTML = `
+    <input type="text" class="hl-title" value="${escapeHtml(hl.title || "")}" placeholder="Title" style="padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:.8rem;">
+    <input type="url" class="hl-url" value="${escapeHtml(hl.url || "")}" placeholder="https://youtube.com/..." style="padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:.8rem;">
+    <button type="button" class="hl-remove" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);font-size:1rem;cursor:pointer;display:grid;place-items:center;">&times;</button>
+  `;
+  row.querySelector(".hl-remove").addEventListener("click", () => row.remove());
+  container.appendChild(row);
+}
+
+function closeEditProfileModal() {
+  const overlay = document.getElementById("pp-edit-overlay");
+  if (!overlay) return;
+  overlay.style.opacity = "0";
+  overlay.style.pointerEvents = "none";
+  const modal = overlay.querySelector("#pp-edit-modal");
+  if (modal) modal.style.transform = "translateY(16px) scale(.97)";
+}
+
+async function saveEditProfile() {
+  const status = document.getElementById("pp-edit-status");
+  if (status) { status.textContent = "Saving..."; status.style.color = "#245f73"; }
+
+  try {
+    const bio = document.getElementById("edit-bio")?.value?.trim() || "";
+    const heightStr = document.getElementById("edit-height")?.value?.trim() || "";
+    const weightStr = document.getElementById("edit-weight")?.value?.trim() || "";
+    const gpaStr = document.getElementById("edit-gpa")?.value?.trim() || "";
+    const position = document.getElementById("edit-position")?.value?.trim() || "";
+    const hometown = document.getElementById("edit-hometown")?.value?.trim() || "";
+    const goals = document.getElementById("edit-goals")?.value?.trim() || "";
+
+    const wingspan = document.getElementById("edit-wingspan")?.value?.trim() || "";
+    const vertical = document.getElementById("edit-vertical")?.value?.trim() || "";
+    const speed = document.getElementById("edit-speed")?.value?.trim() || "";
+    const reach = document.getElementById("edit-reach")?.value?.trim() || "";
+
+    // Collect highlights
+    const hlRows = document.querySelectorAll("#edit-highlights-list > div");
+    const highlights = [];
+    hlRows.forEach((row) => {
+      const title = row.querySelector(".hl-title")?.value?.trim();
+      const url = row.querySelector(".hl-url")?.value?.trim();
+      if (url) highlights.push({ title: title || "Highlight", url, platform: url.includes("youtube") ? "YouTube" : "Link" });
+    });
+
+    const upsertData = {
+      user_id: state.targetUserId,
+      bio,
+      height_inches: feetStrToInches(heightStr),
+      weight_lbs: weightStr ? parseInt(weightStr, 10) : null,
+      gpa: gpaStr ? parseFloat(gpaStr) : null,
+      position,
+      hometown,
+      goals,
+      highlights,
+      measurables: { wingspan, vertical, speed, reach },
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from("athlete_profiles")
+      .upsert(upsertData, { onConflict: "user_id" });
+
+    if (error) throw error;
+
+    if (status) { status.textContent = "Saved!"; status.style.color = "#16a34a"; }
+
+    // Reload profile to show updated data
+    setTimeout(async () => {
+      closeEditProfileModal();
+      const bundle = await loadProfileBundle(state.targetUserId);
+      state.profile = bundle.profile;
+      renderProfile();
+    }, 600);
+
+  } catch (err) {
+    console.error("Save profile failed:", err);
+    if (status) { status.textContent = err.message || "Failed to save."; status.style.color = "#ef4444"; }
+  }
+}
+
+// ── Role-specific edit modal (coach / scout / school_admin) ──
+async function openRoleEditModal() {
+  const overlay = ensureEditProfileOverlay();
+  const body = document.getElementById("pp-edit-body");
+  if (!body) return;
+
+  const profile = state.profile || {};
+  const role = state.role;
+
+  if (role === "coach") {
+    const c = state.coachRow || {};
+    body.innerHTML = `
+      <div style="font-size:.8rem; color:var(--muted); margin-bottom:4px;">Update your coach profile.</div>
+      ${fieldHtml("Bio", "edit-bio", "textarea", c.bio || "", "Tell athletes and scouts about your coaching background...")}
+      ${fieldHtml("Years of Experience", "edit-experience", "number", c.years_experience || "", "e.g. 12", 'min="0" max="60"')}
+    `;
+  } else if (role === "scout") {
+    const s = state.scoutRow || {};
+    body.innerHTML = `
+      <div style="font-size:.8rem; color:var(--muted); margin-bottom:4px;">Update your scout profile.</div>
+      ${fieldHtml("Organization", "edit-org", "text", s.organization || "", "e.g. National Scouting Bureau")}
+      ${fieldHtml("Title", "edit-title", "text", s.title || "", "e.g. Regional Scout, Director of Recruiting")}
+    `;
+  } else {
+    const sch = state.schoolRow || {};
+    body.innerHTML = `
+      <div style="font-size:.8rem; color:var(--muted); margin-bottom:4px;">Update your school profile.</div>
+      ${fieldHtml("School Name", "edit-school-name", "text", sch.name || "", "e.g. Westview High School")}
+      ${fieldHtml("Description", "edit-school-desc", "textarea", sch.description || "", "Tell athletes about your athletic program...")}
+      ${fieldHtml("Location", "edit-school-loc", "text", sch.location || "", "e.g. Atlanta, GA")}
+    `;
+  }
+
+  // Rewire save button
+  const saveBtn = document.getElementById("pp-edit-save");
+  if (saveBtn) {
+    const newSave = saveBtn.cloneNode(true);
+    saveBtn.replaceWith(newSave);
+    newSave.addEventListener("click", () => void saveRoleProfile());
+  }
+
+  void overlay.offsetWidth;
+  overlay.style.opacity = "1";
+  overlay.style.pointerEvents = "auto";
+  const modal = overlay.querySelector("#pp-edit-modal");
+  if (modal) modal.style.transform = "translateY(0) scale(1)";
+}
+
+async function saveRoleProfile() {
+  const status = document.getElementById("pp-edit-status");
+  if (status) { status.textContent = "Saving..."; status.style.color = "#245f73"; }
+
+  try {
+    const role = state.role;
+
+    if (role === "coach") {
+      const bio = document.getElementById("edit-bio")?.value?.trim() || "";
+      const yrs = document.getElementById("edit-experience")?.value?.trim() || "";
+      const { error } = await supabase
+        .from("coaches")
+        .update({ bio, years_experience: yrs ? parseInt(yrs, 10) : null })
+        .eq("user_id", state.targetUserId);
+      if (error) throw error;
+      if (state.coachRow) { state.coachRow.bio = bio; state.coachRow.years_experience = yrs ? parseInt(yrs, 10) : null; }
+    } else if (role === "scout") {
+      const org = document.getElementById("edit-org")?.value?.trim() || "";
+      const title = document.getElementById("edit-title")?.value?.trim() || "";
+      const { error } = await supabase
+        .from("scouts")
+        .update({ organization: org, title })
+        .eq("user_id", state.targetUserId);
+      if (error) throw error;
+      if (state.scoutRow) { state.scoutRow.organization = org; state.scoutRow.title = title; }
+    } else {
+      const name = document.getElementById("edit-school-name")?.value?.trim() || "";
+      const desc = document.getElementById("edit-school-desc")?.value?.trim() || "";
+      const loc = document.getElementById("edit-school-loc")?.value?.trim() || "";
+      const { error } = await supabase
+        .from("schools")
+        .update({ name, description: desc, location: loc })
+        .eq("user_id", state.targetUserId);
+      if (error) throw error;
+      if (state.schoolRow) { state.schoolRow.name = name; state.schoolRow.description = desc; state.schoolRow.location = loc; }
+    }
+
+    if (status) { status.textContent = "Saved!"; status.style.color = "#16a34a"; }
+
+    setTimeout(() => {
+      closeEditProfileModal();
+      renderProfile();
+    }, 600);
+  } catch (err) {
+    console.error("Save role profile failed:", err);
+    if (status) { status.textContent = err.message || "Failed to save."; status.style.color = "#ef4444"; }
+  }
+}
+
+// ── Profile image upload ─────────────────────────────────────
+async function uploadProfileImage(file, userId, type) {
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `${type}/${userId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from("profile-images").upload(path, file, {
+    cacheControl: "3600",
+    upsert: true,
+  });
+  if (error) throw error;
+  const { data: pub } = supabase.storage.from("profile-images").getPublicUrl(path);
+  return pub.publicUrl;
+}
+
+function createHiddenFileInput(accept, onChange) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = accept;
+  input.style.display = "none";
+  input.addEventListener("change", onChange);
+  document.body.appendChild(input);
+  return input;
+}
+
+async function handleAvatarUpload() {
+  const input = createHiddenFileInput("image/*", async () => {
+    const file = input.files?.[0];
+    input.remove();
+    if (!file) return;
+    showToast("Uploading profile picture...");
+    try {
+      const url = await uploadProfileImage(file, state.targetUserId, "avatars");
+      await supabase.from("users").update({ avatar_url: url }).eq("user_id", state.targetUserId);
+      state.profile.avatarUrl = url;
+      renderProfile();
+      showToast("Profile picture updated!");
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+      showToast("Upload failed. Try a smaller image.");
+    }
+  });
+  input.click();
+}
+
+async function handleCoverUpload() {
+  const input = createHiddenFileInput("image/*", async () => {
+    const file = input.files?.[0];
+    input.remove();
+    if (!file) return;
+    showToast("Uploading cover photo...");
+    try {
+      const url = await uploadProfileImage(file, state.targetUserId, "covers");
+      await supabase.from("users").update({ cover_url: url }).eq("user_id", state.targetUserId);
+      state.profile.coverUrl = url;
+      renderProfile();
+      showToast("Cover photo updated!");
+    } catch (err) {
+      console.error("Cover upload failed:", err);
+      showToast("Upload failed. Try a smaller image.");
+    }
+  });
+  input.click();
+}
 
 async function toggleFollow() {
   if (!state.viewerUserId || !state.targetUserId || state.isSelf) return;
@@ -2036,7 +2986,19 @@ function bindEvents() {
       return;
     }
     if (action === "edit-profile") {
-      showToast("Profile editing will be connected next.");
+      if (state.role === "coach" || state.role === "scout" || state.role === "school_admin" || state.role === "school") {
+        void openRoleEditModal();
+      } else {
+        void openEditProfileModal();
+      }
+      return;
+    }
+    if (action === "change-avatar") {
+      void handleAvatarUpload();
+      return;
+    }
+    if (action === "change-cover") {
+      void handleCoverUpload();
       return;
     }
     if (action === "download-profile") {
@@ -2044,37 +3006,9 @@ function bindEvents() {
       return;
     }
     if (action === "message-profile") {
-      // Create a conversation and redirect to messages page
-      const viewerId = state.viewerUserId;
-      if (!viewerId) { showToast("Sign in to send messages."); return; }
-      try {
-        // Check if a conversation already exists between these two users
-        const { data: existing } = await supabase
-          .from("message")
-          .select("conversation_id")
-          .or(`sender_user_id.eq.${viewerId}`)
-          .limit(50);
-
-        // Create new conversation
-        const { data: convoRow, error: convoErr } = await supabase
-          .from("conversation")
-          .insert({})
-          .select("conversation_id")
-          .single();
-
-        if (convoErr || !convoRow?.conversation_id) throw new Error("Could not start conversation.");
-
-        // Send an opening message so the conversation is visible in the list
-        await supabase.from("message").insert({
-          conversation_id: convoRow.conversation_id,
-          sender_user_id: viewerId,
-          body: "👋 Hey! I'd like to connect with you.",
-        });
-
-        window.location.href = `messages.html?convo=${convoRow.conversation_id}`;
-      } catch (err) {
-        showToast(err.message || "Could not open messaging.");
-      }
+      if (!state.viewerUserId) { showToast("Sign in to send messages."); return; }
+      // Navigate to messages page with user_id — it will find or create the conversation
+      window.location.href = `messages.html?user_id=${encodeURIComponent(state.targetUserId)}`;
       return;
     }
 
@@ -2183,6 +3117,17 @@ async function bootstrap(session, viewerRoleOverride = "") {
       state.posts = bundle.posts;
       state.counts = bundle.counts;
       state.role = bundle.role;
+      state.coachRow = bundle.coachRow || null;
+      state.schoolRow = bundle.schoolRow || null;
+      state.scoutRow = bundle.scoutRow || null;
+
+      // Load coach teams if profile is a coach
+      if (bundle.role === "coach" && state.targetUserId) {
+        try { state.coachTeams = await loadCoachTeams(state.targetUserId); } catch (_) { state.coachTeams = []; }
+      } else {
+        state.coachTeams = [];
+      }
+
       state.scoutWorkspace = getScoutWorkspaceState({
         viewerRole: state.viewerRole,
         viewerUserId: state.viewerUserId,

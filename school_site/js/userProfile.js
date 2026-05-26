@@ -1,3 +1,3 @@
-import { mountProfileExperience } from "./profileExperience.js?v=20260521a";
+import { mountProfileExperience } from "./profileExperience.js?v=20260522a";
 
 mountProfileExperience("public");

@@ -6,45 +6,26 @@
   <title>Untitled Athletics • School Dashboard</title>
   <link rel="stylesheet" href="styles.css?v=20260509a">
   <link rel="stylesheet" href="school-dashboard.css?v=20260509a">
-  <script type="module" src="js/app.js?v=20260509a"></script>
+  <script type="module" src="js/app.js?v=20260524a"></script>
   <script type="module" src="js/schoolDashboard.js?v=20260509a"></script>
 </head>
 <body data-page="school-dashboard" data-requires-session="true">
 <div class="app-layout">
 
-  <aside class="sidebar" id="sidebar">
-    <div class="brand">
-      <div class="logo">UA</div>
-      <span class="role-pill" id="role-pill">guest</span>
-    </div>
-    <div>
-      <p class="nav-label">Main</p>
-      <nav class="nav">
-        <a class="nav-btn" data-nav="home" href="index.html"><span class="nav-icon">🏠</span><span class="nav-text">Home</span></a>
-        <a class="nav-btn" data-nav="pulse" href="pulse.html"><span class="nav-icon">⚡</span><span class="nav-text">Pulse</span></a>
-        <a class="nav-btn" data-nav="search" href="explore.html"><span class="nav-icon">🔍</span><span class="nav-text">Explore</span></a>
-        <a class="nav-btn" data-nav="profile" href="profile.html"><span class="nav-icon">👤</span><span class="nav-text">Profile</span></a>
-        <a class="nav-btn" data-nav="messages" href="messages.html"><span class="nav-icon">💬</span><span class="nav-text">Messages</span></a>
-        <a class="nav-btn" data-nav="scout-dashboard" data-role-allow="scout" href="scout-dashboard.html"><span class="nav-icon">📋</span><span class="nav-text">Scout Hub</span></a>
-        <a class="nav-btn" data-nav="school-dashboard" data-role-allow="school_admin" href="school-dashboard.html"><span class="nav-icon">🏫</span><span class="nav-text">School</span></a>
-        <a class="nav-btn" data-nav="coach-dashboard" data-role-allow="coach" href="coach-dashboard.html"><span class="nav-icon">🏋️</span><span class="nav-text">Coach Hub</span></a>
-      </nav>
-      <p class="nav-label" style="margin-top:1.5rem">Manage</p>
-      <nav class="nav" id="school-sub-nav">
-        <a class="nav-btn sch-sub-link active" data-section="overview" href="#school-section-overview"><span class="nav-icon">📊</span><span class="nav-text">Overview</span></a>
-        <a class="nav-btn sch-sub-link" data-section="sports" href="#school-section-sports"><span class="nav-icon">🏀</span><span class="nav-text">Sports</span></a>
-        <a class="nav-btn sch-sub-link" data-section="seasons" href="#school-section-seasons"><span class="nav-icon">📆</span><span class="nav-text">Seasons</span></a>
-        <a class="nav-btn sch-sub-link" data-section="teams" href="#school-section-teams"><span class="nav-icon">🏆</span><span class="nav-text">Teams</span></a>
-        <a class="nav-btn sch-sub-link" data-section="roster" href="#school-section-roster"><span class="nav-icon">👥</span><span class="nav-text">Roster</span></a>
-        <a class="nav-btn sch-sub-link" data-section="schedule" href="#school-section-schedule"><span class="nav-icon">📅</span><span class="nav-text">Schedule</span></a>
-        <a class="nav-btn sch-sub-link" data-section="coaches" href="#school-section-coaches"><span class="nav-icon">🧑‍🏫</span><span class="nav-text">Coaches</span></a>
-        <a class="nav-btn sch-sub-link" data-section="requests" href="#school-section-requests"><span class="nav-icon">📩</span><span class="nav-text">Requests</span></a>
-      </nav>
-    </div>
-    <div class="sidebar-foot">
-      <button class="btn-ghost full" id="sign-out-btn">Sign out</button>
-    </div>
-  </aside>
+  <aside class="sidebar" id="sidebar" data-shared-sidebar></aside>
+  <div data-sidebar-extra-content hidden>
+    <p class="nav-label" style="margin-top:1.5rem">Manage</p>
+    <nav class="nav" id="school-sub-nav">
+      <a class="nav-btn sch-sub-link active" data-section="overview" href="#school-section-overview"><span class="nav-text">Overview</span></a>
+      <a class="nav-btn sch-sub-link" data-section="sports" href="#school-section-sports"><span class="nav-text">Sports</span></a>
+      <a class="nav-btn sch-sub-link" data-section="seasons" href="#school-section-seasons"><span class="nav-text">Seasons</span></a>
+      <a class="nav-btn sch-sub-link" data-section="teams" href="#school-section-teams"><span class="nav-text">Teams</span></a>
+      <a class="nav-btn sch-sub-link" data-section="roster" href="#school-section-roster"><span class="nav-text">Roster</span></a>
+      <a class="nav-btn sch-sub-link" data-section="schedule" href="#school-section-schedule"><span class="nav-text">Schedule</span></a>
+      <a class="nav-btn sch-sub-link" data-section="coaches" href="#school-section-coaches"><span class="nav-text">Coaches</span></a>
+      <a class="nav-btn sch-sub-link" data-section="requests" href="#school-section-requests"><span class="nav-text">Requests</span></a>
+    </nav>
+  </div>
 
   <div class="mobile-overlay" id="mobile-overlay"></div>
 

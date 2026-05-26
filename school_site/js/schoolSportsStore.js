@@ -396,6 +396,168 @@ export async function loadCoachTeams(coachUserId) {
   return [...teamMap.values()];
 }
 
+// ── Attendance CRUD ────────────────────────────────────────
+
+export async function loadAttendance(teamId, eventType, eventId) {
+  const { data, error } = await supabase
+    .from("attendance")
+    .select("*")
+    .eq("team_id", teamId)
+    .eq("event_type", eventType)
+    .eq("event_id", eventId);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function upsertAttendance({ teamId, athleteId, eventType, eventId, status, notes, recordedBy }) {
+  const { data, error } = await supabase
+    .from("attendance")
+    .upsert({
+      team_id: teamId,
+      athlete_id: athleteId,
+      event_type: eventType,
+      event_id: eventId,
+      status: status || "present",
+      notes: notes || null,
+      recorded_by: recordedBy || null,
+    }, { onConflict: "team_id,athlete_id,event_type,event_id" })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function bulkUpsertAttendance(records) {
+  const { data, error } = await supabase
+    .from("attendance")
+    .upsert(records, { onConflict: "team_id,athlete_id,event_type,event_id" })
+    .select("*");
+  if (error) throw error;
+  return data || [];
+}
+
+export async function loadAttendanceSummary(teamId) {
+  // Get all attendance for a team, grouped by athlete
+  const { data, error } = await supabase
+    .from("attendance")
+    .select("*")
+    .eq("team_id", teamId);
+  if (error) throw error;
+  return data || [];
+}
+
+// ── Player Notes CRUD ──────────────────────────────────────
+
+export async function loadPlayerNotes(coachId, athleteId, teamId) {
+  let query = supabase
+    .from("player_notes")
+    .select("*")
+    .eq("coach_id", coachId)
+    .eq("athlete_id", athleteId)
+    .order("is_pinned", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (teamId) query = query.eq("team_id", teamId);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createPlayerNote({ coachId, athleteId, teamId, content, category }) {
+  const { data, error } = await supabase
+    .from("player_notes")
+    .insert({
+      coach_id: coachId,
+      athlete_id: athleteId,
+      team_id: teamId || null,
+      content: content.trim(),
+      category: category || "general",
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updatePlayerNote(noteId, updates) {
+  const { data, error } = await supabase
+    .from("player_notes")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("note_id", noteId)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deletePlayerNote(noteId) {
+  const { error } = await supabase
+    .from("player_notes")
+    .delete()
+    .eq("note_id", noteId);
+  if (error) throw error;
+}
+
+// ── Roster Role Tags ───────────────────────────────────────
+
+export async function updateRosterEntry(rosterId, updates) {
+  const { data, error } = await supabase
+    .from("roster_entries")
+    .update(updates)
+    .eq("roster_id", rosterId)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// ── Formations CRUD ────────────────────────────────────────
+
+export async function loadFormations(teamId) {
+  const { data, error } = await supabase
+    .from("formations")
+    .select("*")
+    .eq("team_id", teamId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createFormation({ teamId, coachId, name, sport, layoutJson, notes }) {
+  const { data, error } = await supabase
+    .from("formations")
+    .insert({
+      team_id: teamId,
+      coach_id: coachId,
+      name: (name || "Untitled Formation").trim(),
+      sport: sport || null,
+      layout_json: layoutJson || [],
+      notes: notes || null,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateFormation(formationId, updates) {
+  const { data, error } = await supabase
+    .from("formations")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("formation_id", formationId)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteFormation(formationId) {
+  const { error } = await supabase
+    .from("formations")
+    .delete()
+    .eq("formation_id", formationId);
+  if (error) throw error;
+}
+
 export async function loadCoachSchoolId(coachUserId) {
   // Find the school this coach belongs to via school_members
   const { data } = await supabase

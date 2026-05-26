@@ -4,9 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Untitled Athletics • Pulse</title>
-  <link rel="stylesheet" href="styles.css?v=20260508e">
-  <script type="module" src="js/app.js?v=20260508e"></script>
-  <script type="module" src="js/pulse.js?v=20260508e"></script>
+  <script>var t=localStorage.getItem("ua-theme");if(t)document.documentElement.setAttribute("data-theme",t);</script>
+  <link rel="stylesheet" href="styles.css?v=20260523g">
+  <script type="module" src="js/app.js?v=20260524a"></script>
+  <script type="module" src="js/pulse.js?v=20260523g"></script>
   <style>
     .pulse-tab-panel        { display: none; }
     .pulse-tab-panel.active { display: block; }
@@ -14,29 +15,7 @@
 </head>
 <body data-page="pulse" data-requires-session="true">
   <div class="app-layout">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <div class="logo">UA</div>
-        <span class="role-pill" id="role-pill">guest</span>
-      </div>
-      <div>
-        <p class="nav-label">Main</p>
-        <nav class="nav">
-          <a class="nav-btn" data-nav="home" href="index.html"><span class="nav-icon">🏠</span><span class="nav-text">Home</span></a>
-          <a class="nav-btn" data-nav="pulse" href="pulse.html"><span class="nav-icon">⚡</span><span class="nav-text">Pulse</span></a>
-          <a class="nav-btn" data-nav="search" href="explore.html"><span class="nav-icon">🔍</span><span class="nav-text">Explore</span></a>
-          <a class="nav-btn" data-nav="profile" href="profile.html"><span class="nav-icon">👤</span><span class="nav-text">Profile</span></a>
-          <a class="nav-btn" data-nav="messages" href="messages.html"><span class="nav-icon">💬</span><span class="nav-text">Messages</span></a>
-        <a class="nav-btn" data-nav="scout-dashboard" data-role-allow="scout" href="scout-dashboard.html"><span class="nav-icon">📋</span><span class="nav-text">Scout Hub</span></a>
-          <a class="nav-btn" data-nav="school-dashboard" data-role-allow="school_admin" href="school-dashboard.html"><span class="nav-icon">🏫</span><span class="nav-text">School</span></a>
-        <a class="nav-btn" data-nav="coach-dashboard" data-role-allow="coach" href="coach-dashboard.html"><span class="nav-icon">🏋️</span><span class="nav-text">Coach Hub</span></a>
-        </nav>
-      </div>
-      <div class="sidebar-foot">
-        <button class="btn-ghost full" id="sign-out-btn">Sign out</button>
-      </div>
-    </aside>
-
+    <aside class="sidebar" id="sidebar" data-shared-sidebar></aside>
     <div class="mobile-overlay" id="mobile-overlay"></div>
 
     <div class="page-wrap">
@@ -96,14 +75,14 @@
           <div class="right-widget">
             <h3 class="widget-title">Sports Watchlist</h3>
             <div class="sport-tags">
-              <a href="pulse.html?sport=basketball" class="sport-tag">🏀 Basketball</a>
-              <a href="pulse.html?sport=soccer"     class="sport-tag">⚽ Soccer</a>
-              <a href="pulse.html?sport=football"   class="sport-tag">🏈 Football</a>
-              <a href="pulse.html?sport=track"      class="sport-tag">🏃 Track</a>
-              <a href="pulse.html?sport=baseball"   class="sport-tag">⚾ Baseball</a>
-              <a href="pulse.html?sport=volleyball" class="sport-tag">🏐 Volleyball</a>
-              <a href="pulse.html?sport=swimming"   class="sport-tag">🏊 Swimming</a>
-              <a href="pulse.html?sport=tennis"     class="sport-tag">🎾 Tennis</a>
+              <a href="pulse.html?sport=basketball" class="sport-tag">Basketball</a>
+              <a href="pulse.html?sport=soccer"     class="sport-tag">Soccer</a>
+              <a href="pulse.html?sport=football"   class="sport-tag">Football</a>
+              <a href="pulse.html?sport=track"      class="sport-tag">Track</a>
+              <a href="pulse.html?sport=baseball"   class="sport-tag">Baseball</a>
+              <a href="pulse.html?sport=volleyball" class="sport-tag">Volleyball</a>
+              <a href="pulse.html?sport=swimming"   class="sport-tag">Swimming</a>
+              <a href="pulse.html?sport=tennis"     class="sport-tag">Tennis</a>
             </div>
           </div>
 
