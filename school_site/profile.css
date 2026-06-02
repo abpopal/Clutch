@@ -234,6 +234,97 @@ html[data-theme="light"] #pp-sport-picker option {
   color: #333;
 }
 
+/* ── Complete Profile card ── */
+.pp-card--complete-profile {
+  background: linear-gradient(135deg, rgba(36,95,115,.12), rgba(45,155,178,.08));
+  border: 1px dashed rgba(45,155,178,.35);
+  grid-column: 1 / -1;
+}
+.pp-complete-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.pp-complete-icon {
+  width: 48px; height: 48px;
+  border-radius: 14px;
+  background: rgba(36,95,115,.2);
+  display: grid; place-items: center;
+  color: #2d9bb2;
+  flex-shrink: 0;
+}
+.pp-complete-text h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.pp-complete-text p {
+  margin: 4px 0 0;
+  font-size: .8rem;
+  color: var(--muted);
+}
+.pp-complete-bar-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,.08);
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.pp-complete-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #245f73, #2d9bb2);
+  transition: width .4s ease;
+}
+.pp-complete-missing {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.pp-complete-tag {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255,255,255,.06);
+  color: var(--muted);
+  font-size: .75rem;
+  font-weight: 600;
+  border: 1px solid rgba(255,255,255,.08);
+}
+.pp-complete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 10px;
+  border: none;
+  background: #245f73;
+  color: #fff;
+  font-size: .875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s;
+}
+.pp-complete-btn:hover {
+  background: #1e5060;
+}
+html[data-theme="light"] .pp-card--complete-profile {
+  background: linear-gradient(135deg, rgba(36,95,115,.06), rgba(45,155,178,.04));
+  border-color: rgba(36,95,115,.25);
+}
+html[data-theme="light"] .pp-complete-icon {
+  background: rgba(36,95,115,.1);
+}
+html[data-theme="light"] .pp-complete-bar-track {
+  background: rgba(0,0,0,.06);
+}
+html[data-theme="light"] .pp-complete-tag {
+  background: rgba(0,0,0,.04);
+  border-color: rgba(0,0,0,.08);
+}
+
 .pp-headline {
   display: grid;
   gap: 7px;

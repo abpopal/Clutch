@@ -1239,6 +1239,61 @@ function realStatsCardMarkup(profile) {
   `;
 }
 
+function profileCompletenessScore(profile) {
+  const checks = [
+    Boolean(profile?.sports?.[0]?.id && profile.sports[0].id !== "general"),
+    Boolean(profile?.position),
+    Boolean(profile?.gradYear),
+    Boolean(profile?.gpa),
+    Boolean(profile?.bio),
+    Boolean(profile?.measurables?.Height),
+    Boolean(profile?.measurables?.Weight),
+    Boolean(profile?.hometown),
+  ];
+  const done = checks.filter(Boolean).length;
+  return { done, total: checks.length, pct: Math.round((done / checks.length) * 100) };
+}
+
+function completeProfileCardMarkup(profile) {
+  if (!state.isSelf) return "";
+  const { done, total, pct } = profileCompletenessScore(profile);
+  if (pct >= 100) return "";
+
+  const missing = [];
+  if (!profile?.sports?.[0]?.id || profile.sports[0].id === "general") missing.push("Sport");
+  if (!profile?.position) missing.push("Position");
+  if (!profile?.gradYear) missing.push("Graduation Year");
+  if (!profile?.gpa) missing.push("GPA");
+  if (!profile?.bio) missing.push("Bio");
+  if (!profile?.measurables?.Height) missing.push("Height");
+  if (!profile?.measurables?.Weight) missing.push("Weight");
+  if (!profile?.hometown) missing.push("Hometown");
+
+  return `
+    <article class="pp-card pp-card--complete-profile">
+      <div class="pp-complete-header">
+        <div class="pp-complete-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div class="pp-complete-text">
+          <h3>Complete Your Profile</h3>
+          <p>${escapeHtml(done)} of ${escapeHtml(String(total))} fields completed</p>
+        </div>
+      </div>
+      <div class="pp-complete-bar-track">
+        <div class="pp-complete-bar-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="pp-complete-missing">
+        ${missing.map(f => `<span class="pp-complete-tag">${escapeHtml(f)}</span>`).join("")}
+      </div>
+      <button type="button" class="pp-complete-btn" data-action="open-complete-wizard">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Complete Profile
+      </button>
+    </article>
+  `;
+}
+
 function overviewTabMarkup(profile, sport) {
   const achievements = genericAchievementItems(profile, sport);
   const recent = recentPosts().slice(0, 4);
@@ -1248,11 +1303,13 @@ function overviewTabMarkup(profile, sport) {
 
   return `
     <div class="pp-grid pp-grid--overview">
+      ${completeProfileCardMarkup(profile)}
+
       <article class="pp-card">
         <div class="pp-card-head">
           <h3>About ${escapeHtml(profile.name.split(" ")[0] || profile.name)}</h3>
         </div>
-        <p class="pp-copy">${escapeHtml(profile.bio || "No athlete summary is available yet.")}</p>
+        <p class="pp-copy">${escapeHtml(profile.bio || (state.isSelf ? "Add a bio to tell scouts about yourself." : "No athlete summary yet."))}</p>
         <div class="pp-chip-stack">
           ${(profile.strengths || []).map((item) => `<span class="pp-chip">${escapeHtml(item)}</span>`).join("")}
         </div>
@@ -1383,11 +1440,12 @@ function overviewTabMarkup(profile, sport) {
         </div>
         <div class="pp-basic-info">
           <div><span>Full Name</span><strong>${escapeHtml(profile.name)}</strong></div>
-          <div><span>Date of Birth</span><strong>${escapeHtml(`${profile.gradYear - 18}-05-12`)}</strong></div>
-          <div><span>Position</span><strong>${escapeHtml(profile.position)}</strong></div>
-          <div><span>Jersey Number</span><strong>${escapeHtml(profile.number)}</strong></div>
-          <div><span>Email</span><strong>${escapeHtml(profile.email || "Available on request")}</strong></div>
-          <div><span>Phone</span><strong>${escapeHtml(`(${seededValue(profile.name, 210, 979)}) ${seededValue(profile.school, 120, 889)}-${seededValue(profile.position, 1000, 9999)}`)}</strong></div>
+          ${profile.position ? `<div><span>Position</span><strong>${escapeHtml(profile.position)}</strong></div>` : ""}
+          ${profile.gradYear ? `<div><span>Class of</span><strong>${escapeHtml(String(profile.gradYear))}</strong></div>` : ""}
+          ${profile.school ? `<div><span>School</span><strong>${escapeHtml(profile.school)}</strong></div>` : ""}
+          ${profile.hometown ? `<div><span>Hometown</span><strong>${escapeHtml(profile.hometown)}</strong></div>` : ""}
+          ${profile.gpa ? `<div><span>GPA</span><strong>${escapeHtml(profile.gpa)}</strong></div>` : ""}
+          ${profile.email ? `<div><span>Email</span><strong>${escapeHtml(profile.email)}</strong></div>` : ""}
         </div>
       </article>
     </div>
@@ -2689,6 +2747,245 @@ function closeEditProfileModal() {
   if (modal) modal.style.transform = "translateY(16px) scale(.97)";
 }
 
+// ── Complete Profile Wizard ────────────────────────────────────
+let _wizardOverlay = null;
+let _wizardStep = 0;
+
+const WIZARD_SPORTS = [
+  "Basketball", "Football", "Soccer", "Baseball", "Track & Field",
+  "Volleyball", "Tennis", "Swimming", "Wrestling", "Lacrosse", "Golf", "Softball",
+];
+
+function ensureWizardOverlay() {
+  if (_wizardOverlay) return _wizardOverlay;
+
+  _wizardOverlay = document.createElement("div");
+  _wizardOverlay.id = "pp-wizard-overlay";
+  Object.assign(_wizardOverlay.style, {
+    position: "fixed", inset: "0", zIndex: "9999",
+    background: "rgba(0,0,0,.6)", backdropFilter: "blur(8px)",
+    WebkitBackdropFilter: "blur(8px)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    opacity: "0", pointerEvents: "none", transition: "opacity .25s ease",
+  });
+
+  _wizardOverlay.innerHTML = `
+    <div id="pp-wizard-modal" style="
+      background:var(--surface,#1a1a2e); border-radius:20px; width:94%; max-width:520px;
+      max-height:85vh; display:flex; flex-direction:column;
+      box-shadow:0 24px 80px rgba(0,0,0,.5); transform:translateY(16px) scale(.97);
+      transition:transform .25s ease; overflow:hidden; border:1px solid var(--line);
+    ">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--line);flex-shrink:0;">
+        <div>
+          <h3 id="pp-wizard-title" style="margin:0;font-size:1.1rem;font-weight:700;color:var(--text);">Complete Your Profile</h3>
+          <p id="pp-wizard-subtitle" style="margin:4px 0 0;font-size:.8rem;color:var(--muted);">Step 1 of 3</p>
+        </div>
+        <button id="pp-wizard-close" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-2);color:var(--muted);font-size:1.2rem;cursor:pointer;display:grid;place-items:center;">&times;</button>
+      </div>
+      <div id="pp-wizard-body" style="padding:24px;overflow-y:auto;flex:1;"></div>
+      <div style="display:flex;gap:10px;padding:16px 24px;border-top:1px solid var(--line);flex-shrink:0;">
+        <button id="pp-wizard-back" type="button" style="padding:10px 20px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text);font-size:.875rem;font-weight:600;cursor:pointer;display:none;">Back</button>
+        <div style="flex:1;"></div>
+        <span id="pp-wizard-status" style="font-size:.8rem;color:var(--muted);align-self:center;"></span>
+        <button id="pp-wizard-next" type="button" style="padding:10px 24px;border-radius:10px;border:none;background:#245f73;color:#fff;font-size:.875rem;font-weight:700;cursor:pointer;">Next</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(_wizardOverlay);
+
+  _wizardOverlay.addEventListener("click", (e) => {
+    if (e.target === _wizardOverlay) closeWizard();
+  });
+  _wizardOverlay.querySelector("#pp-wizard-close").addEventListener("click", closeWizard);
+  _wizardOverlay.querySelector("#pp-wizard-back").addEventListener("click", () => { _wizardStep--; renderWizardStep(); });
+  _wizardOverlay.querySelector("#pp-wizard-next").addEventListener("click", () => void wizardNext());
+
+  return _wizardOverlay;
+}
+
+function openWizard() {
+  const overlay = ensureWizardOverlay();
+  _wizardStep = 0;
+  renderWizardStep();
+  void overlay.offsetWidth;
+  overlay.style.opacity = "1";
+  overlay.style.pointerEvents = "auto";
+  overlay.querySelector("#pp-wizard-modal").style.transform = "translateY(0) scale(1)";
+}
+
+function closeWizard() {
+  if (!_wizardOverlay) return;
+  _wizardOverlay.style.opacity = "0";
+  _wizardOverlay.style.pointerEvents = "none";
+  _wizardOverlay.querySelector("#pp-wizard-modal").style.transform = "translateY(16px) scale(.97)";
+}
+
+function wizFieldHtml(label, id, type, value, placeholder, extra = "") {
+  if (type === "textarea") {
+    return `<div style="margin-bottom:14px;"><label style="display:block;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">${escapeHtml(label)}</label><textarea id="${id}" placeholder="${escapeHtml(placeholder)}" rows="3" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:.875rem;resize:vertical;background:var(--surface-2);color:var(--text);outline:none;box-sizing:border-box;font-family:inherit;" ${extra}>${escapeHtml(value)}</textarea></div>`;
+  }
+  return `<div style="margin-bottom:14px;"><label style="display:block;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">${escapeHtml(label)}</label><input type="${type}" id="${id}" value="${escapeHtml(value)}" placeholder="${escapeHtml(placeholder)}" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:.875rem;background:var(--surface-2);color:var(--text);outline:none;box-sizing:border-box;" ${extra}></div>`;
+}
+
+function renderWizardStep() {
+  const body = document.getElementById("pp-wizard-body");
+  const subtitle = document.getElementById("pp-wizard-subtitle");
+  const backBtn = document.getElementById("pp-wizard-back");
+  const nextBtn = document.getElementById("pp-wizard-next");
+  const status = document.getElementById("pp-wizard-status");
+  if (!body) return;
+
+  const profile = state.profile || {};
+  const hasSport = profile?.sports?.[0]?.id && profile.sports[0].id !== "general";
+
+  backBtn.style.display = _wizardStep > 0 ? "block" : "none";
+  status.textContent = "";
+
+  if (_wizardStep === 0) {
+    subtitle.textContent = "Step 1 of 3 — Sport & Position";
+    nextBtn.textContent = "Next";
+    const currentSportLabel = hasSport ? profile.sports[0].label : "";
+    body.innerHTML = `
+      <p style="color:var(--muted);font-size:.875rem;margin:0 0 18px;">Tell us about your sport so we can set up your profile.</p>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">Sport</label>
+        <div id="wiz-sport-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+          ${WIZARD_SPORTS.map(s => `
+            <button type="button" class="wiz-sport-btn ${currentSportLabel === s ? "is-active" : ""}" data-sport="${escapeHtml(s)}" style="
+              padding:12px 8px;border-radius:10px;border:2px solid ${currentSportLabel === s ? "#245f73" : "var(--line)"};
+              background:${currentSportLabel === s ? "rgba(36,95,115,.15)" : "var(--surface-2)"};
+              color:var(--text);font-size:.8rem;font-weight:600;cursor:pointer;text-align:center;transition:.15s;
+            ">${escapeHtml(s)}</button>
+          `).join("")}
+        </div>
+      </div>
+      ${wizFieldHtml("Position", "wiz-position", "text", profile.position || "", "e.g. Point Guard, Wide Receiver, Midfielder")}
+      ${wizFieldHtml("Jersey Number", "wiz-jersey", "text", profile.number || "", "e.g. 24")}
+    `;
+    // Sport button clicks
+    body.querySelectorAll(".wiz-sport-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        body.querySelectorAll(".wiz-sport-btn").forEach(b => {
+          b.style.borderColor = "var(--line)";
+          b.style.background = "var(--surface-2)";
+          b.classList.remove("is-active");
+        });
+        btn.style.borderColor = "#245f73";
+        btn.style.background = "rgba(36,95,115,.15)";
+        btn.classList.add("is-active");
+      });
+    });
+  } else if (_wizardStep === 1) {
+    subtitle.textContent = "Step 2 of 3 — Physical & Academic";
+    nextBtn.textContent = "Next";
+    body.innerHTML = `
+      <p style="color:var(--muted);font-size:.875rem;margin:0 0 18px;">Help scouts find you with your measurables and academic info.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        ${wizFieldHtml("Height", "wiz-height", "text", profile.measurables?.Height || "", "e.g. 6'1\"")}
+        ${wizFieldHtml("Weight", "wiz-weight", "text", profile.measurables?.Weight ? profile.measurables.Weight.replace(" lbs", "") : "", "e.g. 178 lbs")}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        ${wizFieldHtml("GPA", "wiz-gpa", "number", profile.gpa || "", "e.g. 3.8", 'step="0.01" min="0" max="5"')}
+        ${wizFieldHtml("Graduation Year", "wiz-gradyear", "number", profile.gradYear || "", "e.g. 2026", 'min="2020" max="2035"')}
+      </div>
+      ${wizFieldHtml("Hometown", "wiz-hometown", "text", profile.hometown || "", "e.g. Atlanta, GA")}
+    `;
+  } else if (_wizardStep === 2) {
+    subtitle.textContent = "Step 3 of 3 — About You";
+    nextBtn.textContent = "Save Profile";
+    body.innerHTML = `
+      <p style="color:var(--muted);font-size:.875rem;margin:0 0 18px;">Tell coaches and scouts what makes you unique.</p>
+      ${wizFieldHtml("Bio", "wiz-bio", "textarea", profile.bio || "", "Tell scouts about yourself, your playing style, and your goals...")}
+      ${wizFieldHtml("Recruiting Goals", "wiz-goals", "textarea", profile.goals || "", "What are you looking for in a college program?")}
+    `;
+  }
+}
+
+async function wizardNext() {
+  const status = document.getElementById("pp-wizard-status");
+  const nextBtn = document.getElementById("pp-wizard-next");
+
+  if (_wizardStep < 2) {
+    _wizardStep++;
+    renderWizardStep();
+    return;
+  }
+
+  // Final step — save everything
+  if (status) { status.textContent = "Saving..."; status.style.color = "#245f73"; }
+  if (nextBtn) nextBtn.disabled = true;
+
+  try {
+    // Collect all wizard data
+    const sportBtn = _wizardOverlay.querySelector(".wiz-sport-btn.is-active");
+    const sportLabel = sportBtn?.dataset.sport || "";
+    const position = document.getElementById("wiz-position")?.value?.trim() || "";
+    const jersey = document.getElementById("wiz-jersey")?.value?.trim() || "";
+    const heightStr = document.getElementById("wiz-height")?.value?.trim() || "";
+    const weightStr = document.getElementById("wiz-weight")?.value?.trim() || "";
+    const gpaStr = document.getElementById("wiz-gpa")?.value?.trim() || "";
+    const gradYear = document.getElementById("wiz-gradyear")?.value?.trim() || "";
+    const hometown = document.getElementById("wiz-hometown")?.value?.trim() || "";
+    const bio = document.getElementById("wiz-bio")?.value?.trim() || "";
+    const goals = document.getElementById("wiz-goals")?.value?.trim() || "";
+
+    // Update athletes table
+    const athleteUpdate = {};
+    if (sportLabel) athleteUpdate.sport = sportLabel;
+    if (position) athleteUpdate.position = position;
+    if (gradYear) athleteUpdate.graduation_year = parseInt(gradYear, 10);
+    if (jersey) athleteUpdate.jersey_number = jersey;
+    if (Object.keys(athleteUpdate).length) {
+      const { error } = await supabase.from("athletes").update(athleteUpdate).eq("user_id", state.targetUserId);
+      if (error) console.warn("Athletes update:", error);
+    }
+
+    // Upsert athlete_profiles
+    const profileData = {
+      user_id: state.targetUserId,
+      bio,
+      position,
+      hometown,
+      goals,
+      gpa: gpaStr ? parseFloat(gpaStr) : null,
+      height_inches: feetStrToInches(heightStr),
+      weight_lbs: weightStr ? parseInt(weightStr.replace(/[^\d]/g, ""), 10) : null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error: profError } = await supabase
+      .from("athlete_profiles")
+      .upsert(profileData, { onConflict: "user_id" });
+    if (profError) console.warn("Profile upsert:", profError);
+
+    if (status) { status.textContent = "Saved!"; status.style.color = "#16a34a"; }
+
+    // Reload profile
+    setTimeout(async () => {
+      closeWizard();
+      const bundle = await loadProfileBundle(state.targetUserId);
+      state.profile = bundle.profile;
+      if (sportLabel) {
+        const SPORT_LABEL_TO_KEY = {
+          "basketball": "basketball", "football": "football", "soccer": "soccer",
+          "baseball": "baseball", "track & field": "track", "volleyball": "volleyball",
+          "tennis": "tennis", "swimming": "swimming", "wrestling": "wrestling",
+          "lacrosse": "lacrosse", "golf": "golf", "softball": "softball",
+        };
+        state.activeSportId = SPORT_LABEL_TO_KEY[sportLabel.toLowerCase()] || sportLabel.toLowerCase();
+      }
+      renderProfile();
+    }, 500);
+
+  } catch (err) {
+    console.error("Wizard save failed:", err);
+    if (status) { status.textContent = err.message || "Failed"; status.style.color = "#ef4444"; }
+  } finally {
+    if (nextBtn) nextBtn.disabled = false;
+  }
+}
+
 async function saveEditProfile() {
   const status = document.getElementById("pp-edit-status");
   if (status) { status.textContent = "Saving..."; status.style.color = "#245f73"; }
@@ -3061,6 +3358,10 @@ function bindEvents() {
     if (action === "share-profile") {
       navigator.clipboard?.writeText(window.location.href);
       showToast("Profile link copied.");
+      return;
+    }
+    if (action === "open-complete-wizard") {
+      openWizard();
       return;
     }
     if (action === "edit-profile") {
