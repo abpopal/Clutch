@@ -2,9 +2,22 @@ const SPORT_META = {
   basketball: { label: "Basketball", icon: "BB", accent: "#d7a23d" },
   football: { label: "Football", icon: "FB", accent: "#d76f3d" },
   baseball: { label: "Baseball", icon: "BA", accent: "#8cc9ff" },
-  track: { label: "Track", icon: "TK", accent: "#8fe1bc" },
+  track: { label: "Track & Field", icon: "TK", accent: "#8fe1bc" },
   soccer: { label: "Soccer", icon: "SC", accent: "#9db7ff" },
+  volleyball: { label: "Volleyball", icon: "VB", accent: "#e57373" },
+  tennis: { label: "Tennis", icon: "TN", accent: "#81c784" },
+  swimming: { label: "Swimming", icon: "SW", accent: "#4fc3f7" },
+  wrestling: { label: "Wrestling", icon: "WR", accent: "#ff8a65" },
+  lacrosse: { label: "Lacrosse", icon: "LA", accent: "#7986cb" },
+  golf: { label: "Golf", icon: "GL", accent: "#aed581" },
+  softball: { label: "Softball", icon: "SB", accent: "#f48fb1" },
 };
+
+// Map display labels back to keys: "Track & Field" → "track", "Basketball" → "basketball"
+const SPORT_LABEL_TO_KEY = {};
+for (const [key, meta] of Object.entries(SPORT_META)) {
+  SPORT_LABEL_TO_KEY[meta.label.toLowerCase()] = key;
+}
 
 export const VERIFICATION_BADGES = {
   coach: { key: "coach", label: "Coach Verified", short: "Coach", icon: "✓", tone: "coach" },
@@ -210,7 +223,7 @@ export function calculateAthletePerformanceRating(sports = []) {
   const aggregate = primarySport?.performanceRating
     || (ratedSports.length
       ? Math.round(ratedSports.reduce((sum, sport) => sum + (sport.performanceRating || 0), 0) / ratedSports.length)
-      : 75);
+      : 0);
 
   return {
     sports: ratedSports,
@@ -810,7 +823,7 @@ function dedupeSports(sports) {
   });
 }
 
-function sportsFromStats(stats, position) {
+function sportsFromStats(stats, position, athleteSport) {
   const bySport = new Map();
   (stats || []).forEach((row) => {
     const key = normalizeText(row.sport) || "basketball";
@@ -819,46 +832,31 @@ function sportsFromStats(stats, position) {
   });
 
   if (bySport.size === 0) {
+    // No stats in DB — use athlete's selected sport or a blank shell
+    const sportLabel = (athleteSport || "").trim();
+    const sportKey = SPORT_LABEL_TO_KEY[sportLabel.toLowerCase()] || normalizeText(sportLabel).replace(/\s+/g, "") || "";
+    const meta = sportKey ? (SPORT_META[sportKey] || null) : null;
     const fallbackSport = {
-      id: "basketball",
-      label: "Basketball",
-      icon: "BB",
+      id: meta ? sportKey : "general",
+      label: meta?.label || sportLabel || "Sport",
+      icon: meta?.icon || "AT",
       position: position || "Athlete",
-      season: "Current",
-      grade: "Current",
-      team: "Untitled Athletic",
-      record: "In Season",
-      awards: ["Profile Active"],
-      stats: [
-        { label: "Impact", value: "68", badge: "coach" },
-        { label: "Efficiency", value: "77", badge: "school" },
-        { label: "Assists", value: "11", badge: "official" },
-      ],
-      progression: [
-        { year: "9th", Impact: 42, Efficiency: 55, Assists: 6 },
-        { year: "10th", Impact: 56, Efficiency: 67, Assists: 8 },
-        { year: "11th", Impact: 68, Efficiency: 77, Assists: 11 },
-      ],
-      positionAverages: { Impact: [35, 42, 49], Efficiency: [58, 64, 70], Assists: [4, 6, 7] },
-      compareRadar: [
-        { stat: "Growth", marcus: 72, avg: 52 },
-        { stat: "Trust", marcus: 69, avg: 49 },
-        { stat: "Film", marcus: 65, avg: 46 },
-        { stat: "Academics", marcus: 71, avg: 50 },
-        { stat: "Context", marcus: 74, avg: 51 },
-      ],
-      timeline: [
-        { year: "9th", emoji: "I", stats: { Impact: "42", Efficiency: "55", Assists: "6" }, awards: ["Baseline"], rank: "Regional #55", milestone: "Initial varsity exposure." },
-        { year: "10th", emoji: "II", stats: { Impact: "56", Efficiency: "67", Assists: "8" }, awards: ["Growth"], rank: "Regional #33", milestone: "Consistent contributor." },
-        { year: "11th", emoji: "III", stats: { Impact: "68", Efficiency: "77", Assists: "11" }, awards: ["Trusted"], rank: "Regional #19", milestone: "Built a legitimate scouting profile." },
-      ],
+      season: "",
+      grade: "",
+      team: "",
+      record: "",
+      awards: [],
+      stats: [],
+      progression: [],
+      positionAverages: {},
+      compareRadar: [],
+      timeline: [],
     };
-    const performance = calculateSportPerformanceRating(fallbackSport);
     return [
       {
         ...fallbackSport,
-        performance,
-        performanceRating: performance.score,
+        performance: { score: 0, baseline: 0, matchedWeight: 0, coverage: 0, breakdown: [] },
+        performanceRating: 0,
       },
     ];
   }
@@ -1031,7 +1029,7 @@ export function buildAthleteProfile({
 }) {
   const name = directory?.display_name || "Untitled Athlete";
   const preset = presetByName(name);
-  const liveSports = sportsFromStats(stats, athleteRow?.position || preset?.position || fallbackRole);
+  const liveSports = sportsFromStats(stats, athleteRow?.position || preset?.position || fallbackRole, athleteRow?.sport);
   const liveHighlights = liveHighlightsFromPosts(posts, name);
   const derivedSequence = String(userId || "").replace(/\D/g, "").slice(0, 5) || "00199";
   const derivedId = athleteIdFor(name, athleteRow?.graduation_year || preset?.gradYear || 2026, derivedSequence);
@@ -1049,44 +1047,32 @@ export function buildAthleteProfile({
     barcodeValue: derivedId,
     qrValue: `https://untitledathletic.com/athletes/${derivedId}`,
     name,
-    number: preset?.number || String(3 + Math.floor(seededValue(name, 2) * 21)),
+    number: preset?.number || athleteRow?.jersey_number || "",
     initials: initialsFor(name),
-    position: athleteRow?.position || preset?.position || "Athlete",
-    school: schoolName || preset?.school || "Untitled Athletic Academy",
-    gradYear: athleteRow?.graduation_year || preset?.gradYear || 2026,
-    gpa: preset?.gpa || (fallbackRole === "athlete" ? "3.6" : "N/A"),
-    hometown: preset?.hometown || "Georgia",
-    ranking: preset?.ranking || `Regional #${12 + Math.floor(seededValue(name, 5) * 25)}`,
-    bio: preset?.bio || `${name} has an active recruiting presentation built from the current connected profile, visible media, and structured athlete context.`,
-    playingStyle: preset?.playingStyle || "Dynamic competitor with a profile centered on growth, trust, and evaluation-ready presentation.",
-    strengths: preset?.strengths || ["Competitive Motor", "Coachability", "Growth Trend"],
-    goals: preset?.goals || "Looking for an evaluation environment that values development, context, and academic fit.",
-    coachQuote: preset?.coachQuote || {
-      text: `${name} continues to add credibility to the profile through consistent work and better game-to-game detail.`,
-      author: "Staff Evaluation",
-      role: "Program Coach",
-      verified: true,
-    },
+    position: athleteRow?.position || preset?.position || "",
+    school: schoolName || preset?.school || "",
+    gradYear: athleteRow?.graduation_year || preset?.gradYear || "",
+    gpa: preset?.gpa || "",
+    hometown: preset?.hometown || "",
+    ranking: preset?.ranking || "",
+    bio: preset?.bio || "",
+    playingStyle: preset?.playingStyle || "",
+    strengths: preset?.strengths || [],
+    goals: preset?.goals || "",
+    coachQuote: preset?.coachQuote || null,
     offers: preset?.offers || [],
     events: preset?.events || [],
     recruiters: preset?.recruiters || [],
-    measurables: preset?.measurables || {
-      Height: `6'1"`,
-      Weight: "178 lbs",
-      Wingspan: `6'4"`,
-      Vertical: `32"`,
-      Speed: "11.08s 100m",
-      Reach: `8'0"`,
-    },
+    measurables: preset?.measurables || {},
     readiness: preset?.readiness || {
-      score: 82,
+      score: 0,
       items: [
-        { label: "Coach quote verified", done: true, weight: 15 },
-        { label: "School profile validated", done: true, weight: 15 },
+        { label: "Coach quote verified", done: false, weight: 15 },
+        { label: "School profile validated", done: false, weight: 15 },
         { label: "Game film attached", done: liveHighlights.length > 0, weight: 14 },
-        { label: "Transcript and GPA added", done: true, weight: 14 },
+        { label: "Transcript and GPA added", done: false, weight: 14 },
         { label: "Event history complete", done: false, weight: 12 },
-        { label: "Upcoming schedule added", done: true, weight: 11 },
+        { label: "Upcoming schedule added", done: false, weight: 11 },
         { label: "Recruiter contact log active", done: false, weight: 10 },
         { label: "Premium badge checklist", done: false, weight: 9 },
       ],
@@ -1141,9 +1127,13 @@ export function buildAthleteProfile({
 }
 
 export function formatScoutSummary(athlete) {
-  const height = athlete?.measurables?.Height || "Verified measurables";
-  const topAward = athlete?.sports?.[0]?.awards?.[0] || "Evaluation profile active";
-  return `${height} • ${athlete?.position || "Athlete"} • ${athlete?.gpa || "GPA pending"} GPA • ${topAward} • ${athlete?.ranking || "Regional rank pending"}`;
+  const parts = [];
+  if (athlete?.measurables?.Height) parts.push(athlete.measurables.Height);
+  if (athlete?.position) parts.push(athlete.position);
+  if (athlete?.gpa) parts.push(`${athlete.gpa} GPA`);
+  if (athlete?.sports?.[0]?.awards?.[0]) parts.push(athlete.sports[0].awards[0]);
+  if (athlete?.ranking) parts.push(athlete.ranking);
+  return parts.length ? parts.join(" • ") : "";
 }
 
 export function readinessLabel(score) {

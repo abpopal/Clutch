@@ -174,6 +174,66 @@
   background: rgba(0,0,0,.7);
 }
 
+/* ── Sport selection bar (shown when no sport selected) ── */
+.pp-sport-select-bar {
+  padding: 16px 28px;
+  background: linear-gradient(135deg, rgba(36,95,115,.18), rgba(45,155,178,.12));
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.pp-sport-select-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 600px;
+  margin: 0 auto;
+  color: rgba(255,255,255,.85);
+  font-size: .875rem;
+  font-weight: 600;
+}
+.pp-sport-select-inner svg {
+  flex-shrink: 0;
+  opacity: .7;
+}
+.pp-sport-select-inner span {
+  flex: 1;
+}
+#pp-sport-picker {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.2);
+  background: rgba(0,0,0,.35);
+  color: #fff;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  min-width: 180px;
+}
+#pp-sport-picker:focus {
+  border-color: #2d9bb2;
+  box-shadow: 0 0 0 2px rgba(45,155,178,.3);
+}
+#pp-sport-picker option {
+  background: #1a1a2e;
+  color: #fff;
+}
+html[data-theme="light"] .pp-sport-select-bar {
+  background: linear-gradient(135deg, rgba(36,95,115,.08), rgba(45,155,178,.06));
+  border-top-color: rgba(0,0,0,.06);
+}
+html[data-theme="light"] .pp-sport-select-inner {
+  color: #333;
+}
+html[data-theme="light"] #pp-sport-picker {
+  background: #fff;
+  color: #333;
+  border-color: #ddd;
+}
+html[data-theme="light"] #pp-sport-picker option {
+  background: #fff;
+  color: #333;
+}
+
 .pp-headline {
   display: grid;
   gap: 7px;

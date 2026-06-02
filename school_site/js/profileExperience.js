@@ -22,6 +22,13 @@ const HERO_IMAGES = {
   football: "https://images.unsplash.com/photo-1508098682722-e99c643e7485?auto=format&fit=crop&w=1600&q=80",
   baseball: "https://images.unsplash.com/photo-1471295253337-3ceaaedca402?auto=format&fit=crop&w=1600&q=80",
   track: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=1600&q=80",
+  volleyball: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=1600&q=80",
+  tennis: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=1600&q=80",
+  swimming: "https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&w=1600&q=80",
+  wrestling: "https://images.unsplash.com/photo-1611761484484-3af4c38b7f1a?auto=format&fit=crop&w=1600&q=80",
+  lacrosse: "https://images.unsplash.com/photo-1510925758641-869d353cecc7?auto=format&fit=crop&w=1600&q=80",
+  golf: "https://images.unsplash.com/photo-1535131749006-b7f58c99034b?auto=format&fit=crop&w=1600&q=80",
+  softball: "https://images.unsplash.com/photo-1471295253337-3ceaaedca402?auto=format&fit=crop&w=1600&q=80",
   default: "https://images.unsplash.com/photo-1511886929837-354d827aae26?auto=format&fit=crop&w=1600&q=80",
 };
 
@@ -713,10 +720,12 @@ function heroMetricItems(profile, sport) {
     }
   }
 
-  // Fall back to sport stats from athleteData preset
+  // Fall back to sport stats if they have real values
   if (metrics.length < 4) {
     (sport?.stats || []).slice(0, 4 - metrics.length).forEach((stat) => {
-      metrics.push({ label: stat.label, value: stat.value });
+      if (stat.value && stat.value !== "0" && stat.value !== "0%") {
+        metrics.push({ label: stat.label, value: stat.value });
+      }
     });
   }
 
@@ -725,12 +734,12 @@ function heroMetricItems(profile, sport) {
 
 function ratingFor(profile) {
   const activeSport = currentSport();
-  const score = activeSport?.performanceRating || profile?.performanceRating || profile?.readiness?.score || 82;
+  const score = activeSport?.performanceRating || profile?.performanceRating || profile?.readiness?.score || 0;
   return (Number(score) / 10).toFixed(1);
 }
 
 function profileViewsFor(profile) {
-  return seededValue(profile?.athleteId || profile?.userId || "views", 900, 5400).toLocaleString();
+  return "0";
 }
 
 function recentPosts() {
@@ -758,46 +767,8 @@ function achievementItems(profile) {
 }
 
 function genericAchievementItems(profile, sport) {
-  const baseItems = achievementItems(profile);
-  const templatesBySport = {
-    basketball: [
-      { year: 2026, title: "District Offensive MVP", detail: `${profile.school} Varsity Basketball` },
-      { year: 2025, title: "First Team All-Region", detail: "Coaches Association Selection" },
-      { year: 2025, title: "District Champions", detail: profile.school },
-      { year: 2024, title: "Academic All-State", detail: "State Student Athlete Program" },
-    ],
-    soccer: [
-      { year: 2026, title: "All-District Midfielder", detail: `${profile.school} Varsity Soccer` },
-      { year: 2025, title: "First Team All-Region", detail: "Regional Coaches Poll" },
-      { year: 2025, title: "Playmaker of the Year", detail: `${sport?.team || profile.school}` },
-      { year: 2024, title: "Academic Honor Roll", detail: "Student Athlete Recognition" },
-    ],
-    track: [
-      { year: 2026, title: "State Qualifier", detail: `${profile.school} Track & Field` },
-      { year: 2025, title: "Regional Finals Podium", detail: "Verified Meet Result" },
-      { year: 2025, title: "Top Performance Award", detail: `${sport?.team || profile.school}` },
-      { year: 2024, title: "Academic Honor Roll", detail: "Student Athlete Recognition" },
-    ],
-    default: [
-      { year: 2026, title: "Top Prospect Watchlist", detail: profile.school },
-      { year: 2025, title: "All-Region Selection", detail: `${sport?.label || "Athlete"} Program` },
-      { year: 2025, title: "Team Leadership Award", detail: `${sport?.team || profile.school}` },
-      { year: 2024, title: "Academic Distinction", detail: "Student Athlete Recognition" },
-    ],
-  };
-
-  const templates = templatesBySport[sport?.id] || templatesBySport.default;
-  const merged = [];
-  const seen = new Set();
-
-  [...baseItems, ...templates].forEach((item) => {
-    const key = normalizeText(item.title);
-    if (!key || seen.has(key) || merged.length >= 6) return;
-    seen.add(key);
-    merged.push(item);
-  });
-
-  return merged;
+  // Only show real achievements from the profile data — no fake templates
+  return achievementItems(profile);
 }
 
 function findSportStatValue(sport, keywords) {
@@ -827,36 +798,50 @@ function genericSeasonStats(profile, sport) {
 
   const defaultsBySport = {
     basketball: [
-      { label: "Games", value: String(seededValue(`${profile.userId}:games`, 20, 30)) },
-      { label: "Points", value: findSportStatValue(sport, ["points", "pts", "ppg"]) || String(seededValue(`${profile.userId}:points`, 14, 28)) },
-      { label: "Assists", value: findSportStatValue(sport, ["assists", "ast"]) || String(seededValue(`${profile.userId}:assists`, 4, 11)) },
-      { label: "Rebounds", value: findSportStatValue(sport, ["rebounds", "reb"]) || String(seededValue(`${profile.userId}:rebounds`, 5, 13)) },
-      { label: "FG%", value: findSportStatValue(sport, ["fg", "field goal"]) || `${seededValue(`${profile.userId}:fg`, 43, 61)}%` },
-      { label: "Steals", value: findSportStatValue(sport, ["steals", "stl"]) || String(seededValue(`${profile.userId}:steals`, 2, 5)) },
+      { label: "Games", value: findSportStatValue(sport, ["games", "gp"]) || "0" },
+      { label: "Points", value: findSportStatValue(sport, ["points", "pts", "ppg"]) || "0" },
+      { label: "Assists", value: findSportStatValue(sport, ["assists", "ast"]) || "0" },
+      { label: "Rebounds", value: findSportStatValue(sport, ["rebounds", "reb"]) || "0" },
+      { label: "FG%", value: findSportStatValue(sport, ["fg", "field goal"]) || "0%" },
+      { label: "Steals", value: findSportStatValue(sport, ["steals", "stl"]) || "0" },
     ],
     soccer: [
-      { label: "Games", value: String(seededValue(`${profile.userId}:games`, 18, 26)) },
-      { label: "Goals", value: findSportStatValue(sport, ["goals", "goal"]) || String(seededValue(`${profile.userId}:goals`, 8, 22)) },
-      { label: "Assists", value: findSportStatValue(sport, ["assists", "assist"]) || String(seededValue(`${profile.userId}:assists`, 6, 18)) },
-      { label: "Pass Acc.", value: findSportStatValue(sport, ["pass accuracy", "accuracy"]) || `${seededValue(`${profile.userId}:pass`, 76, 92)}%` },
-      { label: "Chances", value: findSportStatValue(sport, ["chances", "created"]) || String(seededValue(`${profile.userId}:chances`, 24, 51)) },
-      { label: "MOTM", value: String(seededValue(`${profile.userId}:motm`, 3, 9)) },
+      { label: "Games", value: findSportStatValue(sport, ["games", "gp"]) || "0" },
+      { label: "Goals", value: findSportStatValue(sport, ["goals", "goal"]) || "0" },
+      { label: "Assists", value: findSportStatValue(sport, ["assists", "assist"]) || "0" },
+      { label: "Pass Acc.", value: findSportStatValue(sport, ["pass accuracy", "accuracy"]) || "0%" },
+      { label: "Chances", value: findSportStatValue(sport, ["chances", "created"]) || "0" },
+      { label: "MOTM", value: findSportStatValue(sport, ["motm"]) || "0" },
+    ],
+    football: [
+      { label: "Games", value: findSportStatValue(sport, ["games", "gp"]) || "0" },
+      { label: "Yards", value: findSportStatValue(sport, ["yards", "yds"]) || "0" },
+      { label: "TDs", value: findSportStatValue(sport, ["touchdowns", "td"]) || "0" },
+      { label: "Receptions", value: findSportStatValue(sport, ["receptions", "rec"]) || "0" },
+      { label: "Tackles", value: findSportStatValue(sport, ["tackles"]) || "0" },
+      { label: "INTs", value: findSportStatValue(sport, ["interceptions", "int"]) || "0" },
+    ],
+    baseball: [
+      { label: "Games", value: findSportStatValue(sport, ["games", "gp"]) || "0" },
+      { label: "AVG", value: findSportStatValue(sport, ["avg", "batting"]) || ".000" },
+      { label: "OBP", value: findSportStatValue(sport, ["obp"]) || ".000" },
+      { label: "RBI", value: findSportStatValue(sport, ["rbi"]) || "0" },
+      { label: "SB", value: findSportStatValue(sport, ["sb", "stolen"]) || "0" },
+      { label: "HR", value: findSportStatValue(sport, ["hr", "home run"]) || "0" },
     ],
     track: [
-      { label: "Meets", value: String(seededValue(`${profile.userId}:meets`, 7, 15)) },
-      { label: "Finals", value: String(seededValue(`${profile.userId}:finals`, 4, 10)) },
-      { label: "Podiums", value: String(seededValue(`${profile.userId}:podiums`, 2, 7)) },
-      { label: "PR Events", value: String(seededValue(`${profile.userId}:prs`, 2, 5)) },
-      { label: "Points", value: String(seededValue(`${profile.userId}:points`, 18, 44)) },
-      { label: "Top 3", value: String(seededValue(`${profile.userId}:top3`, 3, 8)) },
+      { label: "Meets", value: findSportStatValue(sport, ["meets"]) || "0" },
+      { label: "Finals", value: findSportStatValue(sport, ["finals"]) || "0" },
+      { label: "Podiums", value: findSportStatValue(sport, ["podiums"]) || "0" },
+      { label: "PR Events", value: findSportStatValue(sport, ["pr"]) || "0" },
+      { label: "Points", value: findSportStatValue(sport, ["points"]) || "0" },
+      { label: "Top 3", value: findSportStatValue(sport, ["top"]) || "0" },
     ],
     default: [
-      { label: "Games", value: String(seededValue(`${profile.userId}:games`, 16, 24)) },
-      { label: "Impact", value: findSportStatValue(sport, ["impact"]) || String(seededValue(`${profile.userId}:impact`, 12, 30)) },
-      { label: "Assists", value: findSportStatValue(sport, ["assists", "assist"]) || String(seededValue(`${profile.userId}:assists`, 3, 10)) },
-      { label: "Readiness", value: findSportStatValue(sport, ["readiness"]) || `${seededValue(`${profile.userId}:readiness`, 72, 91)}%` },
-      { label: "Efficiency", value: `${seededValue(`${profile.userId}:efficiency`, 74, 90)}%` },
-      { label: "Honors", value: String(seededValue(`${profile.userId}:honors`, 2, 6)) },
+      { label: "Games", value: findSportStatValue(sport, ["games", "gp"]) || "0" },
+      { label: "Points", value: findSportStatValue(sport, ["points", "pts"]) || "0" },
+      { label: "Assists", value: findSportStatValue(sport, ["assists"]) || "0" },
+      { label: "Wins", value: findSportStatValue(sport, ["wins"]) || "0" },
     ],
   };
 
@@ -2183,6 +2168,38 @@ function renderRoleProfile() {
   `;
 }
 
+async function saveAthleteSport(sportId) {
+  if (!state.targetUserId || !sportId) return;
+
+  const SPORT_LABELS = {
+    basketball: "Basketball", football: "Football", soccer: "Soccer",
+    baseball: "Baseball", track: "Track & Field", volleyball: "Volleyball",
+    tennis: "Tennis", swimming: "Swimming", wrestling: "Wrestling",
+    lacrosse: "Lacrosse", golf: "Golf", softball: "Softball",
+  };
+  const label = SPORT_LABELS[sportId] || sportId;
+
+  try {
+    // Update the athletes table with the selected sport
+    const { error } = await supabase
+      .from("athletes")
+      .update({ sport: label })
+      .eq("user_id", state.targetUserId);
+
+    if (error) throw error;
+
+    // Reload the profile to reflect the new sport
+    const bundle = await loadProfileBundle(state.targetUserId);
+    state.profile = bundle.profile;
+    state.activeSportId = sportId;
+    renderProfile();
+    showToast(`Sport set to ${label}`);
+  } catch (err) {
+    console.error("Failed to save sport:", err);
+    showToast("Failed to save sport. Please try again.");
+  }
+}
+
 function renderProfile() {
   // Route to role-specific profile for non-athletes
   if (state.role && state.role !== "athlete" && state.role !== "user") {
@@ -2196,12 +2213,22 @@ function renderProfile() {
 
   const profile = state.profile;
   const sport = currentSport();
-  if (!profile || !sport) {
+  if (!profile) {
     root.innerHTML = `<div class="pp-empty">Loading profile…</div>`;
     return;
   }
 
-  const heroMetrics = heroMetricItems(profile, sport);
+  // Check if athlete needs to select a sport
+  const hasSport = sport && sport.id !== "general" && sport.label !== "Sport";
+  const heroMetrics = hasSport ? heroMetricItems(profile, sport) : [];
+
+  // Build role line
+  const roleParts = [profile.position, hasSport ? sport.label : ""].filter(Boolean);
+  const roleLine = roleParts.length ? roleParts.join(" • ") : "Athlete";
+
+  // Build meta line
+  const metaParts = [profile.school, profile.hometown, profile.gradYear ? `Class of ${profile.gradYear}` : ""].filter(Boolean);
+  const metaLine = metaParts.join(" • ");
 
   root.innerHTML = `
     <section class="pp-profile">
@@ -2218,9 +2245,9 @@ function renderProfile() {
                 <h1>${escapeHtml(profile.name)}</h1>
                 <span class="pp-verified">Verified</span>
               </div>
-              <p class="pp-role-line">${escapeHtml(profile.position)} • ${escapeHtml(sport.label)}</p>
-              <p class="pp-meta-line">${escapeHtml(profile.school)} • ${escapeHtml(profile.hometown)} • Class of ${escapeHtml(profile.gradYear)}</p>
-              <p class="pp-summary-line">${escapeHtml(formatScoutSummary(profile))}</p>
+              <p class="pp-role-line">${escapeHtml(roleLine)}</p>
+              ${metaLine ? `<p class="pp-meta-line">${escapeHtml(metaLine)}</p>` : ""}
+              ${(profile.bio || hasSport) ? `<p class="pp-summary-line">${escapeHtml(hasSport ? formatScoutSummary(profile) : (profile.bio || ""))}</p>` : ""}
               <div class="pp-social-stats">
                 <span class="pp-social-stat">${state.counts.posts ?? 0} <small>Posts</small></span>
                 <span class="pp-social-stat pp-social-stat--clickable" data-show-follow="followers">${state.counts.followers ?? 0} <small>Followers</small></span>
@@ -2235,10 +2262,11 @@ function renderProfile() {
           <aside class="pp-rating-card">
             <span>Athlete Rating</span>
             <strong>${escapeHtml(ratingFor(profile))}</strong>
-            <p>Ranked ${escapeHtml(profile.ranking)}<br>Class of ${escapeHtml(profile.gradYear)}</p>
+            ${profile.ranking ? `<p>Ranked ${escapeHtml(profile.ranking)}<br>Class of ${escapeHtml(profile.gradYear)}</p>` : profile.gradYear ? `<p>Class of ${escapeHtml(profile.gradYear)}</p>` : ""}
           </aside>
         </div>
 
+        ${heroMetrics.length ? `
         <div class="pp-metrics-bar">
           ${heroMetrics.map((item) => `
             <div class="pp-metric-tile">
@@ -2246,7 +2274,30 @@ function renderProfile() {
               <strong>${escapeHtml(item.value)}</strong>
             </div>
           `).join("")}
-        </div>
+        </div>` : ""}
+
+        ${(!hasSport && state.isSelf) ? `
+        <div class="pp-sport-select-bar">
+          <div class="pp-sport-select-inner">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+            <span>Select your sport to get started</span>
+            <select id="pp-sport-picker">
+              <option value="">Choose a sport...</option>
+              <option value="basketball">Basketball</option>
+              <option value="football">Football</option>
+              <option value="soccer">Soccer</option>
+              <option value="baseball">Baseball</option>
+              <option value="track">Track & Field</option>
+              <option value="volleyball">Volleyball</option>
+              <option value="tennis">Tennis</option>
+              <option value="swimming">Swimming</option>
+              <option value="wrestling">Wrestling</option>
+              <option value="lacrosse">Lacrosse</option>
+              <option value="golf">Golf</option>
+              <option value="softball">Softball</option>
+            </select>
+          </div>
+        </div>` : ""}
       </div>
 
       <div class="pp-tab-bar">
@@ -2548,6 +2599,19 @@ async function openEditProfileModal() {
   body.innerHTML = `
     <div style="font-size:.8rem; color:var(--muted); margin-bottom:4px;">Update your profile info. Changes are saved to the database and shown on your profile.</div>
 
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div>
+        <label style="display:block;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">Sport</label>
+        <select id="edit-sport" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:.875rem;background:var(--surface-2);color:var(--text);outline:none;box-sizing:border-box;">
+          <option value="">Select sport...</option>
+          ${["Basketball","Football","Soccer","Baseball","Track & Field","Volleyball","Tennis","Swimming","Wrestling","Lacrosse","Golf","Softball"]
+            .map(s => `<option value="${escapeHtml(s)}" ${(profile.sports?.[0]?.label || "").toLowerCase() === s.toLowerCase() ? "selected" : ""}>${escapeHtml(s)}</option>`)
+            .join("")}
+        </select>
+      </div>
+      ${fieldHtml("Position", "edit-position", "text", existing?.position || profile.position || "", "e.g. Point Guard")}
+    </div>
+
     ${fieldHtml("Bio", "edit-bio", "textarea", existing?.bio || profile.bio || "", "Tell scouts about yourself...")}
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
@@ -2557,7 +2621,7 @@ async function openEditProfileModal() {
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
       ${fieldHtml("GPA", "edit-gpa", "number", existing?.gpa || profile.gpa || "", "e.g. 3.8", 'step="0.01" min="0" max="5"')}
-      ${fieldHtml("Position", "edit-position", "text", existing?.position || profile.position || "", "e.g. Point Guard")}
+      ${fieldHtml("Grad Year", "edit-gradyear", "number", profile.gradYear || "", "e.g. 2026", 'min="2020" max="2035"')}
     </div>
 
     ${fieldHtml("Hometown", "edit-hometown", "text", existing?.hometown || profile.hometown || "", "e.g. Atlanta, GA")}
@@ -2636,6 +2700,8 @@ async function saveEditProfile() {
     const gpaStr = document.getElementById("edit-gpa")?.value?.trim() || "";
     const position = document.getElementById("edit-position")?.value?.trim() || "";
     const hometown = document.getElementById("edit-hometown")?.value?.trim() || "";
+    const sportVal = document.getElementById("edit-sport")?.value?.trim() || "";
+    const gradYearVal = document.getElementById("edit-gradyear")?.value?.trim() || "";
     const goals = document.getElementById("edit-goals")?.value?.trim() || "";
 
     const wingspan = document.getElementById("edit-wingspan")?.value?.trim() || "";
@@ -2671,6 +2737,18 @@ async function saveEditProfile() {
       .upsert(upsertData, { onConflict: "user_id" });
 
     if (error) throw error;
+
+    // Also update athletes table with sport, position, and grad year
+    const athleteUpdate = {};
+    if (sportVal) athleteUpdate.sport = sportVal;
+    if (position) athleteUpdate.position = position;
+    if (gradYearVal) athleteUpdate.graduation_year = parseInt(gradYearVal, 10);
+    if (Object.keys(athleteUpdate).length) {
+      await supabase
+        .from("athletes")
+        .update(athleteUpdate)
+        .eq("user_id", state.targetUserId);
+    }
 
     if (status) { status.textContent = "Saved!"; status.style.color = "#16a34a"; }
 
@@ -3025,6 +3103,10 @@ function bindEvents() {
     if (target.matches("[data-sport-select]")) {
       state.activeSportId = target.value;
       renderProfile();
+    }
+
+    if (target.matches("#pp-sport-picker") && target.value) {
+      void saveAthleteSport(target.value);
     }
   });
 }
