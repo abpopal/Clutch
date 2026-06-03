@@ -496,6 +496,8 @@ function renderTeamDetailRoster() {
         <option value="" disabled selected>Add athlete to roster...</option>
         ${available.map((m) => `<option value="${m.user_id}">${esc(m.users?.display_name || m.users?.email || m.user_id)}</option>`).join("")}
       </select>
+      <input id="coach-td-add-jersey" type="text" class="sch-input" placeholder="Jersey #" style="width:70px">
+      <input id="coach-td-add-position" type="text" class="sch-input" placeholder="Position" style="width:100px">
       <button class="sch-btn sch-btn--primary sch-btn--xs" id="coach-td-add-btn" type="button">Add</button>`;
   }
 
@@ -1214,6 +1216,8 @@ function renderTeamDetailRosterEnhanced() {
         <option value="" disabled selected>Add athlete to roster...</option>
         ${available.map((m) => `<option value="${m.user_id}">${esc(m.users?.display_name || m.users?.email || m.user_id)}</option>`).join("")}
       </select>
+      <input id="coach-td-add-jersey" type="text" class="sch-input" placeholder="Jersey #" style="width:70px">
+      <input id="coach-td-add-position" type="text" class="sch-input" placeholder="Position" style="width:100px">
       <button class="sch-btn sch-btn--primary sch-btn--xs" id="coach-td-add-btn" type="button">Add</button>`;
   }
 
@@ -1687,9 +1691,11 @@ function bindForms() {
     if (target.closest("#coach-td-add-btn")) {
       const select = $("#coach-td-add-athlete");
       const athleteId = select?.value;
+      const jerseyNumber = $("#coach-td-add-jersey")?.value?.trim() || null;
+      const position = $("#coach-td-add-position")?.value?.trim() || null;
       if (!athleteId || !state.viewingTeamId) return;
       try {
-        await addToRoster({ teamId: state.viewingTeamId, athleteId });
+        await addToRoster({ teamId: state.viewingTeamId, athleteId, jerseyNumber, position });
         state.teamRoster = await loadRoster(state.viewingTeamId);
         renderTeamDetailRoster();
         setStatus("coach-td-roster-status", "");
