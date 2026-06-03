@@ -407,6 +407,22 @@ async function fetchAthleteStats(athleteId) {
   return data || [];
 }
 
+async function fetchAchievements(userId) {
+  if (!userId) return [];
+  try {
+    const { data, error } = await supabase
+      .from("athlete_achievements")
+      .select("*")
+      .eq("athlete_user_id", userId)
+      .order("year", { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.warn("Could not load achievements:", err);
+    return [];
+  }
+}
+
 async function fetchAthleteProfile(userId) {
   if (!userId) return null;
   try {
@@ -598,7 +614,7 @@ async function loadProfileBundle(userId) {
   }
 
   // Run school name, counts, posts, stats, match schedule, and profile edits all in parallel
-  const [schoolName, counts, posts, stats, realSchedule, athleteProfileRow, seasonStats] = await Promise.all([
+  const [schoolName, counts, posts, stats, realSchedule, athleteProfileRow, seasonStats, dbAchievements] = await Promise.all([
     records.athleteRow?.school_id
       ? fetchSchoolName(records.athleteRow.school_id)
       : Promise.resolve(records.schoolRow?.name || ""),
@@ -608,6 +624,7 @@ async function loadProfileBundle(userId) {
     fetchAthleteMatchSchedule(userId),
     fetchAthleteProfile(userId),
     fetchSeasonAverages(userId),
+    fetchAchievements(userId),
   ]);
 
   const resolvedRole = inferredRole || normalizedUserRole || "user";
@@ -670,6 +687,9 @@ async function loadProfileBundle(userId) {
   if (seasonStats && Object.keys(seasonStats).length) {
     profile.realSeasonStats = seasonStats;
   }
+
+  // Inject achievements from DB
+  profile.dbAchievements = dbAchievements || [];
 
   return {
     directory,
@@ -746,28 +766,49 @@ function recentPosts() {
   return state.posts.slice(0, 6);
 }
 
+const ACHIEVEMENT_CATEGORIES = {
+  award: { label: "Award", icon: "trophy" },
+  honor: { label: "Honor", icon: "star" },
+  milestone: { label: "Milestone", icon: "flag" },
+  offer: { label: "Offer", icon: "mail" },
+  event: { label: "Event", icon: "calendar" },
+  record: { label: "Record", icon: "zap" },
+};
+
+const ACHIEVEMENT_SOURCES = {
+  coach: { label: "Coach Verified", color: "#2e7d32", icon: "C" },
+  school_admin: { label: "School Verified", color: "#1565c0", icon: "S" },
+  self: { label: "Self-Reported", color: "#757575", icon: "SR" },
+  system: { label: "Auto", color: "#6a1b9a", icon: "A" },
+};
+
 function achievementItems(profile) {
-  const sport = currentSport();
-  const awards = (sport?.awards || []).map((award, index) => ({
-    title: award,
-    year: 2024 - index,
-    detail: sport?.team || profile.school,
+  // Use DB achievements
+  const dbItems = (profile?.dbAchievements || []).map((a) => ({
+    id: a.achievement_id,
+    title: a.title,
+    year: a.year || (a.date ? new Date(a.date).getFullYear() : ""),
+    detail: a.description || "",
+    category: a.category || "award",
+    source: a.source || "self",
+    sport: a.sport || "",
+    verified: a.verified,
   }));
+
+  // Also include preset data if any (offers, events from hardcoded presets)
   const offers = (profile?.offers || []).map((offer) => ({
     title: `${offer.school} Offer`,
     year: new Date(offer.date || Date.now()).getFullYear(),
     detail: offer.official ? "Official offer" : `${offer.sport} interest`,
+    category: "offer",
+    source: "system",
+    sport: offer.sport || "",
   }));
-  const events = (profile?.events || []).map((event) => ({
-    title: event.name,
-    year: new Date(event.date || Date.now()).getFullYear(),
-    detail: event.result || "Verified event",
-  }));
-  return [...awards, ...offers, ...events].slice(0, 6);
+
+  return [...dbItems, ...offers].slice(0, 20);
 }
 
 function genericAchievementItems(profile, sport) {
-  // Only show real achievements from the profile data — no fake templates
   return achievementItems(profile);
 }
 
@@ -1323,17 +1364,22 @@ function overviewTabMarkup(profile, sport) {
           <h3>Top Achievements</h3>
           <button type="button" class="pp-link-btn" data-switch-tab="achievements">View all</button>
         </div>
-        <div class="pp-timeline pp-timeline--overview">
-          ${achievements.map((item) => `
-            <div class="pp-timeline-row">
-              <strong>${escapeHtml(item.year)}</strong>
-              <div>
-                <h4>${escapeHtml(item.title)}</h4>
-                <p>${escapeHtml(item.detail)}</p>
+        ${achievements.length ? `
+          <div class="pp-achievements-list">
+            ${achievements.slice(0, 4).map((item) => `
+              <div class="pp-achievement-row pp-achievement-row--compact">
+                <div class="pp-achievement-icon">${achievementCategoryIcon(item.category || "award")}</div>
+                <div class="pp-achievement-body">
+                  <div class="pp-achievement-title-row">
+                    <h4>${escapeHtml(item.title)}</h4>
+                    ${achievementSourceBadge(item.source || "self")}
+                  </div>
+                  ${item.detail ? `<p class="pp-achievement-detail">${escapeHtml(item.detail)}</p>` : ""}
+                </div>
               </div>
-            </div>
-          `).join("")}
-        </div>
+            `).join("")}
+          </div>
+        ` : `<div class="pp-empty">${state.isSelf ? "Add achievements from the Achievements tab." : "No achievements yet."}</div>`}
       </article>
 
       <article class="pp-card">
@@ -1653,56 +1699,61 @@ function postsTabMarkup(profile) {
   `;
 }
 
+function achievementSourceBadge(source) {
+  const s = ACHIEVEMENT_SOURCES[source] || ACHIEVEMENT_SOURCES.self;
+  return `<span class="pp-achievement-source" style="background:${s.color};color:#fff;">${escapeHtml(s.icon)} ${escapeHtml(s.label)}</span>`;
+}
+
+function achievementCategoryIcon(category) {
+  const icons = {
+    award: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/><path d="M18 2H6v7a6 6 0 1012 0V2z"/></svg>`,
+    honor: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+    milestone: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>`,
+    offer: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
+    event: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+    record: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+  };
+  return icons[category] || icons.award;
+}
+
 function achievementsTabMarkup(profile, sport) {
   const achievements = achievementItems(profile);
+
   return `
-    <div class="pp-grid pp-grid--split">
+    <div class="pp-tab-stack">
       <article class="pp-card">
         <div class="pp-card-head">
           <h3>Achievements</h3>
+          ${state.isSelf ? `<button type="button" class="pp-link-btn" data-action="add-achievement">+ Add Achievement</button>` : ""}
         </div>
-        <div class="pp-timeline">
-          ${achievements.map((item) => `
-            <div class="pp-timeline-row">
-              <strong>${escapeHtml(item.year)}</strong>
-              <div>
-                <h4>${escapeHtml(item.title)}</h4>
-                <p>${escapeHtml(item.detail)}</p>
+        ${achievements.length ? `
+          <div class="pp-achievements-list">
+            ${achievements.map((item) => `
+              <div class="pp-achievement-row">
+                <div class="pp-achievement-icon">${achievementCategoryIcon(item.category)}</div>
+                <div class="pp-achievement-body">
+                  <div class="pp-achievement-title-row">
+                    <h4>${escapeHtml(item.title)}</h4>
+                    ${achievementSourceBadge(item.source)}
+                  </div>
+                  ${item.detail ? `<p class="pp-achievement-detail">${escapeHtml(item.detail)}</p>` : ""}
+                  <div class="pp-achievement-meta">
+                    ${item.year ? `<span>${escapeHtml(String(item.year))}</span>` : ""}
+                    ${item.sport ? `<span>${escapeHtml(item.sport)}</span>` : ""}
+                    ${item.category ? `<span>${escapeHtml(ACHIEVEMENT_CATEGORIES[item.category]?.label || item.category)}</span>` : ""}
+                  </div>
+                </div>
+                ${state.isSelf && item.source === "self" && item.id ? `<button type="button" class="pp-achievement-delete" data-delete-achievement="${escapeHtml(item.id)}" title="Remove">&times;</button>` : ""}
               </div>
-            </div>
-          `).join("")}
-        </div>
-      </article>
-
-      <article class="pp-card">
-        <div class="pp-card-head">
-          <h3>Recruiting + Event History</h3>
-        </div>
-        <div class="pp-list">
-          ${(profile.offers || []).map((offer) => `
-            <div class="pp-list-row">
-              <strong>${escapeHtml(offer.school)}</strong>
-              <span>${escapeHtml(offer.official ? "Official Offer" : `${offer.sport} Interest`)}</span>
-              <small>${escapeHtml(formatLongDate(offer.date))}</small>
-            </div>
-          `).join("")}
-          ${(profile.events || []).map((event) => `
-            <div class="pp-list-row">
-              <strong>${escapeHtml(event.name)}</strong>
-              <span>${escapeHtml(event.result || "Verified Event")}</span>
-              <small>${escapeHtml(formatLongDate(event.date))}</small>
-            </div>
-          `).join("")}
-        </div>
-      </article>
-
-      <article class="pp-card">
-        <div class="pp-card-head">
-          <h3>${escapeHtml(sport.label)} Honors</h3>
-        </div>
-        <div class="pp-chip-stack">
-          ${(sport.awards || []).map((award) => `<span class="pp-chip">${escapeHtml(award)}</span>`).join("")}
-        </div>
+            `).join("")}
+          </div>
+        ` : `
+          <div class="pp-empty" style="padding:40px 20px;text-align:center;">
+            ${state.isSelf
+              ? "No achievements yet. Add your awards, honors, and milestones to build your recruiting profile."
+              : "No achievements recorded yet."}
+          </div>
+        `}
       </article>
     </div>
   `;
@@ -3063,6 +3114,160 @@ async function saveEditProfile() {
   }
 }
 
+// ── Add Achievement Modal ──────────────────────────────────────
+let _achieveOverlay = null;
+
+function ensureAchievementOverlay() {
+  if (_achieveOverlay) return _achieveOverlay;
+
+  _achieveOverlay = document.createElement("div");
+  _achieveOverlay.id = "pp-achieve-overlay";
+  Object.assign(_achieveOverlay.style, {
+    position: "fixed", inset: "0", zIndex: "9999",
+    background: "rgba(0,0,0,.6)", backdropFilter: "blur(8px)",
+    WebkitBackdropFilter: "blur(8px)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    opacity: "0", pointerEvents: "none", transition: "opacity .25s ease",
+  });
+
+  _achieveOverlay.innerHTML = `
+    <div id="pp-achieve-modal" style="
+      background:var(--surface,#1a1a2e); border-radius:16px; width:94%; max-width:480px;
+      max-height:80vh; display:flex; flex-direction:column;
+      box-shadow:0 24px 80px rgba(0,0,0,.5); transform:translateY(16px) scale(.97);
+      transition:transform .25s ease; overflow:hidden; border:1px solid var(--line);
+    ">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line);flex-shrink:0;">
+        <h3 style="margin:0;font-size:1.05rem;font-weight:700;color:var(--text);">Add Achievement</h3>
+        <button id="pp-achieve-close" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-2);color:var(--muted);font-size:1.2rem;cursor:pointer;display:grid;place-items:center;">&times;</button>
+      </div>
+      <div id="pp-achieve-body" style="padding:20px 22px;overflow-y:auto;flex:1;"></div>
+      <div style="display:flex;gap:10px;padding:14px 22px;border-top:1px solid var(--line);flex-shrink:0;justify-content:flex-end;">
+        <span id="pp-achieve-status" style="font-size:.8rem;color:var(--muted);align-self:center;flex:1;"></span>
+        <button id="pp-achieve-save" type="button" style="padding:10px 22px;border-radius:10px;border:none;background:#245f73;color:#fff;font-size:.875rem;font-weight:700;cursor:pointer;">Save</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(_achieveOverlay);
+
+  _achieveOverlay.addEventListener("click", (e) => {
+    if (e.target === _achieveOverlay) closeAchievementModal();
+  });
+  _achieveOverlay.querySelector("#pp-achieve-close").addEventListener("click", closeAchievementModal);
+  _achieveOverlay.querySelector("#pp-achieve-save").addEventListener("click", () => void saveAchievement());
+
+  return _achieveOverlay;
+}
+
+function openAddAchievementModal() {
+  const overlay = ensureAchievementOverlay();
+  const body = document.getElementById("pp-achieve-body");
+  const status = document.getElementById("pp-achieve-status");
+  if (!body) return;
+  if (status) status.textContent = "";
+
+  const currentYear = new Date().getFullYear();
+  const sportLabel = state.profile?.sports?.[0]?.label || "";
+
+  body.innerHTML = `
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">Category</label>
+      <select id="ach-category" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:.875rem;background:var(--surface-2);color:var(--text);outline:none;box-sizing:border-box;">
+        <option value="award">Award (MVP, All-District, etc.)</option>
+        <option value="honor">Academic Honor (Honor Roll, etc.)</option>
+        <option value="milestone">Milestone (1000 career points, etc.)</option>
+        <option value="offer">College Offer</option>
+        <option value="event">Event / Camp / Showcase</option>
+        <option value="record">Record (School record, personal best)</option>
+      </select>
+    </div>
+
+    ${wizFieldHtml("Title", "ach-title", "text", "", "e.g. All-District First Team, Team MVP, Nike EYBL Camp")}
+    ${wizFieldHtml("Description (optional)", "ach-desc", "textarea", "", "Any extra details about this achievement...")}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      ${wizFieldHtml("Year", "ach-year", "number", String(currentYear), "e.g. 2026", 'min="2015" max="2035"')}
+      ${wizFieldHtml("Sport", "ach-sport", "text", sportLabel, "e.g. Basketball")}
+    </div>
+  `;
+
+  void overlay.offsetWidth;
+  overlay.style.opacity = "1";
+  overlay.style.pointerEvents = "auto";
+  overlay.querySelector("#pp-achieve-modal").style.transform = "translateY(0) scale(1)";
+}
+
+function closeAchievementModal() {
+  if (!_achieveOverlay) return;
+  _achieveOverlay.style.opacity = "0";
+  _achieveOverlay.style.pointerEvents = "none";
+  _achieveOverlay.querySelector("#pp-achieve-modal").style.transform = "translateY(16px) scale(.97)";
+}
+
+async function saveAchievement() {
+  const status = document.getElementById("pp-achieve-status");
+  const saveBtn = document.getElementById("pp-achieve-save");
+
+  const title = document.getElementById("ach-title")?.value?.trim();
+  if (!title) {
+    if (status) { status.textContent = "Title is required."; status.style.color = "#ef4444"; }
+    return;
+  }
+
+  if (status) { status.textContent = "Saving..."; status.style.color = "#245f73"; }
+  if (saveBtn) saveBtn.disabled = true;
+
+  try {
+    const { error } = await supabase.from("athlete_achievements").insert({
+      athlete_user_id: state.targetUserId,
+      title,
+      description: document.getElementById("ach-desc")?.value?.trim() || null,
+      category: document.getElementById("ach-category")?.value || "award",
+      year: parseInt(document.getElementById("ach-year")?.value, 10) || null,
+      sport: document.getElementById("ach-sport")?.value?.trim() || null,
+      source: "self",
+      awarded_by: null,
+      verified: false,
+    });
+
+    if (error) throw error;
+
+    if (status) { status.textContent = "Saved!"; status.style.color = "#16a34a"; }
+
+    setTimeout(async () => {
+      closeAchievementModal();
+      const bundle = await loadProfileBundle(state.targetUserId);
+      state.profile = bundle.profile;
+      renderProfile();
+    }, 400);
+  } catch (err) {
+    console.error("Save achievement failed:", err);
+    if (status) { status.textContent = err.message || "Failed"; status.style.color = "#ef4444"; }
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+  }
+}
+
+async function deleteAchievement(achievementId) {
+  if (!achievementId) return;
+  try {
+    const { error } = await supabase
+      .from("athlete_achievements")
+      .delete()
+      .eq("achievement_id", achievementId);
+    if (error) throw error;
+
+    // Reload
+    const bundle = await loadProfileBundle(state.targetUserId);
+    state.profile = bundle.profile;
+    renderProfile();
+    showToast("Achievement removed.");
+  } catch (err) {
+    console.error("Delete achievement failed:", err);
+    showToast("Failed to remove achievement.");
+  }
+}
+
 // ── Role-specific edit modal (coach / scout / school_admin) ──
 async function openRoleEditModal() {
   const overlay = ensureEditProfileOverlay();
@@ -3362,6 +3567,17 @@ function bindEvents() {
     }
     if (action === "open-complete-wizard") {
       openWizard();
+      return;
+    }
+    if (action === "add-achievement") {
+      openAddAchievementModal();
+      return;
+    }
+
+    // Delete achievement
+    const deleteId = target.closest("[data-delete-achievement]")?.dataset.deleteAchievement;
+    if (deleteId) {
+      void deleteAchievement(deleteId);
       return;
     }
     if (action === "edit-profile") {
