@@ -32,7 +32,7 @@ const COMMANDS = [
 ];
 
 const HEADER_CACHE_KEY = "ua:header:v20260524a";
-const SIDEBAR_CACHE_KEY = "ua:sidebar:v20260524a";
+const SIDEBAR_CACHE_KEY = "ua:sidebar:v20260606a";
 
 async function loadPartial(selector, url, cacheKey) {
   const host = document.querySelector(selector);
@@ -60,7 +60,7 @@ async function mountSharedHeader() {
 }
 
 async function mountSharedSidebar() {
-  await loadPartial("#sidebar[data-shared-sidebar]", "partials/sidebar.html?v=20260524a", SIDEBAR_CACHE_KEY);
+  await loadPartial("#sidebar[data-shared-sidebar]", "partials/sidebar.html?v=20260606a", SIDEBAR_CACHE_KEY);
   // Move any page-specific sidebar-extra content into the slot
   const extraSlot = document.querySelector("#sidebar-extra");
   const extraSource = document.querySelector("[data-sidebar-extra-content]");
@@ -424,12 +424,34 @@ async function initApp() {
       return;
     }
 
-    const role = normalizeRole(session.user?.user_metadata?.role);
+    // Use metadata role as initial guess, then override with DB role
+    const metaRole = normalizeRole(session.user?.user_metadata?.role);
+    applyRoleVisibility(metaRole);
+    buildPalette(metaRole);
 
-    applyRoleVisibility(role);
-    buildPalette(role);
     const appUserId = await syncUserDirectoryFromSession(session);
     currentAppUserId = appUserId;
+
+    // Fetch the real role from DB — this is the source of truth
+    let resolvedRole = metaRole;
+    if (appUserId) {
+      try {
+        const dbUser = await fetchFirst(
+          supabase.from("users").select("role").eq("user_id", appUserId)
+        );
+        if (dbUser?.role) {
+          resolvedRole = normalizeRole(dbUser.role);
+        }
+      } catch (_) { /* keep metaRole */ }
+    }
+
+    // Re-apply with the real DB role if it differs
+    if (resolvedRole !== metaRole) {
+      applyRoleVisibility(resolvedRole);
+      buildPalette(resolvedRole);
+    }
+
+    const role = resolvedRole;
     updateHeaderAccount(session, appUserId);
     setGlobalAppState({ auth: buildAuthState({ session, appUserId, role }) });
 
@@ -471,7 +493,13 @@ async function initApp() {
     }
 
     if (currentPage === "login") {
-      window.location.href = "index.html";
+      // Redirect to role-appropriate landing page after login
+      const landingPages = {
+        coach: "coach-dashboard.html",
+        school_admin: "school-dashboard.html",
+        scout: "scout-dashboard.html",
+      };
+      window.location.href = landingPages[role] || "index.html";
       return;
     }
 
