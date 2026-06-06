@@ -482,6 +482,11 @@ function renderTeamDetail(team) {
 }
 
 function renderTeamDetailRoster() {
+  // Delegate to enhanced version which has Award, Captain, Starter, Notes buttons
+  return renderTeamDetailRosterEnhanced();
+}
+
+function _renderTeamDetailRosterSimple() {
   const addContainer = $("#coach-td-roster-add");
   const listContainer = $("#coach-td-roster-list");
   const countChip = $("#coach-td-roster-count");
@@ -1698,7 +1703,7 @@ function bindForms() {
       try {
         await addToRoster({ teamId: state.viewingTeamId, athleteId, jerseyNumber, position });
         state.teamRoster = await loadRoster(state.viewingTeamId);
-        renderTeamDetailRoster();
+        renderTeamDetailRosterEnhanced();
         setStatus("coach-td-roster-status", "");
       } catch (err) {
         setStatus("coach-td-roster-status", err.message || "Failed to add athlete.", true);
@@ -1719,7 +1724,7 @@ function bindForms() {
       try {
         await removeFromRoster(removeRoster.dataset.removeRoster);
         state.teamRoster = await loadRoster(state.viewingTeamId);
-        renderTeamDetailRoster();
+        renderTeamDetailRosterEnhanced();
       } catch (err) {
         console.error("Remove roster failed:", err);
       }
