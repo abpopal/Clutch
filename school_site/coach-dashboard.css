@@ -510,6 +510,22 @@
 .roster-tag.captain { background: rgba(245,158,11,.15); color: var(--amber); }
 .roster-tag.starter { background: rgba(34,197,94,.12); color: var(--green); }
 
+.roster-inline-edit {
+  border: 1px solid transparent;
+  background: var(--surface-2, rgba(255,255,255,.04));
+  border-radius: 6px;
+  color: var(--text);
+  transition: border-color .2s;
+}
+.roster-inline-edit:hover {
+  border-color: var(--line);
+}
+.roster-inline-edit:focus {
+  border-color: #245f73;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(36,95,115,.2);
+}
+
 /* ── Tactical Board ──────────────────────────────────────────── */
 .tac-board-container {
   position: relative;

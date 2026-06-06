@@ -1217,12 +1217,12 @@ function renderTeamDetailRosterEnhanced() {
 
   if (addContainer) {
     addContainer.innerHTML = `
-      <select id="coach-td-add-athlete" class="sch-select" style="flex:1">
+      <select id="coach-td-add-athlete" class="sch-select" style="flex:1" required>
         <option value="" disabled selected>Add athlete to roster...</option>
         ${available.map((m) => `<option value="${m.user_id}">${esc(m.users?.display_name || m.users?.email || m.user_id)}</option>`).join("")}
       </select>
-      <input id="coach-td-add-jersey" type="text" class="sch-input" placeholder="Jersey #" style="width:70px">
-      <input id="coach-td-add-position" type="text" class="sch-input" placeholder="Position" style="width:100px">
+      <input id="coach-td-add-jersey" type="text" class="sch-input" placeholder="Jersey # *" style="width:70px" required>
+      <input id="coach-td-add-position" type="text" class="sch-input" placeholder="Position *" style="width:100px" required>
       <button class="sch-btn sch-btn--primary sch-btn--xs" id="coach-td-add-btn" type="button">Add</button>`;
   }
 
@@ -1239,10 +1239,11 @@ function renderTeamDetailRosterEnhanced() {
             <div class="sch-list-item" style="flex-wrap:wrap;gap:8px">
               <div class="sch-list-item-main" style="flex:1;min-width:180px">
                 <strong>${esc(name)}</strong>
-                <span style="color:var(--muted);font-size:.8125rem">
-                  ${r.jersey_number ? `#${esc(r.jersey_number)}` : ""}${r.position ? ` ${esc(r.position)}` : ""}
+                <div style="display:flex;gap:6px;align-items:center;margin-top:4px;">
+                  <input type="text" class="sch-input roster-inline-edit" data-roster-field="jersey_number" data-roster-id="${r.roster_id}" value="${esc(r.jersey_number || "")}" placeholder="#" style="width:50px;padding:4px 6px;font-size:.8rem;text-align:center;">
+                  <input type="text" class="sch-input roster-inline-edit" data-roster-field="position" data-roster-id="${r.roster_id}" value="${esc(r.position || "")}" placeholder="Position" style="width:100px;padding:4px 6px;font-size:.8rem;">
                   ${tags.join("")}
-                </span>
+                </div>
               </div>
               <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
                 <button class="sch-btn sch-btn--ghost sch-btn--xs" data-toggle-captain="${r.roster_id}" data-current="${r.is_captain}">${r.is_captain ? "★ Captain" : "☆ Captain"}</button>
@@ -1254,6 +1255,25 @@ function renderTeamDetailRosterEnhanced() {
             </div>`;
         }).join("")
       : `<div class="sch-empty">No athletes on roster yet. Add athletes from the dropdown above.</div>`;
+  }
+
+  // Inline edit: save on blur
+  if (listContainer) {
+    listContainer.querySelectorAll(".roster-inline-edit").forEach((input) => {
+      input.addEventListener("change", async () => {
+        const rosterId = input.dataset.rosterId;
+        const field = input.dataset.rosterField;
+        const value = input.value.trim() || null;
+        try {
+          await updateRosterEntry(rosterId, { [field]: value });
+          input.style.borderColor = "#16a34a";
+          setTimeout(() => { input.style.borderColor = ""; }, 1000);
+        } catch (err) {
+          console.error("Inline edit failed:", err);
+          input.style.borderColor = "#ef4444";
+        }
+      });
+    });
   }
 }
 
@@ -1700,6 +1720,12 @@ function bindForms() {
       const jerseyNumber = $("#coach-td-add-jersey")?.value?.trim() || null;
       const position = $("#coach-td-add-position")?.value?.trim() || null;
       if (!athleteId || !state.viewingTeamId) return;
+      if (!jerseyNumber || !position) {
+        setStatus("coach-td-roster-status", "Jersey number and position are required.", true);
+        if (!jerseyNumber) $("#coach-td-add-jersey")?.focus();
+        else if (!position) $("#coach-td-add-position")?.focus();
+        return;
+      }
       try {
         await addToRoster({ teamId: state.viewingTeamId, athleteId, jerseyNumber, position });
         state.teamRoster = await loadRoster(state.viewingTeamId);
