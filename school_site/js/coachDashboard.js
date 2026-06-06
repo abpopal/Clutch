@@ -1242,6 +1242,7 @@ function renderTeamDetailRosterEnhanced() {
               <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
                 <button class="sch-btn sch-btn--ghost sch-btn--xs" data-toggle-captain="${r.roster_id}" data-current="${r.is_captain}">${r.is_captain ? "★ Captain" : "☆ Captain"}</button>
                 <button class="sch-btn sch-btn--ghost sch-btn--xs" data-toggle-starter="${r.roster_id}" data-current="${r.is_starter}">${r.is_starter ? "✓ Starter" : "Starter"}</button>
+                <button class="sch-btn sch-btn--ghost sch-btn--xs" data-award-achievement="${r.athlete_id}" data-athlete-name="${esc(name)}">Award</button>
                 <button class="sch-btn sch-btn--ghost sch-btn--xs" data-open-notes="${r.athlete_id}" data-athlete-name="${esc(name)}">Notes</button>
                 <button class="sch-btn sch-btn--danger sch-btn--xs" data-remove-roster="${r.roster_id}">Remove</button>
               </div>
@@ -1705,6 +1706,13 @@ function bindForms() {
       return;
     }
 
+    // Award achievement
+    const awardBtn = target.closest("[data-award-achievement]");
+    if (awardBtn) {
+      openAwardAchievementModal(awardBtn.dataset.awardAchievement, awardBtn.dataset.athleteName || "Athlete");
+      return;
+    }
+
     // Remove from roster
     const removeRoster = target.closest("[data-remove-roster]");
     if (removeRoster) {
@@ -1848,6 +1856,245 @@ function bindForms() {
 async function reloadTrainings() {
   const teamIds = state.teams.map((t) => t.team_id);
   state.allTrainings = await loadTrainingsByTeams(teamIds);
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── AWARD ACHIEVEMENT MODAL ──────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+let _awardOverlay = null;
+
+function ensureAwardOverlay() {
+  if (_awardOverlay) return _awardOverlay;
+
+  _awardOverlay = document.createElement("div");
+  _awardOverlay.id = "coach-award-overlay";
+  Object.assign(_awardOverlay.style, {
+    position: "fixed", inset: "0", zIndex: "9999",
+    background: "rgba(0,0,0,.6)", backdropFilter: "blur(8px)",
+    WebkitBackdropFilter: "blur(8px)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    opacity: "0", pointerEvents: "none", transition: "opacity .25s ease",
+  });
+
+  _awardOverlay.innerHTML = `
+    <div id="coach-award-modal" style="
+      background:var(--surface,#1a1a2e); border-radius:16px; width:94%; max-width:500px;
+      max-height:85vh; display:flex; flex-direction:column;
+      box-shadow:0 24px 80px rgba(0,0,0,.5); transform:translateY(16px) scale(.97);
+      transition:transform .25s ease; overflow:hidden; border:1px solid var(--line);
+    ">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line);flex-shrink:0;">
+        <div>
+          <h3 id="coach-award-title" style="margin:0;font-size:1.05rem;font-weight:700;color:var(--text);">Award Achievement</h3>
+          <p id="coach-award-subtitle" style="margin:4px 0 0;font-size:.8rem;color:var(--muted);"></p>
+        </div>
+        <button id="coach-award-close" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-2);color:var(--muted);font-size:1.2rem;cursor:pointer;display:grid;place-items:center;">&times;</button>
+      </div>
+      <div id="coach-award-body" style="padding:20px 22px;overflow-y:auto;flex:1;"></div>
+      <div style="display:flex;gap:10px;padding:14px 22px;border-top:1px solid var(--line);flex-shrink:0;justify-content:flex-end;">
+        <span id="coach-award-status" style="font-size:.8rem;color:var(--muted);align-self:center;flex:1;"></span>
+        <button id="coach-award-save" type="button" style="padding:10px 22px;border-radius:10px;border:none;background:#2e7d32;color:#fff;font-size:.875rem;font-weight:700;cursor:pointer;">Award Achievement</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(_awardOverlay);
+
+  _awardOverlay.addEventListener("click", (e) => {
+    if (e.target === _awardOverlay) closeAwardModal();
+  });
+  _awardOverlay.querySelector("#coach-award-close").addEventListener("click", closeAwardModal);
+  _awardOverlay.querySelector("#coach-award-save").addEventListener("click", () => void saveAwardedAchievement());
+
+  return _awardOverlay;
+}
+
+function openAwardAchievementModal(athleteId, athleteName) {
+  const overlay = ensureAwardOverlay();
+  const subtitle = document.getElementById("coach-award-subtitle");
+  const body = document.getElementById("coach-award-body");
+  const status = document.getElementById("coach-award-status");
+  if (!body) return;
+
+  if (subtitle) subtitle.textContent = `Awarding to ${athleteName}`;
+  if (status) status.textContent = "";
+
+  // Store athlete info on the modal
+  overlay.dataset.athleteId = athleteId;
+  overlay.dataset.athleteName = athleteName;
+
+  // Determine team sport
+  const team = state.teams.find((t) => t.team_id === state.viewingTeamId);
+  const sportName = team?.sports?.name || "";
+
+  const currentYear = new Date().getFullYear();
+
+  const presets = {
+    award: [
+      "Team MVP", "Most Improved", "Offensive Player of the Year",
+      "Defensive Player of the Year", "Rookie of the Year", "All-District First Team",
+      "All-District Second Team", "All-Region", "All-State",
+    ],
+    honor: [
+      "Academic All-District", "Academic All-State", "Honor Roll Athlete",
+      "Scholar Athlete Award", "Leadership Award", "Sportsmanship Award",
+    ],
+    milestone: [
+      "1000 Career Points", "100 Career Goals", "500 Career Yards",
+      "50 Career Wins", "School Record Holder",
+    ],
+  };
+
+  body.innerHTML = `
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">Category</label>
+      <select id="award-category" class="sch-select" style="width:100%;">
+        <option value="award">Award (MVP, All-District, etc.)</option>
+        <option value="honor">Academic Honor</option>
+        <option value="milestone">Milestone / Record</option>
+        <option value="event">Event / Tournament Result</option>
+        <option value="record">School / Program Record</option>
+      </select>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">Quick Select</label>
+      <div id="award-presets" style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${presets.award.map(p => `<button type="button" class="award-preset-btn" style="
+          padding:6px 12px;border-radius:8px;border:1px solid var(--line);
+          background:var(--surface-2);color:var(--text);font-size:.78rem;font-weight:600;
+          cursor:pointer;transition:.15s;
+        ">${esc(p)}</button>`).join("")}
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">Title</label>
+      <input type="text" id="award-title" class="sch-input" placeholder="e.g. Team MVP, All-District First Team" style="width:100%;box-sizing:border-box;">
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">Description (optional)</label>
+      <textarea id="award-desc" class="sch-input" rows="2" placeholder="Why is this athlete receiving this achievement?" style="width:100%;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div>
+        <label style="display:block;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">Year</label>
+        <input type="number" id="award-year" class="sch-input" value="${currentYear}" min="2015" max="2035" style="width:100%;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="display:block;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">Sport</label>
+        <input type="text" id="award-sport" class="sch-input" value="${esc(sportName)}" placeholder="e.g. Basketball" style="width:100%;box-sizing:border-box;">
+      </div>
+    </div>
+  `;
+
+  // Preset quick select
+  body.querySelectorAll(".award-preset-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const titleInput = document.getElementById("award-title");
+      if (titleInput) titleInput.value = btn.textContent;
+      // Highlight selected
+      body.querySelectorAll(".award-preset-btn").forEach(b => {
+        b.style.borderColor = "var(--line)";
+        b.style.background = "var(--surface-2)";
+      });
+      btn.style.borderColor = "#2e7d32";
+      btn.style.background = "rgba(46,125,50,.12)";
+    });
+  });
+
+  // Update presets when category changes
+  const catSelect = document.getElementById("award-category");
+  if (catSelect) {
+    catSelect.addEventListener("change", () => {
+      const presetsDiv = document.getElementById("award-presets");
+      if (!presetsDiv) return;
+      const cat = catSelect.value;
+      const items = presets[cat] || [];
+      if (!items.length) {
+        presetsDiv.style.display = "none";
+        return;
+      }
+      presetsDiv.style.display = "flex";
+      presetsDiv.innerHTML = items.map(p => `<button type="button" class="award-preset-btn" style="
+        padding:6px 12px;border-radius:8px;border:1px solid var(--line);
+        background:var(--surface-2);color:var(--text);font-size:.78rem;font-weight:600;
+        cursor:pointer;transition:.15s;
+      ">${esc(p)}</button>`).join("");
+      presetsDiv.querySelectorAll(".award-preset-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const titleInput = document.getElementById("award-title");
+          if (titleInput) titleInput.value = btn.textContent;
+          presetsDiv.querySelectorAll(".award-preset-btn").forEach(b => {
+            b.style.borderColor = "var(--line)";
+            b.style.background = "var(--surface-2)";
+          });
+          btn.style.borderColor = "#2e7d32";
+          btn.style.background = "rgba(46,125,50,.12)";
+        });
+      });
+    });
+  }
+
+  // Show
+  void overlay.offsetWidth;
+  overlay.style.opacity = "1";
+  overlay.style.pointerEvents = "auto";
+  overlay.querySelector("#coach-award-modal").style.transform = "translateY(0) scale(1)";
+}
+
+function closeAwardModal() {
+  if (!_awardOverlay) return;
+  _awardOverlay.style.opacity = "0";
+  _awardOverlay.style.pointerEvents = "none";
+  _awardOverlay.querySelector("#coach-award-modal").style.transform = "translateY(16px) scale(.97)";
+}
+
+async function saveAwardedAchievement() {
+  const status = document.getElementById("coach-award-status");
+  const saveBtn = document.getElementById("coach-award-save");
+
+  const athleteId = _awardOverlay?.dataset.athleteId;
+  const athleteName = _awardOverlay?.dataset.athleteName || "Athlete";
+  const title = document.getElementById("award-title")?.value?.trim();
+
+  if (!title) {
+    if (status) { status.textContent = "Title is required."; status.style.color = "#ef4444"; }
+    return;
+  }
+  if (!athleteId) {
+    if (status) { status.textContent = "No athlete selected."; status.style.color = "#ef4444"; }
+    return;
+  }
+
+  if (status) { status.textContent = "Awarding..."; status.style.color = "#2e7d32"; }
+  if (saveBtn) saveBtn.disabled = true;
+
+  try {
+    const { error } = await supabase.from("athlete_achievements").insert({
+      athlete_user_id: athleteId,
+      title,
+      description: document.getElementById("award-desc")?.value?.trim() || null,
+      category: document.getElementById("award-category")?.value || "award",
+      year: parseInt(document.getElementById("award-year")?.value, 10) || null,
+      sport: document.getElementById("award-sport")?.value?.trim() || null,
+      source: "coach",
+      awarded_by: state.appUserId,
+      verified: true,
+    });
+
+    if (error) throw error;
+
+    if (status) { status.textContent = `Awarded to ${athleteName}!`; status.style.color = "#16a34a"; }
+    setTimeout(() => closeAwardModal(), 1200);
+  } catch (err) {
+    console.error("Award achievement failed:", err);
+    if (status) { status.textContent = err.message || "Failed to award."; status.style.color = "#ef4444"; }
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────
