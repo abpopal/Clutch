@@ -82,7 +82,7 @@ function guardedSubmit(formId, statusId, handler) {
 }
 
 // ── Section Navigation (tab bar) ──────────────────────────────
-function switchSection(sectionId) {
+function switchSection(sectionId, updateHash = true) {
   $$(".sch-section").forEach((s) => s.classList.remove("sch-section--active"));
   const target = $(`#coach-section-${sectionId}`);
   if (target) target.classList.add("sch-section--active");
@@ -91,6 +91,15 @@ function switchSection(sectionId) {
   $$(".coach-tab").forEach((t) => t.classList.remove("active"));
   const tab = $(`.coach-tab[data-section="${sectionId}"]`);
   if (tab) tab.classList.add("active");
+
+  // Persist to URL hash so refresh preserves the view
+  if (updateHash) {
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    params.set("tab", sectionId);
+    // Clear team if we're not in team-detail
+    if (sectionId !== "team-detail") params.delete("team");
+    history.replaceState(null, "", `#${params.toString()}`);
+  }
 }
 
 function initSectionNav() {
@@ -445,6 +454,12 @@ async function openTeamDetail(teamId) {
   if (!team) return;
 
   switchSection("team-detail");
+
+  // Save team to URL hash
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  params.set("tab", "team-detail");
+  params.set("team", teamId);
+  history.replaceState(null, "", `#${params.toString()}`);
 
   const nameEl = $("#coach-td-name");
   const metaEl = $("#coach-td-meta");
@@ -2128,6 +2143,32 @@ async function saveAwardedAchievement() {
   }
 }
 
+// ── URL hash state restore ────────────────────────────────────
+async function restoreFromHash() {
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const tab = params.get("tab");
+  const teamId = params.get("team");
+
+  if (tab && tab !== "overview") {
+    if (tab === "team-detail" && teamId) {
+      // Open the specific team
+      const team = state.teams.find((t) => t.team_id === teamId);
+      if (team) {
+        await openTeamDetail(teamId);
+      } else {
+        switchSection("my-teams", false);
+      }
+    } else {
+      switchSection(tab, false);
+    }
+  }
+}
+
+// Listen for back/forward navigation
+window.addEventListener("hashchange", () => {
+  if (state.initialized) void restoreFromHash();
+});
+
 // ── Init ──────────────────────────────────────────────────────
 async function initCoachDashboard() {
   if (state.initializing || state.initialized) return;
@@ -2140,6 +2181,9 @@ async function initCoachDashboard() {
     initSectionNav();
     bindForms();
     state.initialized = true;
+
+    // Restore view from URL hash (e.g. #tab=my-teams&team=uuid)
+    await restoreFromHash();
   } catch (err) {
     console.error("Coach dashboard init failed:", err);
     const status = $("#coach-status");

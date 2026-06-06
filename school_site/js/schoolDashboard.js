@@ -65,7 +65,7 @@ function formatTime(t) {
 }
 
 // ── Section Navigation ────────────────────────────────────────
-function switchSection(sectionId) {
+function switchSection(sectionId, updateHash = true) {
   $$(".sch-section").forEach((s) => s.classList.remove("sch-section--active"));
   $$(".sch-sub-link").forEach((l) => l.classList.remove("active"));
 
@@ -74,6 +74,13 @@ function switchSection(sectionId) {
 
   const link = $(`.sch-sub-link[data-section="${sectionId}"]`);
   if (link) link.classList.add("active");
+
+  if (updateHash) {
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    params.set("tab", sectionId);
+    if (sectionId !== "team-detail") params.delete("team");
+    history.replaceState(null, "", `#${params.toString()}`);
+  }
 }
 
 function initSectionNav() {
@@ -579,6 +586,12 @@ async function openTeamDetail(teamId) {
 
   renderTeamDetail();
   switchSection("team-detail");
+
+  // Save team to URL hash
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  params.set("tab", "team-detail");
+  params.set("team", teamId);
+  history.replaceState(null, "", `#${params.toString()}`);
 }
 
 function renderTeamDetail() {
@@ -1532,6 +1545,29 @@ async function saveSchoolAward() {
   }
 }
 
+async function restoreFromHash() {
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const tab = params.get("tab");
+  const teamId = params.get("team");
+
+  if (tab) {
+    if (tab === "team-detail" && teamId) {
+      const team = state.teams.find((t) => t.team_id === teamId);
+      if (team) {
+        await openTeamDetail(teamId);
+      } else {
+        switchSection("teams", false);
+      }
+    } else {
+      switchSection(tab, false);
+    }
+  }
+}
+
+window.addEventListener("hashchange", () => {
+  if (state.initialized) void restoreFromHash();
+});
+
 async function initSchoolDashboard() {
   const auth = getGlobalAppState().auth;
   if (!auth?.session && !auth?.authUser) return;
@@ -1567,6 +1603,9 @@ async function initSchoolDashboard() {
 
     state.initialized = true;
     if (statusEl) statusEl.textContent = "";
+
+    // Restore view from URL hash
+    await restoreFromHash();
   } catch (err) {
     console.error("School dashboard init failed", err);
     state.initializing = false;  // allow retry on failure
